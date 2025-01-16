@@ -1,23 +1,25 @@
 'use client';
 
 import { Button } from "./ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface PaginationProps {
   currentPage: number;
   totalItems: number;
   pageSize: number;
+  baseUrl: string;
   className?: string;
 }
 
-export default function Pagination({ currentPage, totalItems, pageSize, className = '' }: PaginationProps) {
+export default function Pagination({ currentPage, totalItems, pageSize, baseUrl, className = '' }: PaginationProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const totalPages = Math.ceil(totalItems / pageSize);
 
   if (totalPages <= 1) return null;
 
   const onPageChange = (page: number) => {
-    router.push(`/?page=${page}`);
+    router.push(`${pathname}?page=${page}`);
   };
 
   const renderPageNumbers = () => {

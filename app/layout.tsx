@@ -5,8 +5,8 @@ import Header from '@/app/components/Header'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Legislation Tracker',
-  description: 'Track legislation affecting Black communities',
+  title: 'LegiEquity Monitor',
+  description: 'AI-powered legislative analysis for racial equity impact assessment',
 }
 
 export default function RootLayout({

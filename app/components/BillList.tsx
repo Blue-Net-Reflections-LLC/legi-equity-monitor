@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link'
-import { Bill } from '@/types'
+import { usePathname } from 'next/navigation'
+import { Bill, BillWithImpacts, ImpactLevel } from '@/app/types'
 import { Card, CardHeader, CardContent, CardFooter } from '@/app/components/ui/card'
 import ImpactBadge from '@/app/components/ImpactBadge'
 
@@ -10,31 +13,30 @@ const RACE_CODES = {
   WH: 'White'
 } as const;
 
-type ImpactLevel = 'mild' | 'medium' | 'high' | 'urgent'
-type Sentiment = 'POSITIVE' | 'NEGATIVE'
-
-interface BillWithImpacts extends Bill {
-  racial_impacts?: Record<string, { severity: ImpactLevel; impact_type: Sentiment }>;
-}
-
 export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
+  const pathname = usePathname();
+  const stateCode = pathname.split('/').filter(Boolean)[0];
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {bills.map((bill) => (
-        <Card key={bill.bill_id} className="bg-white hover:shadow-lg transition-shadow">
-          <CardHeader className="border-b bg-gray-50/50">
+        <Card key={bill.bill_id}>
+          <CardHeader className="pb-2">
             <Link 
-              href={`/bill/${bill.bill_id}`} 
+              href={`/${stateCode}/bill/${bill.bill_id}`}
               className="text-lg font-semibold hover:text-blue-600 transition-colors"
             >
               {bill.bill_number}
             </Link>
           </CardHeader>
-          <CardContent className="bg-white">
+          <CardContent>
             <div className="flex gap-4">
               <div className="flex-1">
-                <h3 className="font-medium mb-2 hover:text-blue-600">
-                  <Link href={`/bill/${bill.bill_id}`}>
+                <h3 className="font-medium mb-2">
+                  <Link 
+                    href={`/${stateCode}/bill/${bill.bill_id}`}
+                    className="hover:text-blue-600 transition-colors"
+                  >
                     {bill.title}
                   </Link>
                 </h3>
@@ -66,11 +68,11 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
               )}
             </div>
           </CardContent>
-          <CardFooter className="text-xs text-gray-500 border-t bg-gray-50/50">
+          <CardFooter className="text-xs text-gray-500">
             <div className="w-full">
               <div className="flex justify-between items-center">
                 <span>Last Action:</span>
-                <span>{new Date(bill.last_action_date).toLocaleDateString()}</span>
+                <span>{bill.last_action_date ? new Date(bill.last_action_date).toLocaleDateString() : 'N/A'}</span>
               </div>
               <div className="mt-1 text-gray-600">{bill.last_action}</div>
             </div>
@@ -78,6 +80,6 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
         </Card>
       ))}
     </div>
-  )
+  );
 }
 
