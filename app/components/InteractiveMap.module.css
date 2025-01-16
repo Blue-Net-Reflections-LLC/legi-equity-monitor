@@ -1,0 +1,50 @@
+.mapContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mapContainer svg {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+}
+
+.infoBox {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+}
+
+.mapContainer path,
+.mapContainer circle {
+  fill: #D3D3D3;
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+.mapContainer path:hover,
+.mapContainer circle:hover {
+  stroke: #002868 !important;
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  fill: #002868 !important;
+  cursor: pointer;
+}
+
+/* Ensure the Alaska/Hawaii connection lines don't change on hover */
+.mapContainer path#path67 {
+  fill: none !important;
+  stroke: #A9A9A9 !important;
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  .mapContainer {
+    display: none;
+  }
+} 

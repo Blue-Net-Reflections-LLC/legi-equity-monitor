@@ -1,6 +1,12 @@
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import StateTiles from "@/app/components/StateTiles";
 import AnimatedContent from "./components/AnimatedContent";
+import dynamic from "next/dynamic";
+
+// Dynamically import the InteractiveMap component with no SSR
+const InteractiveMap = dynamic(() => import("./components/InteractiveMap"), {
+  ssr: false,
+});
 
 export default function Home() {
   return (
@@ -22,8 +28,18 @@ export default function Home() {
         </AuroraBackground>
       </section>
 
-      {/* States Grid Section */}
-      <section className="py-16 px-4 bg-gradient-to-b from-white/50 to-white dark:from-zinc-900/50 dark:to-zinc-900">
+      {/* Interactive Map Section (Desktop Only) */}
+      <section className="hidden md:block py-16 px-4">
+        <div className="max-w-7xl mx-auto h-[600px]">
+          <h2 className="text-2xl md:text-4xl font-semibold text-zinc-900 dark:text-white text-center mb-12">
+            Select a State to Begin
+          </h2>
+          <InteractiveMap />
+        </div>
+      </section>
+
+      {/* States Grid Section (Mobile Only) */}
+      <section className="md:hidden py-16 px-4 bg-gradient-to-b from-white/50 to-white dark:from-zinc-900/50 dark:to-zinc-900">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl md:text-4xl font-semibold text-zinc-900 dark:text-white text-center mb-12">
             Select a State to Begin
