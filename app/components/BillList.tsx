@@ -35,7 +35,8 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
                 <h3 className="font-medium mb-2">
                   <Link 
                     href={`/${stateCode}/bill/${bill.bill_id}`}
-                    className="hover:text-blue-600 transition-colors"
+                    className="hover:text-blue-600 transition-colors line-clamp-2"
+                    title={bill.title}
                   >
                     {bill.title}
                   </Link>
