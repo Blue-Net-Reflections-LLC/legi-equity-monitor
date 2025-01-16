@@ -92,22 +92,22 @@ Consider these factors in your analysis:
 You MUST return a JSON object with EXACTLY this structure and these keys:
 {
   "AI": {
-    "impact_type": "POSITIVE" | "NEGATIVE",  // Use EXACTLY these strings
+    "impact_type": "POSITIVE" | "NEGATIVE",  // ONLY these two values are allowed. NEVER use "NEUTRAL" or any other value
     "severity": "mild" | "medium" | "high" | "urgent",
     "analysis": "string explaining the reasoning"
   },
   "AP": {
-    "impact_type": "POSITIVE" | "NEGATIVE",
+    "impact_type": "POSITIVE" | "NEGATIVE",  // ONLY these two values are allowed. NEVER use "NEUTRAL" or any other value
     "severity": "mild" | "medium" | "high" | "urgent",
     "analysis": "string explaining the reasoning"
   },
   "BH": {
-    "impact_type": "POSITIVE" | "NEGATIVE",
+    "impact_type": "POSITIVE" | "NEGATIVE",  // ONLY these two values are allowed. NEVER use "NEUTRAL" or any other value
     "severity": "mild" | "medium" | "high" | "urgent",
     "analysis": "string explaining the reasoning"
   },
   "WH": {
-    "impact_type": "POSITIVE" | "NEGATIVE",
+    "impact_type": "POSITIVE" | "NEGATIVE",  // ONLY these two values are allowed. NEVER use "NEUTRAL" or any other value
     "severity": "mild" | "medium" | "high" | "urgent",
     "analysis": "string explaining the reasoning"
   }
@@ -139,11 +139,12 @@ Example response for a hypothetical education bill:
 
 CRITICAL REQUIREMENTS:
 1. ALL four groups (AI, AP, BH, WH) must be included
-2. impact_type MUST be exactly "POSITIVE" or "NEGATIVE" (uppercase)
+2. impact_type MUST be exactly "POSITIVE" or "NEGATIVE" (uppercase). NEVER use "NEUTRAL" or any other value
 3. severity MUST be one of: "mild", "medium", "high", "urgent"
 4. Use EXACTLY these keys: "AI", "AP", "BH", "WH"
 5. All property names and values must use double quotes
-6. Each group must have all three fields: impact_type, severity, and analysis`
+6. Each group must have all three fields: impact_type, severity, and analysis
+7. If a bill seems to have no impact, use "POSITIVE" with "mild" severity rather than attempting to use "NEUTRAL"`
         },
         {
           role: 'user',
