@@ -3,6 +3,7 @@ import BillList from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
 import { BillWithImpacts } from "@/app/types";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
+import FilterDrawer from '@/app/components/FilterDrawer';
 
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
@@ -64,10 +65,10 @@ async function getBills(
 
 export default async function StatePage({ 
   params,
-  searchParams 
-}: { 
+  searchParams,
+}: {
   params: { state: string };
-  searchParams: { page?: string } 
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const stateCode = params.state.toUpperCase();
   const stateName = STATE_NAMES[stateCode];
@@ -97,6 +98,7 @@ export default async function StatePage({
             <div className="text-sm text-gray-500">
               Showing {bills.length} of {totalCount} bills
             </div>
+            <FilterDrawer />
           </div>
           <BillList bills={bills} />
           <Pagination
