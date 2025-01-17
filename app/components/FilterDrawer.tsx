@@ -111,96 +111,138 @@ export default function FilterDrawer() {
             Filter bills by various criteria
           </SheetDescription>
         </SheetHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 overflow-y-auto max-h-[calc(100vh-8rem)]">
           {/* Categories */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Categories</label>
-            <select
-              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
-              multiple
-              size={5}
-              value={searchParams.getAll('categories')}
-              onChange={handleCategoryChange}
-            >
-              {options.categories.map(category => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto p-2 border rounded-md dark:border-zinc-700">
+              {options.categories.map(category => {
+                const isChecked = searchParams.getAll('categories').includes(category);
+                return (
+                  <label key={category} className="flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={e => {
+                        const params = new URLSearchParams(searchParams.toString());
+                        if (e.target.checked) {
+                          params.append('categories', category);
+                        } else {
+                          const values = params.getAll('categories').filter(v => v !== category);
+                          params.delete('categories');
+                          values.forEach(v => params.append('categories', v));
+                        }
+                        router.push(`${pathname}?${params.toString()}`);
+                      }}
+                      className="rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">{category}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           {/* Race/Ethnicity */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Race/Ethnicity</label>
-            <select
-              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
-              value={searchParams.get('race_code') || ''}
-              onChange={e => {
-                const params = new URLSearchParams(searchParams.toString());
-                if (e.target.value) {
-                  params.set('race_code', e.target.value);
-                } else {
+            <div className="grid grid-cols-1 gap-2 p-2 border rounded-md dark:border-zinc-700">
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
                   params.delete('race_code');
-                }
-                router.push(`${pathname}?${params.toString()}`);
-              }}
-            >
-              <option value="">All Groups</option>
+                  router.push(`${pathname}?${params.toString()}`);
+                }}
+                className={`text-left py-1 px-2 rounded text-sm ${!searchParams.get('race_code') 
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-100' 
+                  : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}
+              >
+                All Groups
+              </button>
               {Object.entries(RACE_CODES).map(([code, label]) => (
-                <option key={code} value={code}>{label}</option>
+                <button
+                  key={code}
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.set('race_code', code);
+                    router.push(`${pathname}?${params.toString()}`);
+                  }}
+                  className={`text-left py-1 px-2 rounded text-sm ${searchParams.get('race_code') === code 
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-100' 
+                    : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}
+                >
+                  {label}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* Impact Type */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Impact Type</label>
-            <select
-              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
-              value={searchParams.get('impact_type') || ''}
-              onChange={e => {
-                const params = new URLSearchParams(searchParams.toString());
-                if (e.target.value) {
-                  params.set('impact_type', e.target.value);
-                } else {
+            <div className="grid grid-cols-1 gap-2 p-2 border rounded-md dark:border-zinc-700">
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
                   params.delete('impact_type');
-                }
-                router.push(`${pathname}?${params.toString()}`);
-              }}
-            >
-              <option value="">Any Impact</option>
+                  router.push(`${pathname}?${params.toString()}`);
+                }}
+                className={`text-left py-1 px-2 rounded text-sm ${!searchParams.get('impact_type') 
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-100' 
+                  : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}
+              >
+                Any Impact
+              </button>
               {IMPACT_TYPES.map(type => (
-                <option key={type} value={type}>
+                <button
+                  key={type}
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.set('impact_type', type);
+                    router.push(`${pathname}?${params.toString()}`);
+                  }}
+                  className={`text-left py-1 px-2 rounded text-sm ${searchParams.get('impact_type') === type 
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-100' 
+                    : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}
+                >
                   {type.charAt(0) + type.slice(1).toLowerCase()}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* Severity */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Severity</label>
-            <select
-              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
-              value={searchParams.get('severity') || ''}
-              onChange={e => {
-                const params = new URLSearchParams(searchParams.toString());
-                if (e.target.value) {
-                  params.set('severity', e.target.value);
-                } else {
+            <div className="grid grid-cols-1 gap-2 p-2 border rounded-md dark:border-zinc-700">
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
                   params.delete('severity');
-                }
-                router.push(`${pathname}?${params.toString()}`);
-              }}
-            >
-              <option value="">Any Severity</option>
+                  router.push(`${pathname}?${params.toString()}`);
+                }}
+                className={`text-left py-1 px-2 rounded text-sm ${!searchParams.get('severity') 
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-100' 
+                  : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}
+              >
+                Any Severity
+              </button>
               {SEVERITIES.map(severity => (
-                <option key={severity} value={severity}>
+                <button
+                  key={severity}
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.set('severity', severity);
+                    router.push(`${pathname}?${params.toString()}`);
+                  }}
+                  className={`text-left py-1 px-2 rounded text-sm ${searchParams.get('severity') === severity 
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-100' 
+                    : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}
+                >
                   {severity.charAt(0).toUpperCase() + severity.slice(1)}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* Committee */}
