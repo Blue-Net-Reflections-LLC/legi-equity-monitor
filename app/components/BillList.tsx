@@ -41,9 +41,28 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
                     {bill.title}
                   </Link>
                 </h3>
-                <p className="text-sm text-gray-600 line-clamp-3">
+                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
                   {bill.description}
                 </p>
+                {/* Categories with scores */}
+                {bill.inferred_categories && bill.inferred_categories.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {bill.inferred_categories
+                      .filter((cat: { category: string, score: number }) => cat.score >= 0.2)
+                      .map((cat: { category: string, score: number }) => (
+                      <span 
+                        key={cat.category}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                        title={`Confidence: ${Math.round(cat.score * 100)}%`}
+                      >
+                        {cat.category}
+                        <span className="ml-1 text-purple-500 dark:text-purple-400">
+                          {Math.round(cat.score * 100)}%
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               
               {/* Impact Badges */}
@@ -55,7 +74,7 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
                     
                     return (
                       <div key={code} className="flex flex-col gap-1">
-                        <div className="text-xs font-medium text-gray-500 truncate" title={name}>
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate" title={name}>
                           {name.split('/')[0]}
                         </div>
                         <ImpactBadge 
@@ -69,13 +88,13 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
               )}
             </div>
           </CardContent>
-          <CardFooter className="text-xs text-gray-500">
+          <CardFooter className="text-xs text-gray-500 dark:text-gray-400">
             <div className="w-full">
               <div className="flex justify-between items-center">
                 <span>Last Action:</span>
                 <span>{bill.last_action_date ? new Date(bill.last_action_date).toLocaleDateString() : 'N/A'}</span>
               </div>
-              <div className="mt-1 text-gray-600">{bill.last_action}</div>
+              <div className="mt-1 text-gray-600 dark:text-gray-300">{bill.last_action}</div>
             </div>
           </CardFooter>
         </Card>
