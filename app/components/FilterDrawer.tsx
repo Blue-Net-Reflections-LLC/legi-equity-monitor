@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { SlidersHorizontal } from "lucide-react";
 import {
@@ -9,7 +9,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetDescription,
 } from "@/components/ui/sheet";
+import { Button } from "@/app/components/ui/button";
 
 const RACE_CODES = {
   AI: 'American Indian/Alaska Native',
@@ -29,6 +31,7 @@ interface FilterOptions {
 export default function FilterDrawer() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   
   const [options, setOptions] = useState<FilterOptions>({
     committees: [],
@@ -85,37 +88,63 @@ export default function FilterDrawer() {
     updateFilters({ ...filters, [field]: e.target.value });
   };
 
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('categories');
+    selectedOptions.forEach(value => params.append('categories', value));
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <button 
-          className="p-3 bg-white dark:bg-zinc-800 rounded-lg shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2 border border-zinc-200 dark:border-zinc-700"
-          title="Filter Bills"
-        >
-          <SlidersHorizontal className="h-5 w-5" />
-          <span className="hidden sm:inline">Filters</span>
-          <span className="sr-only">Open Filters</span>
-        </button>
+        <Button variant="outline" size="sm" className="gap-2">
+          <SlidersHorizontal className="h-4 w-4" />
+          <span className="hidden md:inline">Filters</span>
+        </Button>
       </SheetTrigger>
       <SheetContent className="bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800">
         <SheetHeader>
           <SheetTitle>Filter Bills</SheetTitle>
+          <SheetDescription>
+            Filter bills by various criteria
+          </SheetDescription>
         </SheetHeader>
-        <div className="space-y-6 mt-6 overflow-y-auto max-h-[calc(100vh-8rem)] pr-6">
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg">
-              {error}
-            </div>
-          )}
+        <div className="grid gap-4 py-4">
+          {/* Categories */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Categories</label>
+            <select
+              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
+              multiple
+              size={5}
+              value={searchParams.getAll('categories')}
+              onChange={handleCategoryChange}
+            >
+              {options.categories.map(category => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Race/Ethnicity */}
           <div className="space-y-2">
-            <label htmlFor="race_code" className="font-medium block">Race/Ethnicity</label>
+            <label className="text-sm font-medium">Race/Ethnicity</label>
             <select
-              id="race_code"
-              value={filters.race_code}
-              onChange={handleChange('race_code')}
-              className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2"
+              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
+              value={searchParams.get('race_code') || ''}
+              onChange={e => {
+                const params = new URLSearchParams(searchParams.toString());
+                if (e.target.value) {
+                  params.set('race_code', e.target.value);
+                } else {
+                  params.delete('race_code');
+                }
+                router.push(`${pathname}?${params.toString()}`);
+              }}
             >
               <option value="">All Groups</option>
               {Object.entries(RACE_CODES).map(([code, label]) => (
@@ -126,15 +155,22 @@ export default function FilterDrawer() {
 
           {/* Impact Type */}
           <div className="space-y-2">
-            <label htmlFor="impact_type" className="font-medium block">Impact Type</label>
+            <label className="text-sm font-medium">Impact Type</label>
             <select
-              id="impact_type"
-              value={filters.impact_type}
-              onChange={handleChange('impact_type')}
-              className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2"
+              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
+              value={searchParams.get('impact_type') || ''}
+              onChange={e => {
+                const params = new URLSearchParams(searchParams.toString());
+                if (e.target.value) {
+                  params.set('impact_type', e.target.value);
+                } else {
+                  params.delete('impact_type');
+                }
+                router.push(`${pathname}?${params.toString()}`);
+              }}
             >
               <option value="">Any Impact</option>
-              {IMPACT_TYPES.map((type) => (
+              {IMPACT_TYPES.map(type => (
                 <option key={type} value={type}>
                   {type.charAt(0) + type.slice(1).toLowerCase()}
                 </option>
@@ -144,15 +180,22 @@ export default function FilterDrawer() {
 
           {/* Severity */}
           <div className="space-y-2">
-            <label htmlFor="severity" className="font-medium block">Severity</label>
+            <label className="text-sm font-medium">Severity</label>
             <select
-              id="severity"
-              value={filters.severity}
-              onChange={handleChange('severity')}
-              className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2"
+              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
+              value={searchParams.get('severity') || ''}
+              onChange={e => {
+                const params = new URLSearchParams(searchParams.toString());
+                if (e.target.value) {
+                  params.set('severity', e.target.value);
+                } else {
+                  params.delete('severity');
+                }
+                router.push(`${pathname}?${params.toString()}`);
+              }}
             >
               <option value="">Any Severity</option>
-              {SEVERITIES.map((severity) => (
+              {SEVERITIES.map(severity => (
                 <option key={severity} value={severity}>
                   {severity.charAt(0).toUpperCase() + severity.slice(1)}
                 </option>
@@ -161,40 +204,27 @@ export default function FilterDrawer() {
           </div>
 
           {/* Committee */}
-          {options.committees.length > 0 && (
-            <div className="space-y-2">
-              <label htmlFor="committee" className="font-medium block">Committee</label>
-              <select
-                id="committee"
-                value={filters.committee}
-                onChange={handleChange('committee')}
-                className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2"
-              >
-                <option value="">All Committees</option>
-                {options.committees.map((committee) => (
-                  <option key={committee} value={committee}>{committee}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Category */}
-          {options.categories.length > 0 && (
-            <div className="space-y-2">
-              <label htmlFor="category" className="font-medium block">Category</label>
-              <select
-                id="category"
-                value={filters.category}
-                onChange={handleChange('category')}
-                className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2"
-              >
-                <option value="">All Categories</option>
-                {options.categories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Committee</label>
+            <select
+              className="w-full p-2 border rounded-md dark:bg-zinc-900 dark:border-zinc-700"
+              value={searchParams.get('committee') || ''}
+              onChange={e => {
+                const params = new URLSearchParams(searchParams.toString());
+                if (e.target.value) {
+                  params.set('committee', e.target.value);
+                } else {
+                  params.delete('committee');
+                }
+                router.push(`${pathname}?${params.toString()}`);
+              }}
+            >
+              <option value="">All Committees</option>
+              {options.committees.map(committee => (
+                <option key={committee} value={committee}>{committee}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

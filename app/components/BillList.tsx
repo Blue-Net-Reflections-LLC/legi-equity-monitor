@@ -18,7 +18,7 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
   const stateCode = pathname.split('/').filter(Boolean)[0];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       {bills.map((bill) => (
         <Card key={bill.bill_id}>
           <CardHeader className="pb-2">
