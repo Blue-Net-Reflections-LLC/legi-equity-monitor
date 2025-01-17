@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bill, BillWithImpacts, ImpactLevel } from '@/app/types'
+import { BillWithImpacts, ImpactLevel } from '@/app/types'
 import { Card, CardHeader, CardContent, CardFooter } from '@/app/components/ui/card'
 import ImpactBadge from '@/app/components/ImpactBadge'
 

@@ -11,7 +11,7 @@ export interface Bill {
   last_action: string | null;
   last_action_date: Date | null;
   pdf_url: string | null;
-  inferred_categories: Record<string, any> | null;
+  inferred_categories: Array<{ category: string; score: number }> | null;
 }
 
 export interface BillWithImpacts extends Bill {
