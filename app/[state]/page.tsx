@@ -57,6 +57,7 @@ async function getBills(
     ${filters.categories ? db` AND EXISTS (
       SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
       WHERE cat->>'category' = ANY(${filters.categories})
+      AND (cat->>'score')::float >= 0.2
     )` : db``}
     ${filters.race_code ? db` AND EXISTS (
       SELECT 1 FROM racial_impact_analysis ria 
@@ -83,6 +84,7 @@ async function getBills(
     ${filters.categories ? db` AND EXISTS (
       SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
       WHERE cat->>'category' = ANY(${filters.categories})
+      AND (cat->>'score')::float >= 0.2
     )` : db``}
     ${filters.race_code ? db` AND EXISTS (
       SELECT 1 FROM racial_impact_analysis ria 

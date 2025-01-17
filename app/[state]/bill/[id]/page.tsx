@@ -150,6 +150,30 @@ export default async function BillPage({
                   </p>
                 </div>
 
+                {bill.inferred_categories && bill.inferred_categories.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+                      Categories
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {bill.inferred_categories
+                        .filter((cat: { category: string, score: number }) => cat.score >= 0.2)
+                        .map((cat: { category: string, score: number }) => (
+                        <span 
+                          key={cat.category}
+                          className="inline-flex items-center px-2.5 py-1.5 rounded-full text-sm bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                          title={`Confidence: ${Math.round(cat.score * 100)}%`}
+                        >
+                          {cat.category}
+                          <span className="ml-1.5 text-purple-500 dark:text-purple-400">
+                            {Math.round(cat.score * 100)}%
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {bill.committee_name && (
                   <div>
                     <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">
