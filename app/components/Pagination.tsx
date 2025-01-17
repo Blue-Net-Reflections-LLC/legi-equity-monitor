@@ -9,17 +9,26 @@ interface PaginationProps {
   pageSize: number;
   baseUrl: string;
   className?: string;
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function Pagination({ currentPage, totalItems, pageSize, baseUrl, className = '' }: PaginationProps) {
+export default function Pagination({ currentPage, totalItems, pageSize, baseUrl, className = '', searchParams = {} }: PaginationProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const totalPages = Math.ceil(totalItems / pageSize);
 
+  const totalPages = Math.ceil(totalItems / pageSize);
   if (totalPages <= 1) return null;
 
   const onPageChange = (page: number) => {
-    router.push(`${pathname}?page=${page}`);
+    const params = new URLSearchParams();
+    // Preserve all existing search params except page
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (key !== 'page' && typeof value === 'string') {
+        params.set(key, value);
+      }
+    });
+    params.set('page', page.toString());
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   const renderPageNumbers = () => {

@@ -3,6 +3,7 @@ import BillList from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
 import { BillWithImpacts } from "@/app/types";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
+import FilterDrawer from '@/app/components/FilterDrawer';
 
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
@@ -11,7 +12,14 @@ const STATE_NAMES: Record<string, string> = {
 async function getBills(
   stateCode: string,
   page = 1,
-  pageSize = 12
+  pageSize = 12,
+  filters: {
+    race_code?: string;
+    impact_type?: string;
+    severity?: string;
+    committee?: string;
+    categories?: string[];
+  } = {}
 ): Promise<{ bills: BillWithImpacts[], totalCount: number }> {
   const offset = (page - 1) * pageSize;
 
@@ -45,15 +53,49 @@ async function getBills(
     FROM bills b
     LEFT JOIN bill_impacts bi ON b.bill_id = bi.bill_id
     WHERE b.bill_type = 'B'
+    ${filters.committee ? db` AND b.committee_name = ${filters.committee}` : db``}
+    ${filters.categories ? db` AND EXISTS (
+      SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
+      WHERE cat->>'category' = ANY(${filters.categories})
+    )` : db``}
+    ${filters.race_code ? db` AND EXISTS (
+      SELECT 1 FROM racial_impact_analysis ria 
+      WHERE ria.bill_id = b.bill_id 
+      AND ria.race_code = ${filters.race_code}
+      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
+      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
+    )` : filters.impact_type || filters.severity ? db` AND EXISTS (
+      SELECT 1 FROM racial_impact_analysis ria 
+      WHERE ria.bill_id = b.bill_id 
+      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
+      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
+    )` : db``}
     ORDER BY b.last_action_date DESC NULLS LAST
     LIMIT ${pageSize} OFFSET ${offset}
   `;
 
-  // Get total count
+  // Get total count with same conditions
   const [{ count }] = await db`
     SELECT COUNT(DISTINCT b.bill_id) 
     FROM bills b
     WHERE b.bill_type = 'B'
+    ${filters.committee ? db` AND b.committee_name = ${filters.committee}` : db``}
+    ${filters.categories ? db` AND EXISTS (
+      SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
+      WHERE cat->>'category' = ANY(${filters.categories})
+    )` : db``}
+    ${filters.race_code ? db` AND EXISTS (
+      SELECT 1 FROM racial_impact_analysis ria 
+      WHERE ria.bill_id = b.bill_id 
+      AND ria.race_code = ${filters.race_code}
+      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
+      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
+    )` : filters.impact_type || filters.severity ? db` AND EXISTS (
+      SELECT 1 FROM racial_impact_analysis ria 
+      WHERE ria.bill_id = b.bill_id 
+      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
+      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
+    )` : db``}
   ` as unknown as [{ count: string }];
 
   return {
@@ -64,17 +106,44 @@ async function getBills(
 
 export default async function StatePage({ 
   params,
-  searchParams 
-}: { 
+  searchParams,
+}: {
   params: { state: string };
-  searchParams: { page?: string } 
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const stateCode = params.state.toUpperCase();
   const stateName = STATE_NAMES[stateCode];
-  const page = parseInt(searchParams.page || '1');
+  const page = parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1');
   const pageSize = 12;
 
-  const { bills, totalCount } = await getBills(stateCode, page, pageSize);
+  const filters = {
+    race_code: typeof searchParams.race_code === 'string' ? searchParams.race_code : undefined,
+    impact_type: typeof searchParams.impact_type === 'string' ? searchParams.impact_type : undefined,
+    severity: typeof searchParams.severity === 'string' ? searchParams.severity : undefined,
+    committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
+    categories: Array.isArray(searchParams.categories) 
+      ? searchParams.categories 
+      : typeof searchParams.categories === 'string' 
+        ? [searchParams.categories]
+        : undefined,
+  };
+
+  // Helper function to generate filter URLs
+  const getFilterUrl = (newFilters: typeof filters) => {
+    const params = new URLSearchParams();
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value) {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, v));
+        } else {
+          params.set(key, value);
+        }
+      }
+    });
+    return `/${stateCode.toLowerCase()}${params.toString() ? `?${params.toString()}` : ''}`;
+  };
+
+  const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
 
   return (
     <>
@@ -93,17 +162,115 @@ export default async function StatePage({
       {/* Bills Section */}
       <section className="py-4 px-4">
         <div className="max-w-7xl mx-auto space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              Showing {bills.length} of {totalCount} bills
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-500">
+                Showing {bills.length} of {totalCount} bills
+              </div>
+              <FilterDrawer />
             </div>
+            
+            {/* Active Filters */}
+            {Object.values(filters).some(Boolean) && (
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm text-gray-500">Active filters:</span>
+                {filters.committee && (
+                  <a
+                    href={getFilterUrl({ ...filters, committee: undefined })}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100 hover:bg-blue-200 dark:hover:bg-blue-800 cursor-pointer"
+                  >
+                    Committee: {filters.committee}
+                    <span className="ml-1">×</span>
+                  </a>
+                )}
+                {filters.categories && (
+                  <a
+                    href={getFilterUrl({ ...filters, categories: undefined })}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-100 hover:bg-purple-200 dark:hover:bg-purple-800 cursor-pointer"
+                  >
+                    Categories: {filters.categories.join(', ')}
+                    <span className="ml-1">×</span>
+                  </a>
+                )}
+                {filters.race_code && (
+                  <a
+                    href={getFilterUrl({ ...filters, race_code: undefined })}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100 hover:bg-green-200 dark:hover:bg-green-800 cursor-pointer"
+                  >
+                    Race: {filters.race_code}
+                    <span className="ml-1">×</span>
+                  </a>
+                )}
+                {filters.impact_type && (
+                  <a
+                    href={getFilterUrl({ ...filters, impact_type: undefined })}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-100 hover:bg-yellow-200 dark:hover:bg-yellow-800 cursor-pointer"
+                  >
+                    Impact: {filters.impact_type}
+                    <span className="ml-1">×</span>
+                  </a>
+                )}
+                {filters.severity && (
+                  <a
+                    href={getFilterUrl({ ...filters, severity: undefined })}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100 hover:bg-red-200 dark:hover:bg-red-800 cursor-pointer"
+                  >
+                    Severity: {filters.severity}
+                    <span className="ml-1">×</span>
+                  </a>
+                )}
+                <a 
+                  href={`/${stateCode.toLowerCase()}`}
+                  className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline"
+                >
+                  Clear all filters
+                </a>
+              </div>
+            )}
           </div>
-          <BillList bills={bills} />
+          {bills.length > 0 ? (
+            <BillList bills={bills} />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+              <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-3 mb-4">
+                <svg
+                  className="h-6 w-6 text-gray-500 dark:text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                No bills found
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-md">
+                {Object.values(filters).some(Boolean)
+                  ? "Try adjusting your filters to see more bills."
+                  : "There are no bills available at the moment."}
+              </p>
+              {Object.values(filters).some(Boolean) && (
+                <a
+                  href={`/${stateCode.toLowerCase()}`}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
+                >
+                  Clear all filters
+                </a>
+              )}
+            </div>
+          )}
           <Pagination
             currentPage={page}
             totalItems={totalCount}
             pageSize={pageSize}
             baseUrl={`/${stateCode.toLowerCase()}`}
+            searchParams={searchParams}
           />
         </div>
       </section>
