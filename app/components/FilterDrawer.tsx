@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SlidersHorizontal } from "lucide-react";
 import {
   Sheet,
@@ -38,21 +38,10 @@ export default function FilterDrawer() {
     categories: []
   });
 
-  const [error, setError] = useState<string | null>(null);
-  
-  const [filters, setFilters] = useState({
-    race_code: searchParams.get('race_code') || '',
-    impact_type: searchParams.get('impact_type') || '',
-    severity: searchParams.get('severity') || '',
-    committee: searchParams.get('committee') || '',
-    category: searchParams.get('category') || '',
-  });
-
   // Fetch filter options
   useEffect(() => {
     async function fetchOptions() {
       try {
-        setError(null);
         const response = await fetch('/api/filters');
         if (!response.ok) {
           throw new Error('Failed to fetch filter options');
@@ -60,41 +49,11 @@ export default function FilterDrawer() {
         const data = await response.json();
         setOptions(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        console.error('Error fetching filter options:', err);
       }
     }
     fetchOptions();
   }, []);
-
-  // Update URL when filters change
-  const updateFilters = useCallback((newFilters: typeof filters) => {
-    const params = new URLSearchParams(searchParams.toString());
-    
-    Object.entries(newFilters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-    });
-
-    router.push('?' + params.toString());
-    setFilters(newFilters);
-  }, [router, searchParams]);
-
-  const handleChange = (field: keyof typeof filters) => (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    updateFilters({ ...filters, [field]: e.target.value });
-  };
-
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('categories');
-    selectedOptions.forEach(value => params.append('categories', value));
-    router.push(`${pathname}?${params.toString()}`);
-  };
 
   return (
     <Sheet>

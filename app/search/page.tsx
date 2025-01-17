@@ -1,13 +1,13 @@
 import sql from '@/lib/db';
 import BillList from '@/app/components/BillList';
 import SearchForm from '@/app/search/SearchForm';
-import { Bill } from '@/types';
+import { BillWithImpacts } from '@/app/types';
 
 export const revalidate = 0; // Disable caching for search results
 
-async function searchBills(query: string): Promise<Bill[]> {
-  return sql<Bill[]>`
-    SELECT bill_id, bill_number, title, description, last_action, last_action_date
+async function searchBills(query: string): Promise<BillWithImpacts[]> {
+  return sql<BillWithImpacts[]>`
+    SELECT bill_id, bill_number, title, description, last_action, last_action_date, inferred_categories
     FROM bills
     WHERE title ILIKE ${'%' + query + '%'} OR description ILIKE ${'%' + query + '%'}
     ORDER BY last_action_date DESC
@@ -25,7 +25,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
       <SearchForm initialQuery={query} />
       {query && (
         <>
-          <h2 className="text-xl font-semibold">Search Results for "{query}"</h2>
+          <h2 className="text-xl font-semibold">Search Results for &quot;{query}&quot;</h2>
           <BillList bills={bills} />
         </>
       )}

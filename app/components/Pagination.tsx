@@ -7,12 +7,11 @@ interface PaginationProps {
   currentPage: number;
   totalItems: number;
   pageSize: number;
-  baseUrl: string;
   className?: string;
   searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default function Pagination({ currentPage, totalItems, pageSize, baseUrl, className = '', searchParams = {} }: PaginationProps) {
+export default function Pagination({ currentPage, totalItems, pageSize, className = '', searchParams = {} }: PaginationProps) {
   const router = useRouter();
   const pathname = usePathname();
 

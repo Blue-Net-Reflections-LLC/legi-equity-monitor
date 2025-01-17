@@ -271,7 +271,6 @@ export default async function StatePage({
             currentPage={page}
             totalItems={totalCount}
             pageSize={pageSize}
-            baseUrl={`/${stateCode.toLowerCase()}`}
             searchParams={searchParams}
           />
         </div>
