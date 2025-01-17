@@ -12,7 +12,14 @@ const STATE_NAMES: Record<string, string> = {
 async function getBills(
   stateCode: string,
   page = 1,
-  pageSize = 12
+  pageSize = 12,
+  filters: {
+    race_code?: string;
+    impact_type?: string;
+    severity?: string;
+    committee?: string;
+    category?: string;
+  } = {}
 ): Promise<{ bills: BillWithImpacts[], totalCount: number }> {
   const offset = (page - 1) * pageSize;
 
@@ -46,15 +53,49 @@ async function getBills(
     FROM bills b
     LEFT JOIN bill_impacts bi ON b.bill_id = bi.bill_id
     WHERE b.bill_type = 'B'
+    ${filters.committee ? db` AND b.committee_name = ${filters.committee}` : db``}
+    ${filters.category ? db` AND EXISTS (
+      SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
+      WHERE cat->>'category' = ${filters.category}
+    )` : db``}
+    ${filters.race_code ? db` AND EXISTS (
+      SELECT 1 FROM racial_impact_analysis ria 
+      WHERE ria.bill_id = b.bill_id 
+      AND ria.race_code = ${filters.race_code}
+      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
+      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
+    )` : filters.impact_type || filters.severity ? db` AND EXISTS (
+      SELECT 1 FROM racial_impact_analysis ria 
+      WHERE ria.bill_id = b.bill_id 
+      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
+      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
+    )` : db``}
     ORDER BY b.last_action_date DESC NULLS LAST
     LIMIT ${pageSize} OFFSET ${offset}
   `;
 
-  // Get total count
+  // Get total count with same conditions
   const [{ count }] = await db`
     SELECT COUNT(DISTINCT b.bill_id) 
     FROM bills b
     WHERE b.bill_type = 'B'
+    ${filters.committee ? db` AND b.committee_name = ${filters.committee}` : db``}
+    ${filters.category ? db` AND EXISTS (
+      SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
+      WHERE cat->>'category' = ${filters.category}
+    )` : db``}
+    ${filters.race_code ? db` AND EXISTS (
+      SELECT 1 FROM racial_impact_analysis ria 
+      WHERE ria.bill_id = b.bill_id 
+      AND ria.race_code = ${filters.race_code}
+      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
+      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
+    )` : filters.impact_type || filters.severity ? db` AND EXISTS (
+      SELECT 1 FROM racial_impact_analysis ria 
+      WHERE ria.bill_id = b.bill_id 
+      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
+      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
+    )` : db``}
   ` as unknown as [{ count: string }];
 
   return {
@@ -72,10 +113,18 @@ export default async function StatePage({
 }) {
   const stateCode = params.state.toUpperCase();
   const stateName = STATE_NAMES[stateCode];
-  const page = parseInt(searchParams.page || '1');
+  const page = parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1');
   const pageSize = 12;
 
-  const { bills, totalCount } = await getBills(stateCode, page, pageSize);
+  const filters = {
+    race_code: typeof searchParams.race_code === 'string' ? searchParams.race_code : undefined,
+    impact_type: typeof searchParams.impact_type === 'string' ? searchParams.impact_type : undefined,
+    severity: typeof searchParams.severity === 'string' ? searchParams.severity : undefined,
+    committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
+    category: typeof searchParams.category === 'string' ? searchParams.category : undefined,
+  };
+
+  const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
 
   return (
     <>
