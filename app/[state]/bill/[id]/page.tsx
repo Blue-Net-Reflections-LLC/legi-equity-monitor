@@ -44,6 +44,61 @@ interface BillHistory {
   history_body_name: string;
 }
 
+interface BillDocument {
+  text_id?: number;
+  supplement_id?: number;
+  date: Date;
+  title: string;
+  type_desc: string;
+  mime_type: string;
+  mime_ext: string;
+  size: number;
+  legiscan_url: string;
+  state_url: string;
+}
+
+async function getBillDocuments(billId: string): Promise<BillDocument[]> {
+  const [texts, supplements] = await Promise.all([
+    // Get bill texts
+    db`
+      SELECT 
+        text_id,
+        bill_text_date as date,
+        bill_text_name as title,
+        'Bill Text' as type_desc,
+        bill_text_size as size,
+        mime_type,
+        mime_ext,
+        legiscan_url,
+        state_url
+      FROM lsv_bill_text
+      WHERE bill_id = ${billId}
+      ORDER BY bill_text_date DESC
+    `,
+    // Get bill supplements
+    db`
+      SELECT 
+        supplement_id,
+        supplement_date as date,
+        supplement_type_desc as title,
+        supplement_type_desc as type_desc,
+        supplement_size as size,
+        mime_type,
+        mime_ext,
+        legiscan_url,
+        state_url
+      FROM lsv_bill_supplement
+      WHERE bill_id = ${billId}
+      ORDER BY supplement_date DESC
+    `
+  ]);
+
+  return [
+    ...texts.map((doc: any) => ({ ...doc, text_id: doc.text_id })),
+    ...supplements.map((doc: any) => ({ ...doc, supplement_id: doc.supplement_id }))
+  ];
+}
+
 async function getBill(stateCode: string, billId: string): Promise<BillWithImpacts | null> {
   const [bill] = await db`
     SELECT 
@@ -135,11 +190,12 @@ export default async function BillPage({
 }) {
   const stateCode = params.state.toUpperCase();
   
-  const [bill, sponsors, rollCalls, history] = await Promise.all([
+  const [bill, sponsors, rollCalls, history, documents] = await Promise.all([
     getBill(stateCode, params.id),
     getSponsors(params.id),
     getRollCalls(params.id),
-    getBillHistory(params.id)
+    getBillHistory(params.id),
+    getBillDocuments(params.id)
   ]);
   
   if (!bill) {
@@ -319,6 +375,56 @@ export default async function BillPage({
                 </div>
               </div>
             </Card>
+
+            {/* Documents Card */}
+            {documents.length > 0 && (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Documents</h3>
+                <div className="space-y-3">
+                  {documents.map((doc) => (
+                    <div 
+                      key={doc.text_id || doc.supplement_id}
+                      className="p-3 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                    >
+                      <div className="font-medium text-zinc-900 dark:text-white text-sm">
+                        {doc.title}
+                      </div>
+                      <div className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                        {doc.type_desc} • {new Date(doc.date).toLocaleDateString()} • {(doc.size / 1024).toFixed(1)} KB
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        {doc.legiscan_url && (
+                          <a 
+                            href={doc.legiscan_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+                          >
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            LegiScan
+                          </a>
+                        )}
+                        {doc.state_url && (
+                          <a 
+                            href={doc.state_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-zinc-900 bg-zinc-100 hover:bg-zinc-200 dark:text-zinc-100 dark:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors"
+                          >
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            State Site
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* Links Card */}
             <Card className="p-6">

@@ -136,7 +136,7 @@ export default async function SponsorPage({
   ]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-900">
+    <div className="py-8 min-h-screen bg-white dark:bg-zinc-900">
       <AuroraBackground className="h-[12vh] min-h-[96px] flex items-center justify-center">
         <div className="max-w-7xl w-full mx-auto px-4 relative z-10">
           <div className="flex justify-between items-start">
@@ -156,7 +156,7 @@ export default async function SponsorPage({
         </div>
       </AuroraBackground>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 mt-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Sidebar */}
           <div className="space-y-6">

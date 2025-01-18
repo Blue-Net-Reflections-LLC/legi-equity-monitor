@@ -135,7 +135,7 @@ export default async function StatePage({
               <div className="text-sm text-gray-500">
                 Showing {bills.length} of {totalCount} bills
               </div>
-              <FilterDrawer />
+              {/* <FilterDrawer /> */}
             </div>
             
             {/* Active Filters */}
