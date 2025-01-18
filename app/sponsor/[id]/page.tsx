@@ -290,7 +290,7 @@ export default async function SponsorPage({
                     ].filter(Boolean).join(" ")}
                     {sponsor.nickname && (
                       <span className="text-sm text-zinc-500 dark:text-zinc-400 ml-2">
-                        ("{sponsor.nickname}")
+                        (&ldquo;{sponsor.nickname}&rdquo;)
                       </span>
                     )}
                   </div>

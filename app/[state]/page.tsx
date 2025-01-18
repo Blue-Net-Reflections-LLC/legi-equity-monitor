@@ -1,32 +1,23 @@
 import db from "@/lib/db";
 import BillList from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
-import { BillWithImpacts } from "@/app/types";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
-import FilterDrawer from '@/app/components/FilterDrawer';
-
-const STATE_NAMES: Record<string, string> = {
-  GA: "Georgia",
-};
+import { Bill } from "@/app/types";
 
 async function getBills(
   stateCode: string,
   page = 1,
   pageSize = 12,
   filters: {
-    race_code?: string;
-    impact_type?: string;
-    severity?: string;
     committee?: string;
-    categories?: string[];
   } = {}
-): Promise<{ bills: BillWithImpacts[], totalCount: number }> {
+): Promise<{ bills: Bill[], totalCount: number }> {
   const offset = (page - 1) * pageSize;
 
   // Get bills with pagination using LegiScan view
   const bills = await db`
     SELECT 
-      b.bill_id,
+      b.bill_id::integer,
       b.bill_number,
       b.title,
       b.description,
@@ -56,7 +47,7 @@ async function getBills(
     ORDER BY b.status_date DESC NULLS LAST
     LIMIT ${pageSize} 
     OFFSET ${offset}
-  `;
+  ` as Bill[];
 
   // Get total count with same conditions
   const [{ count }] = await db`
@@ -67,7 +58,7 @@ async function getBills(
   ` as unknown as [{ count: string }];
 
   return {
-    bills: bills as unknown as BillWithImpacts[],
+    bills: bills as unknown as Bill[],
     totalCount: Number(count)
   };
 }
@@ -84,15 +75,7 @@ export default async function StatePage({
   const pageSize = 12;
 
   const filters = {
-    race_code: typeof searchParams.race_code === 'string' ? searchParams.race_code : undefined,
-    impact_type: typeof searchParams.impact_type === 'string' ? searchParams.impact_type : undefined,
-    severity: typeof searchParams.severity === 'string' ? searchParams.severity : undefined,
     committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
-    categories: Array.isArray(searchParams.categories) 
-      ? searchParams.categories 
-      : typeof searchParams.categories === 'string' 
-        ? [searchParams.categories]
-        : undefined,
   };
 
   const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
@@ -148,42 +131,6 @@ export default async function StatePage({
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100 hover:bg-blue-200 dark:hover:bg-blue-800 cursor-pointer"
                   >
                     Committee: {filters.committee}
-                    <span className="ml-1">×</span>
-                  </a>
-                )}
-                {filters.categories && (
-                  <a
-                    href={getFilterUrl({ ...filters, categories: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-100 hover:bg-purple-200 dark:hover:bg-purple-800 cursor-pointer"
-                  >
-                    Categories: {filters.categories.join(', ')}
-                    <span className="ml-1">×</span>
-                  </a>
-                )}
-                {filters.race_code && (
-                  <a
-                    href={getFilterUrl({ ...filters, race_code: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100 hover:bg-green-200 dark:hover:bg-green-800 cursor-pointer"
-                  >
-                    Race: {filters.race_code}
-                    <span className="ml-1">×</span>
-                  </a>
-                )}
-                {filters.impact_type && (
-                  <a
-                    href={getFilterUrl({ ...filters, impact_type: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-100 hover:bg-yellow-200 dark:hover:bg-yellow-800 cursor-pointer"
-                  >
-                    Impact: {filters.impact_type}
-                    <span className="ml-1">×</span>
-                  </a>
-                )}
-                {filters.severity && (
-                  <a
-                    href={getFilterUrl({ ...filters, severity: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100 hover:bg-red-200 dark:hover:bg-red-800 cursor-pointer"
-                  >
-                    Severity: {filters.severity}
                     <span className="ml-1">×</span>
                   </a>
                 )}

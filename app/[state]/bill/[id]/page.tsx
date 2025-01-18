@@ -1,21 +1,44 @@
 import db from "@/lib/db";
-import { BillWithImpacts } from "@/app/types";
 import { notFound } from "next/navigation";
 import { Card } from "@/app/components/ui/card";
-import ImpactBadge from "@/app/components/ImpactBadge";
-import SponsorList from './SponsorList';
-import RollCallVotes from './RollCallVotes';
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from './BackButton';
+import SponsorList from './SponsorList';
+import RollCallVotes from './RollCallVotes';
 
 export const revalidate = 3600; // Revalidate every hour
 
-const RACE_CODES = {
-  AI: 'American Indian/Alaska Native',
-  AP: 'Asian/Pacific Islander',
-  BH: 'Black/African American',
-  WH: 'White'
-} as const;
+interface Bill {
+  bill_id: string;
+  bill_number: string;
+  title: string;
+  description: string;
+  state_abbr: string;
+  state_name: string;
+  status_id: number;
+  status_desc: string;
+  status_date: Date;
+  bill_type_id: number;
+  bill_type_name: string;
+  bill_type_abbr: string;
+  body_id: number;
+  body_name: string;
+  current_body_id: number;
+  current_body_name: string;
+  pending_committee_id: number;
+  pending_committee_name: string;
+  pending_committee_body_name: string;
+  legiscan_url: string;
+  state_url: string;
+  session_id: number;
+  session_name: string;
+  session_title: string;
+  session_year_start: number;
+  session_year_end: number;
+  session_special: number;
+  session_sine_die: number;
+  session_prior: number;
+}
 
 interface Sponsor {
   people_id: number;
@@ -94,12 +117,12 @@ async function getBillDocuments(billId: string): Promise<BillDocument[]> {
   ]);
 
   return [
-    ...texts.map((doc: any) => ({ ...doc, text_id: doc.text_id })),
-    ...supplements.map((doc: any) => ({ ...doc, supplement_id: doc.supplement_id }))
+    ...texts.map((doc) => ({ ...doc, text_id: doc.text_id } as BillDocument)),
+    ...supplements.map((doc) => ({ ...doc, supplement_id: doc.supplement_id } as BillDocument))
   ];
 }
 
-async function getBill(stateCode: string, billId: string): Promise<BillWithImpacts | null> {
+async function getBill(stateCode: string, billId: string): Promise<Bill | null> {
   const [bill] = await db`
     SELECT 
       b.bill_id,
@@ -127,7 +150,10 @@ async function getBill(stateCode: string, billId: string): Promise<BillWithImpac
       b.session_name,
       b.session_title,
       b.session_year_start,
-      b.session_year_end
+      b.session_year_end,
+      b.session_special,
+      b.session_sine_die,
+      b.session_prior
     FROM lsv_bill b
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
     AND b.bill_id = ${billId}
@@ -135,7 +161,7 @@ async function getBill(stateCode: string, billId: string): Promise<BillWithImpac
 
   if (!bill) return null;
 
-  return bill as unknown as BillWithImpacts;
+  return bill as Bill;
 }
 
 async function getSponsors(billId: string): Promise<Sponsor[]> {
