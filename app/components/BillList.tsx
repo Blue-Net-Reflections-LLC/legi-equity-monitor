@@ -44,25 +44,16 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
                 <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
                   {bill.description}
                 </p>
-                {/* Categories with scores */}
-                {bill.inferred_categories && bill.inferred_categories.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {bill.inferred_categories
-                      .filter((cat: { category: string, score: number }) => cat.score >= 0.2)
-                      .map((cat: { category: string, score: number }) => (
-                      <span 
-                        key={cat.category}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                        title={`Confidence: ${Math.round(cat.score * 100)}%`}
-                      >
-                        {cat.category}
-                        <span className="ml-1 text-purple-500 dark:text-purple-400">
-                          {Math.round(cat.score * 100)}%
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                
+                {/* Bill Type and Status */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    {bill.bill_type_name}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                    {bill.status_desc}
+                  </span>
+                </div>
               </div>
               
               {/* Impact Badges */}
@@ -91,10 +82,12 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
           <CardFooter className="text-xs text-gray-500 dark:text-gray-400">
             <div className="w-full">
               <div className="flex justify-between items-center">
-                <span>Last Action:</span>
-                <span>{bill.last_action_date ? new Date(bill.last_action_date).toLocaleDateString() : 'N/A'}</span>
+                <span>Status Date:</span>
+                <span>{bill.status_date ? new Date(bill.status_date).toLocaleDateString() : 'N/A'}</span>
               </div>
-              <div className="mt-1 text-gray-600 dark:text-gray-300">{bill.last_action}</div>
+              <div className="mt-1 text-gray-600 dark:text-gray-300">
+                {bill.pending_committee_name ? `In Committee: ${bill.pending_committee_name}` : bill.status_desc}
+              </div>
             </div>
           </CardFooter>
         </Card>

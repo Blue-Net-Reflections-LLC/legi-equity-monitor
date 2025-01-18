@@ -1,0 +1,3 @@
+The path to the official bills schema is:  /lib/official-bills-schema.sql
+Always use views first from the official bills schema when querying the database.
+

@@ -1,8 +1,9 @@
 interface Sponsor {
-  sponsor_id: number;
+  people_id: number;
   name: string;
-  district: string;
-  party: string;
+  party_name: string;
+  role_name: string;
+  sponsor_type_desc: string;
 }
 
 export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
@@ -16,7 +17,7 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sponsors.map((sponsor) => (
             <div 
-              key={sponsor.sponsor_id}
+              key={sponsor.people_id}
               className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg"
             >
               <div>
@@ -24,11 +25,11 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
                   {sponsor.name}
                 </div>
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                  District {sponsor.district}
+                  {sponsor.role_name} • {sponsor.sponsor_type_desc}
                 </div>
               </div>
               <div className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                {sponsor.party}
+                {sponsor.party_name}
               </div>
             </div>
           ))}

@@ -23,81 +23,47 @@ async function getBills(
 ): Promise<{ bills: BillWithImpacts[], totalCount: number }> {
   const offset = (page - 1) * pageSize;
 
-  // Get bills with pagination
+  // Get bills with pagination using LegiScan view
   const bills = await db`
-    WITH bill_impacts AS (
-      SELECT 
-        bill_id,
-        jsonb_object_agg(
-          race_code,
-          jsonb_build_object(
-            'severity', severity,
-            'impact_type', CASE WHEN impact_type::impact_type_enum = 'POSITIVE' THEN 'positive' ELSE 'negative' END
-          )
-        ) as racial_impacts
-      FROM racial_impact_analysis
-      GROUP BY bill_id
-    )
-    SELECT DISTINCT 
+    SELECT 
       b.bill_id,
       b.bill_number,
-      b.bill_type,
       b.title,
       b.description,
-      b.committee_name,
-      b.last_action,
-      b.last_action_date,
-      b.pdf_url,
-      b.inferred_categories,
-      bi.racial_impacts
-    FROM bills b
-    LEFT JOIN bill_impacts bi ON b.bill_id = bi.bill_id
-    WHERE b.bill_type = 'B'
-    ${filters.committee ? db` AND b.committee_name = ${filters.committee}` : db``}
-    ${filters.categories ? db` AND EXISTS (
-      SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
-      WHERE cat->>'category' = ANY(${filters.categories})
-      AND (cat->>'score')::float >= 0.2
-    )` : db``}
-    ${filters.race_code ? db` AND EXISTS (
-      SELECT 1 FROM racial_impact_analysis ria 
-      WHERE ria.bill_id = b.bill_id 
-      AND ria.race_code = ${filters.race_code}
-      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
-      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
-    )` : filters.impact_type || filters.severity ? db` AND EXISTS (
-      SELECT 1 FROM racial_impact_analysis ria 
-      WHERE ria.bill_id = b.bill_id 
-      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
-      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
-    )` : db``}
-    ORDER BY b.last_action_date DESC NULLS LAST
-    LIMIT ${pageSize} OFFSET ${offset}
+      b.state_abbr,
+      b.state_name,
+      b.status_id,
+      b.status_desc,
+      b.status_date,
+      b.bill_type_id,
+      b.bill_type_name,
+      b.body_id,
+      b.body_name,
+      b.current_body_id,
+      b.current_body_name,
+      b.pending_committee_id,
+      b.pending_committee_name,
+      b.legiscan_url,
+      b.state_url,
+      b.session_id,
+      b.session_name,
+      b.session_title,
+      b.session_year_start,
+      b.session_year_end
+    FROM lsv_bill b
+    WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
+    ORDER BY b.status_date DESC NULLS LAST
+    LIMIT ${pageSize} 
+    OFFSET ${offset}
   `;
 
   // Get total count with same conditions
   const [{ count }] = await db`
     SELECT COUNT(DISTINCT b.bill_id) 
-    FROM bills b
-    WHERE b.bill_type = 'B'
-    ${filters.committee ? db` AND b.committee_name = ${filters.committee}` : db``}
-    ${filters.categories ? db` AND EXISTS (
-      SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
-      WHERE cat->>'category' = ANY(${filters.categories})
-      AND (cat->>'score')::float >= 0.2
-    )` : db``}
-    ${filters.race_code ? db` AND EXISTS (
-      SELECT 1 FROM racial_impact_analysis ria 
-      WHERE ria.bill_id = b.bill_id 
-      AND ria.race_code = ${filters.race_code}
-      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
-      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
-    )` : filters.impact_type || filters.severity ? db` AND EXISTS (
-      SELECT 1 FROM racial_impact_analysis ria 
-      WHERE ria.bill_id = b.bill_id 
-      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
-      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
-    )` : db``}
+    FROM lsv_bill b
+    WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
   ` as unknown as [{ count: string }];
 
   return {
@@ -114,7 +80,6 @@ export default async function StatePage({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const stateCode = params.state.toUpperCase();
-  const stateName = STATE_NAMES[stateCode];
   const page = parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1');
   const pageSize = 12;
 
@@ -130,6 +95,9 @@ export default async function StatePage({
         : undefined,
   };
 
+  const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
+  const stateName = bills[0]?.state_name || stateCode;
+
   // Helper function to generate filter URLs
   const getFilterUrl = (newFilters: typeof filters) => {
     const params = new URLSearchParams();
@@ -144,8 +112,6 @@ export default async function StatePage({
     });
     return `/${stateCode.toLowerCase()}${params.toString() ? `?${params.toString()}` : ''}`;
   };
-
-  const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
 
   return (
     <>
