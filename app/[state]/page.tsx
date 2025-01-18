@@ -1,107 +1,64 @@
 import db from "@/lib/db";
 import BillList from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
-import { BillWithImpacts } from "@/app/types";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
-import FilterDrawer from '@/app/components/FilterDrawer';
-
-const STATE_NAMES: Record<string, string> = {
-  GA: "Georgia",
-};
+import { Bill } from "@/app/types";
 
 async function getBills(
   stateCode: string,
   page = 1,
   pageSize = 12,
   filters: {
-    race_code?: string;
-    impact_type?: string;
-    severity?: string;
     committee?: string;
-    categories?: string[];
   } = {}
-): Promise<{ bills: BillWithImpacts[], totalCount: number }> {
+): Promise<{ bills: Bill[], totalCount: number }> {
   const offset = (page - 1) * pageSize;
 
-  // Get bills with pagination
+  // Get bills with pagination using LegiScan view
   const bills = await db`
-    WITH bill_impacts AS (
-      SELECT 
-        bill_id,
-        jsonb_object_agg(
-          race_code,
-          jsonb_build_object(
-            'severity', severity,
-            'impact_type', CASE WHEN impact_type::impact_type_enum = 'POSITIVE' THEN 'positive' ELSE 'negative' END
-          )
-        ) as racial_impacts
-      FROM racial_impact_analysis
-      GROUP BY bill_id
-    )
-    SELECT DISTINCT 
-      b.bill_id,
+    SELECT 
+      b.bill_id::integer,
       b.bill_number,
-      b.bill_type,
       b.title,
       b.description,
-      b.committee_name,
-      b.last_action,
-      b.last_action_date,
-      b.pdf_url,
-      b.inferred_categories,
-      bi.racial_impacts
-    FROM bills b
-    LEFT JOIN bill_impacts bi ON b.bill_id = bi.bill_id
-    WHERE b.bill_type = 'B'
-    ${filters.committee ? db` AND b.committee_name = ${filters.committee}` : db``}
-    ${filters.categories ? db` AND EXISTS (
-      SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
-      WHERE cat->>'category' = ANY(${filters.categories})
-      AND (cat->>'score')::float >= 0.2
-    )` : db``}
-    ${filters.race_code ? db` AND EXISTS (
-      SELECT 1 FROM racial_impact_analysis ria 
-      WHERE ria.bill_id = b.bill_id 
-      AND ria.race_code = ${filters.race_code}
-      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
-      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
-    )` : filters.impact_type || filters.severity ? db` AND EXISTS (
-      SELECT 1 FROM racial_impact_analysis ria 
-      WHERE ria.bill_id = b.bill_id 
-      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
-      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
-    )` : db``}
-    ORDER BY b.last_action_date DESC NULLS LAST
-    LIMIT ${pageSize} OFFSET ${offset}
-  `;
+      b.state_abbr,
+      b.state_name,
+      b.status_id,
+      b.status_desc,
+      b.status_date,
+      b.bill_type_id,
+      b.bill_type_name,
+      b.body_id,
+      b.body_name,
+      b.current_body_id,
+      b.current_body_name,
+      b.pending_committee_id,
+      b.pending_committee_name,
+      b.legiscan_url,
+      b.state_url,
+      b.session_id,
+      b.session_name,
+      b.session_title,
+      b.session_year_start,
+      b.session_year_end
+    FROM lsv_bill b
+    WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
+    ORDER BY b.status_date DESC NULLS LAST
+    LIMIT ${pageSize} 
+    OFFSET ${offset}
+  ` as Bill[];
 
   // Get total count with same conditions
   const [{ count }] = await db`
     SELECT COUNT(DISTINCT b.bill_id) 
-    FROM bills b
-    WHERE b.bill_type = 'B'
-    ${filters.committee ? db` AND b.committee_name = ${filters.committee}` : db``}
-    ${filters.categories ? db` AND EXISTS (
-      SELECT 1 FROM jsonb_array_elements(b.inferred_categories) cat 
-      WHERE cat->>'category' = ANY(${filters.categories})
-      AND (cat->>'score')::float >= 0.2
-    )` : db``}
-    ${filters.race_code ? db` AND EXISTS (
-      SELECT 1 FROM racial_impact_analysis ria 
-      WHERE ria.bill_id = b.bill_id 
-      AND ria.race_code = ${filters.race_code}
-      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
-      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
-    )` : filters.impact_type || filters.severity ? db` AND EXISTS (
-      SELECT 1 FROM racial_impact_analysis ria 
-      WHERE ria.bill_id = b.bill_id 
-      ${filters.impact_type ? db` AND ria.impact_type::text = ${filters.impact_type}` : db``}
-      ${filters.severity ? db` AND ria.severity = ${filters.severity}` : db``}
-    )` : db``}
+    FROM lsv_bill b
+    WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
   ` as unknown as [{ count: string }];
 
   return {
-    bills: bills as unknown as BillWithImpacts[],
+    bills: bills as unknown as Bill[],
     totalCount: Number(count)
   };
 }
@@ -114,21 +71,15 @@ export default async function StatePage({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const stateCode = params.state.toUpperCase();
-  const stateName = STATE_NAMES[stateCode];
   const page = parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1');
   const pageSize = 12;
 
   const filters = {
-    race_code: typeof searchParams.race_code === 'string' ? searchParams.race_code : undefined,
-    impact_type: typeof searchParams.impact_type === 'string' ? searchParams.impact_type : undefined,
-    severity: typeof searchParams.severity === 'string' ? searchParams.severity : undefined,
     committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
-    categories: Array.isArray(searchParams.categories) 
-      ? searchParams.categories 
-      : typeof searchParams.categories === 'string' 
-        ? [searchParams.categories]
-        : undefined,
   };
+
+  const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
+  const stateName = bills[0]?.state_name || stateCode;
 
   // Helper function to generate filter URLs
   const getFilterUrl = (newFilters: typeof filters) => {
@@ -144,8 +95,6 @@ export default async function StatePage({
     });
     return `/${stateCode.toLowerCase()}${params.toString() ? `?${params.toString()}` : ''}`;
   };
-
-  const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
 
   return (
     <>
@@ -169,7 +118,7 @@ export default async function StatePage({
               <div className="text-sm text-gray-500">
                 Showing {bills.length} of {totalCount} bills
               </div>
-              <FilterDrawer />
+              {/* <FilterDrawer /> */}
             </div>
             
             {/* Active Filters */}
@@ -182,42 +131,6 @@ export default async function StatePage({
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100 hover:bg-blue-200 dark:hover:bg-blue-800 cursor-pointer"
                   >
                     Committee: {filters.committee}
-                    <span className="ml-1">×</span>
-                  </a>
-                )}
-                {filters.categories && (
-                  <a
-                    href={getFilterUrl({ ...filters, categories: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-100 hover:bg-purple-200 dark:hover:bg-purple-800 cursor-pointer"
-                  >
-                    Categories: {filters.categories.join(', ')}
-                    <span className="ml-1">×</span>
-                  </a>
-                )}
-                {filters.race_code && (
-                  <a
-                    href={getFilterUrl({ ...filters, race_code: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-100 hover:bg-green-200 dark:hover:bg-green-800 cursor-pointer"
-                  >
-                    Race: {filters.race_code}
-                    <span className="ml-1">×</span>
-                  </a>
-                )}
-                {filters.impact_type && (
-                  <a
-                    href={getFilterUrl({ ...filters, impact_type: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-100 hover:bg-yellow-200 dark:hover:bg-yellow-800 cursor-pointer"
-                  >
-                    Impact: {filters.impact_type}
-                    <span className="ml-1">×</span>
-                  </a>
-                )}
-                {filters.severity && (
-                  <a
-                    href={getFilterUrl({ ...filters, severity: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100 hover:bg-red-200 dark:hover:bg-red-800 cursor-pointer"
-                  >
-                    Severity: {filters.severity}
                     <span className="ml-1">×</span>
                   </a>
                 )}

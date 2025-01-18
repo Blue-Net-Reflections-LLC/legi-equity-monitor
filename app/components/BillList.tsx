@@ -2,18 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BillWithImpacts, ImpactLevel } from '@/app/types'
+import { Bill } from '@/app/types'
 import { Card, CardHeader, CardContent, CardFooter } from '@/app/components/ui/card'
-import ImpactBadge from '@/app/components/ImpactBadge'
 
-const RACE_CODES = {
-  AI: 'American Indian/Alaska Native',
-  AP: 'Asian/Pacific Islander',
-  BH: 'Black/African American',
-  WH: 'White'
-} as const;
-
-export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
+export default function BillList({ bills }: { bills: Bill[] }) {
   const pathname = usePathname();
   const stateCode = pathname.split('/').filter(Boolean)[0];
 
@@ -44,57 +36,28 @@ export default function BillList({ bills }: { bills: BillWithImpacts[] }) {
                 <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
                   {bill.description}
                 </p>
-                {/* Categories with scores */}
-                {bill.inferred_categories && bill.inferred_categories.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {bill.inferred_categories
-                      .filter((cat: { category: string, score: number }) => cat.score >= 0.2)
-                      .map((cat: { category: string, score: number }) => (
-                      <span 
-                        key={cat.category}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                        title={`Confidence: ${Math.round(cat.score * 100)}%`}
-                      >
-                        {cat.category}
-                        <span className="ml-1 text-purple-500 dark:text-purple-400">
-                          {Math.round(cat.score * 100)}%
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              {/* Impact Badges */}
-              {bill.racial_impacts && (
-                <div className="w-32 flex flex-col gap-2">
-                  {Object.entries(RACE_CODES).map(([code, name]) => {
-                    const impact = bill.racial_impacts?.[code];
-                    if (!impact) return null;
-                    
-                    return (
-                      <div key={code} className="flex flex-col gap-1">
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 truncate" title={name}>
-                          {name.split('/')[0]}
-                        </div>
-                        <ImpactBadge 
-                          level={impact.severity as ImpactLevel}
-                          sentiment={impact.impact_type.toLowerCase() as 'positive' | 'negative'}
-                        />
-                      </div>
-                    );
-                  })}
+                
+                {/* Bill Type and Status */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    {bill.bill_type_name}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                    {bill.status_desc}
+                  </span>
                 </div>
-              )}
+              </div>
             </div>
           </CardContent>
           <CardFooter className="text-xs text-gray-500 dark:text-gray-400">
             <div className="w-full">
               <div className="flex justify-between items-center">
-                <span>Last Action:</span>
-                <span>{bill.last_action_date ? new Date(bill.last_action_date).toLocaleDateString() : 'N/A'}</span>
+                <span>Status Date:</span>
+                <span>{bill.status_date ? new Date(bill.status_date).toLocaleDateString() : 'N/A'}</span>
               </div>
-              <div className="mt-1 text-gray-600 dark:text-gray-300">{bill.last_action}</div>
+              <div className="mt-1 text-gray-600 dark:text-gray-300">
+                {bill.pending_committee_name ? `In Committee: ${bill.pending_committee_name}` : bill.status_desc}
+              </div>
             </div>
           </CardFooter>
         </Card>

@@ -1,13 +1,13 @@
 interface RollCall {
   roll_call_id: number;
-  bill_id: number;
-  date: Date;
-  description: string;
+  roll_call_date: Date;
+  roll_call_desc: string;
   yea: number;
   nay: number;
   nv: number;
-  exc: number;
-  result: string;
+  absent: number;
+  passed: number;
+  roll_call_body_name: string;
 }
 
 export default function RollCallVotes({ rollCalls }: { rollCalls: RollCall[] }) {
@@ -26,10 +26,10 @@ export default function RollCallVotes({ rollCalls }: { rollCalls: RollCall[] }) 
             >
               <div className="flex items-center justify-between">
                 <div className="font-medium text-zinc-900 dark:text-white">
-                  {vote.description}
+                  {vote.roll_call_desc}
                 </div>
                 <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {new Date(vote.date).toLocaleDateString()}
+                  {new Date(vote.roll_call_date).toLocaleDateString()}
                 </div>
               </div>
               
@@ -54,15 +54,15 @@ export default function RollCallVotes({ rollCalls }: { rollCalls: RollCall[] }) 
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-zinc-600 dark:text-zinc-300">
-                    {vote.exc}
+                    {vote.absent}
                   </div>
-                  <div className="text-sm text-zinc-500 dark:text-zinc-400">Excused</div>
+                  <div className="text-sm text-zinc-500 dark:text-zinc-400">Absent</div>
                 </div>
               </div>
 
               <div className="text-sm font-medium text-center pt-2 border-t border-zinc-200 dark:border-zinc-700">
-                Result: <span className={vote.result === 'PASSED' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                  {vote.result}
+                Result: <span className={vote.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                  {vote.passed ? 'PASSED' : 'FAILED'}
                 </span>
               </div>
             </div>

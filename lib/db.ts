@@ -1,10 +1,10 @@
 import postgres from 'postgres';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
+if (!process.env.LEGISCAN_DB_URL) {
+  throw new Error('LEGISCAN_DB_URL environment variable is required');
 }
 
-const sql = postgres(process.env.DATABASE_URL, {
+const sql = postgres(process.env.LEGISCAN_DB_URL, {
   ssl: {
     rejectUnauthorized: false
   },

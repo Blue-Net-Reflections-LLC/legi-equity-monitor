@@ -3,37 +3,19 @@ import sql from '@/lib/db';
 
 export async function GET() {
   try {
-    // Get unique committees, excluding null and empty values
+    // Get unique committees from the LegiScan view
     const committees = await sql`
-      SELECT DISTINCT committee_name
-      FROM bills
-      WHERE committee_name IS NOT NULL 
-        AND committee_name != ''
-        AND committee_name != 'Unknown'
-      ORDER BY committee_name ASC
+      SELECT DISTINCT pending_committee_name
+      FROM lsv_bill
+      WHERE pending_committee_name IS NOT NULL 
+        AND pending_committee_name != ''
+      ORDER BY pending_committee_name ASC
     `;
 
-    // Get unique categories from the JSONB array of objects
-    const categories = await sql`
-      WITH RECURSIVE
-        categories_array AS (
-          SELECT jsonb_array_elements(inferred_categories) as category
-          FROM bills
-          WHERE inferred_categories IS NOT NULL
-        )
-      SELECT DISTINCT (category->>'category') as category
-      FROM categories_array
-      WHERE category->>'category' IS NOT NULL
-      ORDER BY category ASC
-    `;
-
-    // Log the results for debugging
-    console.log('Found committees:', committees.map(c => c.committee_name));
-    console.log('Found categories:', categories.map(c => c.category));
-
+    // Return just the committees since we don't have categories in the LegiScan schema
     return NextResponse.json({
-      committees: committees.map(c => c.committee_name).filter(Boolean),
-      categories: categories.map(c => c.category).filter(Boolean)
+      committees: committees.map(c => c.pending_committee_name).filter(Boolean),
+      categories: [] // No categories in LegiScan schema
     });
   } catch (error) {
     console.error('Error fetching filter options:', error);
