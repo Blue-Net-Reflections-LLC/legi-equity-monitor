@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+---
+
+# Please understand the project documentation for what we are trying to build
+- [project-statement.md](mdc:bill-analysis-design/project-statement.md)
+- [bills_input_json_structuree.md](mdc:bill-analysis-design/bills_input_json_structuree.md)
+- [category-subgroups.md](mdc:bill-analysis-design/category-subgroups.md)
+- [output-structure.md](mdc:bill-analysis-design/output-structure.md)
+
