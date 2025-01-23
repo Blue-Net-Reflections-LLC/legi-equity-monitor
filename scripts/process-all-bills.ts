@@ -39,7 +39,7 @@ async function processAllBills() {
                 envConfig.openaiModel
             );
 
-            await processor.processBatch(bills);
+            // await processor.processBatch(bills);
             processed += bills.length;
 
             // Add delay between batches to avoid rate limits

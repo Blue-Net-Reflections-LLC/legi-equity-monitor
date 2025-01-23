@@ -10,8 +10,7 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number, offs
                 b.bill_type_id,
                 b.description,
                 b.change_hash,
-                b.status_id,
-                s.status_desc as status,
+                b.status_id as status,
                 ses.year_start as session_year_start,
                 ses.year_end as session_year_end,
                 st.state_name as state,
@@ -19,11 +18,12 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number, offs
                 (
                     SELECT json_agg(json_build_object(
                         'people_id', sp.people_id,
-                        'party', p.party_abbr,
+                        'party', party.party_name,
                         'type', CASE WHEN sp.sponsor_order = 1 THEN 'Primary Sponsor' ELSE 'Co-Sponsor' END
                     ))
                     FROM ls_bill_sponsor sp
                     JOIN ls_people p ON sp.people_id = p.people_id
+                    JOIN ls_party party ON p.party_id = party.party_id
                     WHERE sp.bill_id = b.bill_id
                 ) as sponsors,
                 -- Get subjects as JSON array
@@ -48,14 +48,14 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number, offs
                 (
                     SELECT json_agg(json_build_object(
                         'date', bt.bill_text_date,
-                        'name', bt.bill_text_name,
+                        'name', tt.bill_text_name,
                         'content_url', bt.state_url
                     ))
                     FROM ls_bill_text bt
+                    JOIN ls_text_type tt ON bt.bill_text_type_id = tt.bill_text_type_id
                     WHERE bt.bill_id = b.bill_id
                 ) as full_texts
             FROM ls_bill b
-            LEFT JOIN ls_status s ON b.status_id = s.status_id
             LEFT JOIN ls_session ses ON b.session_id = ses.session_id
             LEFT JOIN ls_state st ON b.state_id = st.state_id
             LEFT JOIN bill_analysis_status bas ON b.bill_id = bas.bill_id
