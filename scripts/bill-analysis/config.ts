@@ -12,6 +12,7 @@ interface EnvConfig {
     openaiBaseUrl: string;
     openaiModel: string;
     openaiContextWindow: number;
+    openaiMaxBatchSize: number;
 }
 
 export function validateConfig(): EnvConfig {
@@ -38,11 +39,18 @@ export function validateConfig(): EnvConfig {
         throw new Error('Invalid BILLS_OPENAI_CONTEXT_WINDOW value');
     }
 
+    // Parse and validate batch size
+    const batchSize = parseInt(process.env.BILLS_OPENAI_BATCH_SIZE || '5');
+    if (isNaN(batchSize) || batchSize <= 0 || batchSize > 5) {
+        throw new Error('BILLS_OPENAI_BATCH_SIZE must be between 1 and 5');
+    }
+
     return {
         legiscanDbUrl: requiredEnvVars.legiscanDbUrl!,
         openaiApiKey: requiredEnvVars.openaiApiKey!,
         openaiBaseUrl: requiredEnvVars.openaiBaseUrl!,
         openaiModel: requiredEnvVars.openaiModel!,
         openaiContextWindow: contextWindow,
+        openaiMaxBatchSize: batchSize,
     };
 } 

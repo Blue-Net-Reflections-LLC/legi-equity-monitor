@@ -38,15 +38,20 @@ export class BatchProcessor {
                 }
             } catch (error) {
                 console.error('Batch analysis error:', error);
-                // Mark all bills as failed
-                for (const bill of bills) {
-                    await this.updateBillProgress(batchId, bill.bill_id, 'failed', {
-                        error: error instanceof Error ? error.message : 'Unknown error'
-                    });
-                }
+                // Batch update all bills as failed
+                await this.sql`
+                    UPDATE bill_analysis_batch_items
+                    SET processing_state = 'failed',
+                        attempt_count = attempt_count + 1,
+                        updated_at = NOW(),
+                        last_error = ${error instanceof Error ? error.message : 'Unknown error'}
+                    WHERE batch_id = ${batchId}
+                `;
+                throw error;
             }
 
             await this.completeBatch(batchId);
+            return; // Continue with next batch
 
         } catch (error) {
             console.error('Batch processing error:', error);
@@ -56,26 +61,29 @@ export class BatchProcessor {
 
     private async initializeBatch(batchId: string, bills: Bill[]): Promise<void> {
         await this.sql.begin(async (sql) => {
-            // Create or update analysis status records
-            for (const bill of bills) {
-                await sql`
-                    INSERT INTO bill_analysis_status (
-                        bill_id, 
-                        current_change_hash,
-                        analysis_state
-                    ) 
-                    VALUES (
-                        ${bill.bill_id}, 
-                        ${bill.change_hash},
-                        'pending'
-                    )
-                    ON CONFLICT (bill_id) DO UPDATE 
-                    SET current_change_hash = ${bill.change_hash},
-                        analysis_state = 'pending'
-                `;
-            }
+            // Batch insert/update analysis status records
+            await sql`
+                WITH bill_data AS (
+                    SELECT 
+                        unnest(${bills.map(b => b.bill_id)}::int[]) as bill_id,
+                        unnest(${bills.map(b => b.change_hash)}::text[]) as change_hash
+                )
+                INSERT INTO bill_analysis_status (
+                    bill_id, 
+                    current_change_hash,
+                    analysis_state
+                ) 
+                SELECT 
+                    bill_id,
+                    change_hash,
+                    'pending'::analysis_state_enum
+                FROM bill_data
+                ON CONFLICT (bill_id) DO UPDATE 
+                SET current_change_hash = EXCLUDED.current_change_hash,
+                    analysis_state = EXCLUDED.analysis_state
+            `;
 
-            // Rest of initialization...
+            // Create batch progress record
             await sql`
                 INSERT INTO bill_analysis_progress (
                     batch_id, start_time, total_bills, batch_state
@@ -84,12 +92,16 @@ export class BatchProcessor {
                 )
             `;
 
+            // Batch insert batch items
             await sql`
                 INSERT INTO bill_analysis_batch_items (
                     batch_id, bill_id, processing_state
                 ) 
-                SELECT ${batchId}, bill_id, 'pending'
-                FROM unnest(${bills.map(b => b.bill_id)}) AS t(bill_id)
+                SELECT 
+                    ${batchId},
+                    bill_id,
+                    'pending'
+                FROM unnest(${bills.map(b => b.bill_id)}::int[]) AS t(bill_id)
             `;
         });
     }
@@ -100,19 +112,21 @@ export class BatchProcessor {
         state: ProcessingState,
         metrics?: BatchMetrics
     ): Promise<void> {
-        const updates = [];
-        updates.push(`processing_state = ${state}`);
-        updates.push(`attempt_count = attempt_count + 1`);
-        updates.push(`updated_at = NOW()`);
-        
-        if (metrics?.processingTime !== undefined) updates.push(`processing_time = ${metrics.processingTime}`);
-        if (metrics?.tokenCount !== undefined) updates.push(`token_count = ${metrics.tokenCount}`);
-        if (metrics?.error !== undefined) updates.push(`last_error = ${metrics.error}`);
+        const processingTime = metrics?.processingTime ?? null;
+        const tokenCount = metrics?.tokenCount ?? null;
+        const error = metrics?.error ?? null;
 
         await this.sql`
             UPDATE bill_analysis_batch_items
-            SET ${this.sql(updates.join(', '))}
-            WHERE batch_id = ${batchId} AND bill_id = ${billId}
+            SET 
+                processing_state = ${state}::processing_state_enum,
+                attempt_count = attempt_count + 1,
+                updated_at = NOW(),
+                processing_time = ${processingTime},
+                token_count = ${tokenCount},
+                last_error = ${error}
+            WHERE batch_id = ${batchId} 
+            AND bill_id = ${billId}
         `;
     }
 
@@ -137,7 +151,57 @@ Analyze how the bill's specific mechanisms, requirements, and implementations mi
 Base your analysis on the actual text and provisions, not historical patterns or assumptions.
 Be thorough, objective, and evidence-based, citing specific sections and language from the bill.
 
-CRITICAL: You must respond with valid JSON exactly matching this structure. Any deviation will cause process failure:
+CRITICAL: You must respond with ONLY the JSON data. Do not include any markdown, explanation, or additional text.
+The response must exactly match this structure, using these specific categories and their corresponding subgroup codes:
+
+IMPORTANT: Each bill should be analyzed for ALL relevant categories and their subgroups. A bill may impact multiple categories and multiple subgroups within each category. Do not omit categories that are impacted.
+
+Categories and Their Subgroups:
+
+1. race:
+   - BH: Black/African American
+   - AP: Asian/Pacific Islander
+   - LX: Latinx
+   - WH: White
+   - IN: Indigenous/Native American
+
+2. religion:
+   - MU: Muslim
+   - CH: Christian
+   - JW: Jewish
+   - HI: Hindu
+   - BD: Buddhist
+   - SK: Sikh
+   - AT: Atheist/Agnostic
+
+3. gender:
+   - ML: Male
+   - FM: Female
+   - TG: Transgender
+   - NB: Nonbinary
+   - GQ: Genderqueer
+
+4. age:
+   - CY: Children and Youth
+   - AD: Adults
+   - OA: Older Adults
+
+5. disability:
+   - PD: Physical Disabilities
+   - MH: Mental Health Challenges
+   - DD: Developmental Disabilities
+
+6. veterans:
+   - VT: Veterans
+   - DV: Disabled Veterans
+   - RM: Retired Military Personnel
+
+Example of multiple category/subgroup analysis:
+- An education bill might affect both "age" (CY: Children and Youth) and "disability" (MH: Mental Health, DD: Developmental Disabilities)
+- A healthcare bill might affect "veterans" (DV: Disabled Veterans) and "age" (OA: Older Adults)
+- A civil rights bill might affect multiple subgroups across "race", "religion", and "gender" categories
+
+Response Structure:
 {
     "analyses": [
         {
@@ -147,14 +211,14 @@ CRITICAL: You must respond with valid JSON exactly matching this structure. Any 
                 "positive_impact_score": number (0-1),
                 "confidence": "High" | "Medium" | "Low"
             },
-            "demographic_categories": [
+            "demographic_categories": [  // Include ALL impacted categories
                 {
-                    "category": "race" | "religion" | "gender" | "age" | "disability" | "socioeconomic",
+                    "category": "race" | "religion" | "gender" | "age" | "disability" | "veterans",
                     "bias_score": number (0-1),
                     "positive_impact_score": number (0-1),
-                    "subgroups": [
+                    "subgroups": [  // Include ALL impacted subgroups
                         {
-                            "code": string,
+                            "code": string,  // Use codes from the category lists above
                             "bias_score": number (0-1),
                             "positive_impact_score": number (0-1),
                             "evidence": string
@@ -167,11 +231,14 @@ CRITICAL: You must respond with valid JSON exactly matching this structure. Any 
 }
 
 IMPORTANT:
+- Analyze and include ALL relevant categories and subgroups that are impacted
 - All number values must be between 0 and 1
 - All fields are required
 - Response must be pure JSON with no additional text or explanation
 - Maintain exact 1:1 correspondence between input bills and output analyses
-- Each bill_id in the output must match an input bill_id`;
+- Each bill_id in the output must match an input bill_id
+- Use only the specified categories and their corresponding subgroup codes
+- Each category must use only its defined subgroup codes`;
 
         const userMessage = `Analyze these bills' potential impact on different demographic groups:
 
@@ -189,12 +256,18 @@ ${JSON.stringify(inputs, null, 2)}`;
                     content: userMessage
                 }
             ],
-            temperature: 0.7,
-            max_tokens: 4000
+            temperature: 0.0,
+            max_tokens: 8192
         });
 
         try {
-            const response = JSON.parse(completion.choices[0].message.content || '');
+            let content = completion.choices[0].message.content || '';
+            
+            // Remove any markdown or code block wrapping
+            content = content.replace(/^```json\n|\n```$/g, '');  // Remove JSON code blocks
+            content = content.replace(/^```\n|\n```$/g, '');      // Remove generic code blocks
+            
+            const response = JSON.parse(content);
             
             // Validate 1:1 correspondence
             if (!response.analyses || response.analyses.length !== bills.length) {
@@ -336,17 +409,35 @@ ${JSON.stringify(inputs, null, 2)}`;
 
     private async handleBatchError(batchId: string, bills: Bill[], error: unknown): Promise<void> {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const fullError = error instanceof Error ? error : new Error(errorMessage);
 
-        if (bills.length > this.minBatchSize) {
-            // Split batch and retry
-            const halfSize = Math.floor(bills.length / 2);
-            await this.processBatch(bills.slice(0, halfSize));
-            await this.processBatch(bills.slice(halfSize));
-        } else {
-            // Mark single bill as failed
-            await this.updateBillProgress(batchId, bills[0].bill_id, 'failed', {
-                error: errorMessage
-            });
-        }
+        // Log full error details
+        console.error('Fatal batch processing error:');
+        console.error('Error message:', errorMessage);
+        console.error('Stack trace:', fullError.stack);
+        console.error('Batch ID:', batchId);
+        console.error('Number of bills affected:', bills.length);
+
+        // Mark all bills as failed
+        await this.sql`
+            UPDATE bill_analysis_batch_items
+            SET processing_state = 'failed',
+                attempt_count = attempt_count + 1,
+                updated_at = NOW(),
+                last_error = ${errorMessage}
+            WHERE batch_id = ${batchId}
+        `;
+
+        // Update batch status
+        await this.sql`
+            UPDATE bill_analysis_progress
+            SET batch_state = 'failed',
+                end_time = NOW(),
+                error_message = ${errorMessage}
+            WHERE batch_id = ${batchId}
+        `;
+
+        // Exit with error
+        process.exit(1);
     }
 } 

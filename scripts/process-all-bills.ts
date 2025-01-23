@@ -1,4 +1,3 @@
-import { BatchSizeCalculator } from './bill-analysis/batch-calculator';
 import { BatchProcessor } from './bill-analysis/batch-processor';
 import postgres from 'postgres';
 import OpenAI from 'openai';
@@ -15,17 +14,14 @@ async function processAllBills() {
     });
 
     try {
-        const calculator = new BatchSizeCalculator(envConfig.openaiContextWindow);
-        const batchSize = calculator.getQueryLimit();
-        
-        console.log(`Starting mass bill analysis with batch size: ${batchSize}`);
+        console.log(`Starting mass bill analysis with batch size: ${envConfig.openaiMaxBatchSize}`);
         console.log(`Using model: ${envConfig.openaiModel}`);
 
         let processed = 0;
         let hasMore = true;
 
         while (hasMore) {
-            const bills = await getBillsForAnalysis(sql, batchSize);
+            const bills = await getBillsForAnalysis(sql, envConfig.openaiMaxBatchSize);
             if (bills.length === 0) {
                 hasMore = false;
                 continue;
@@ -33,13 +29,8 @@ async function processAllBills() {
 
             console.log(`Processing batch of ${bills.length} bills (Total processed: ${processed})`);
             
-            const processor = new BatchProcessor(
-                sql, 
-                openai, 
-                envConfig.openaiModel
-            );
-
-            // await processor.processBatch(bills);
+            const processor = new BatchProcessor(sql, openai, envConfig.openaiModel);
+            await processor.processBatch(bills);
             processed += bills.length;
 
             // Add delay between batches to avoid rate limits
@@ -50,6 +41,14 @@ async function processAllBills() {
         
     } catch (error) {
         console.error('Error in mass bill analysis:', error);
+        
+        // Update status of all pending bills to failed
+        await sql`
+            UPDATE bill_analysis_status
+            SET analysis_state = 'failed'::analysis_state_enum
+            WHERE analysis_state = 'pending'::analysis_state_enum
+        `;
+        
         process.exit(1);
     } finally {
         await sql.end();
