@@ -4,10 +4,26 @@ export interface Bill {
     description: string;
     bill_type_id: number;
     change_hash: string;
-    amendments?: Array<{
+    status: string;
+    session_year_start: string;
+    session_year_end: string;
+    state: string;
+    sponsors: Array<{
+        people_id: string;
+        party: string;
+        type: string;
+    }>;
+    subjects: string[];
+    amendments: Array<{
+        amendment_id: string;
         title: string;
         description: string;
         adopted: boolean;
+    }>;
+    full_texts: Array<{
+        date: Date;
+        name: string;
+        content_url: string;
     }>;
 }
 
