@@ -4,18 +4,13 @@ import { Bill, BatchMetrics, ProcessingState } from './types';
 import OpenAI from 'openai';
 
 export class BatchProcessor {
-    private currentBatchSize: number;
     private readonly minBatchSize = 1;
-    private successfulBatches = 0;
 
     constructor(
         private readonly sql: postgres.Sql,
         private readonly openai: OpenAI,
-        initialBatchSize: number,
         private readonly model: string
-    ) {
-        this.currentBatchSize = initialBatchSize;
-    }
+    ) {}
 
     async processBatch(bills: Bill[]): Promise<void> {
         const batchId = uuid();
@@ -137,9 +132,10 @@ export class BatchProcessor {
         }));
 
         const systemMessage = `You are an expert policy analyst. Your task is to analyze legislative bills for their potential impacts on different demographic groups.
-Focus on identifying both direct and indirect effects on various populations, particularly historically marginalized groups.
-Provide specific evidence from the bill text to support your analysis.
-Be thorough, objective, and evidence-based in your assessment.
+Focus on the semantic content and logical implications of the bill's language and provisions.
+Analyze how the bill's specific mechanisms, requirements, and implementations might affect different populations.
+Base your analysis on the actual text and provisions, not historical patterns or assumptions.
+Be thorough, objective, and evidence-based, citing specific sections and language from the bill.
 
 CRITICAL: You must respond with valid JSON exactly matching this structure. Any deviation will cause process failure:
 {
@@ -199,12 +195,27 @@ ${JSON.stringify(inputs, null, 2)}`;
 
         try {
             const response = JSON.parse(completion.choices[0].message.content || '');
+            
+            // Validate 1:1 correspondence
+            if (!response.analyses || response.analyses.length !== bills.length) {
+                throw new Error(`Expected ${bills.length} analyses but got ${response.analyses?.length || 0}`);
+            }
+
+            // Validate each bill_id matches
+            const mismatches = bills.filter(bill => 
+                !response.analyses.find((a: { bill_id: string }) => a.bill_id === bill.bill_id.toString())
+            );
+            if (mismatches.length > 0) {
+                throw new Error(`Missing analyses for bills: ${mismatches.map(b => b.bill_id).join(', ')}`);
+            }
+
             return {
                 analyses: response.analyses,
                 tokenCount: completion.usage?.total_tokens || 0
             };
-        } catch (error) {
-            throw new Error('Failed to parse LLM response as JSON');
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            throw new Error(`Failed to parse or validate LLM response: ${errorMessage}`);
         }
     }
 

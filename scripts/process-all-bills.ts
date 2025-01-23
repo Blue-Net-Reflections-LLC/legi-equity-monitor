@@ -1,4 +1,3 @@
-import { config } from 'dotenv';
 import { BatchSizeCalculator } from './bill-analysis/batch-calculator';
 import { BatchProcessor } from './bill-analysis/batch-processor';
 import postgres from 'postgres';
@@ -6,7 +5,6 @@ import OpenAI from 'openai';
 import { getBillsForAnalysis } from './bill-analysis/db-queries';
 import { validateConfig } from './bill-analysis/config';
 
-config();
 const envConfig = validateConfig();
 
 async function processAllBills() {
@@ -38,7 +36,6 @@ async function processAllBills() {
             const processor = new BatchProcessor(
                 sql, 
                 openai, 
-                batchSize,
                 envConfig.openaiModel
             );
 

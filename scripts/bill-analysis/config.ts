@@ -1,3 +1,11 @@
+import { config } from 'dotenv';
+import path from 'path';
+
+// Load .env.local in development
+if (process.env.NODE_ENV !== 'production') {
+    config({ path: path.resolve(process.cwd(), '.env.local') });
+}
+
 interface EnvConfig {
     legiscanDbUrl: string;
     openaiApiKey: string;
@@ -7,6 +15,7 @@ interface EnvConfig {
 }
 
 export function validateConfig(): EnvConfig {
+    // Load from either .env.local or system environment variables
     const requiredEnvVars = {
         legiscanDbUrl: process.env.LEGISCAN_DB_URL,
         openaiApiKey: process.env.BILLS_OPENAI_API_KEY,
