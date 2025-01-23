@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "analyze": "tsx scripts/process-all-bills.ts"
+    "analyze": "npx tsx scripts/process-all-bills.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.4",
