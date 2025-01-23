@@ -244,21 +244,10 @@ IMPORTANT:
 
 ${JSON.stringify(inputs, null, 2)}`;
 
-        const completion = await this.openai.chat.completions.create({
-            model: this.model,
-            messages: [
-                {
-                    role: "system",
-                    content: systemMessage
-                },
-                {
-                    role: "user",
-                    content: userMessage
-                }
-            ],
-            temperature: 0.0,
-            max_tokens: 8192
-        });
+        const completion = await this.retryOpenAICall([
+            { role: "system", content: systemMessage },
+            { role: "user", content: userMessage }
+        ]);
 
         try {
             let content = completion.choices[0].message.content || '';
@@ -439,5 +428,32 @@ ${JSON.stringify(inputs, null, 2)}`;
 
         // Exit with error
         process.exit(1);
+    }
+
+    private async retryOpenAICall(messages: any[], maxRetries = 3) {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const completion = await this.openai.chat.completions.create({
+                    model: this.model,
+                    messages,
+                    temperature: 0.0,
+                    max_tokens: 8192
+                });
+
+                // Try parsing the response
+                const content = (completion.choices[0].message.content || '')
+                    .replace(/^```json\n|\n```$/g, '')
+                    .replace(/^```\n|\n```$/g, '');
+
+                JSON.parse(content); // Will throw if invalid JSON
+                
+                return completion;
+            } catch (error) {
+                console.error(`Attempt ${attempt + 1} failed:`, error);
+                if (attempt === maxRetries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            }
+        }
+        throw new Error('All retry attempts failed');
     }
 } 

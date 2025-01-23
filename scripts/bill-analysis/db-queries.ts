@@ -63,6 +63,11 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number, offs
             AND (
                 bas.bill_id IS NULL  -- New bills
                 OR b.change_hash != bas.last_change_hash  -- Changed bills
+                OR bas.analysis_state = 'error'  -- Failed bills (using 'error' state)
+                OR (
+                    bas.analysis_state = 'pending'  -- Stale pending bills
+                    AND bas.updated_at < NOW() - INTERVAL '5 minutes'
+                )
             )
             AND (
                 array_length(regexp_split_to_array(trim(b.description), '\s+'), 1) >= 20
