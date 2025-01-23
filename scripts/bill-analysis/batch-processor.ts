@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import { v4 as uuid } from 'uuid';
-import { Bill, BatchMetrics, ProcessingState } from './types';
+import { Bill, BatchMetrics, ProcessingState, AnalysisResult } from './types';
 import OpenAI from 'openai';
 
 export class BatchProcessor {
@@ -219,8 +219,8 @@ ${JSON.stringify(inputs, null, 2)}`;
         }
     }
 
-    private async storeBillAnalysis(billId: number, result: { analyses: any[], tokenCount: number }) {
-        const analyses = result.analyses;
+    private async storeBillAnalysis(billId: number, result: AnalysisResult) {
+        const analysis = result.analyses[0];
 
         await this.sql.begin(async (sql) => {
             // Delete old analysis if it exists (in correct order)
@@ -258,50 +258,48 @@ ${JSON.stringify(inputs, null, 2)}`;
                     notes
                 ) VALUES (
                     ${billId},
-                    ${analyses[0].overall_analysis.bias_score as number},
-                    ${analyses[0].overall_analysis.positive_impact_score as number},
-                    ${analyses[0].overall_analysis.confidence as string},
-                    ${JSON.stringify(analyses)}
+                    ${analysis.overall_analysis.bias_score},
+                    ${analysis.overall_analysis.positive_impact_score},
+                    ${analysis.overall_analysis.confidence},
+                    ${JSON.stringify(analysis)}
                 )
                 RETURNING analysis_id
             `;
 
             // Store category scores
-            for (const analysis of analyses) {
-                for (const category of analysis.demographic_categories) {
-                    const [categoryResult] = await sql`
-                        INSERT INTO bill_analysis_category_scores (
-                            analysis_id,
-                            category,
-                            bias_score,
-                            positive_impact_score
-                        ) VALUES (
-                            ${analysisResult.analysis_id},
-                            ${category.category},
-                            ${category.bias_score},
-                            ${category.positive_impact_score}
-                        )
-                        RETURNING category_score_id
-                    `;
+            for (const category of analysis.demographic_categories) {
+                const [categoryResult] = await sql`
+                    INSERT INTO bill_analysis_category_scores (
+                        analysis_id,
+                        category,
+                        bias_score,
+                        positive_impact_score
+                    ) VALUES (
+                        ${analysisResult.analysis_id},
+                        ${category.category},
+                        ${category.bias_score},
+                        ${category.positive_impact_score}
+                    )
+                    RETURNING category_score_id
+                `;
 
-                    // Store subgroup scores
-                    for (const subgroup of category.subgroups) {
-                        await sql`
-                            INSERT INTO bill_analysis_subgroup_scores (
-                                category_score_id,
-                                subgroup_code,
-                                bias_score,
-                                positive_impact_score,
-                                evidence
-                            ) VALUES (
-                                ${categoryResult.category_score_id},
-                                ${subgroup.code},
-                                ${subgroup.bias_score},
-                                ${subgroup.positive_impact_score},
-                                ${subgroup.evidence}
-                            )
-                        `;
-                    }
+                // Store subgroup scores
+                for (const subgroup of category.subgroups) {
+                    await sql`
+                        INSERT INTO bill_analysis_subgroup_scores (
+                            category_score_id,
+                            subgroup_code,
+                            bias_score,
+                            positive_impact_score,
+                            evidence
+                        ) VALUES (
+                            ${categoryResult.category_score_id},
+                            ${subgroup.code},
+                            ${subgroup.bias_score},
+                            ${subgroup.positive_impact_score},
+                            ${subgroup.evidence}
+                        )
+                    `;
                 }
             }
 

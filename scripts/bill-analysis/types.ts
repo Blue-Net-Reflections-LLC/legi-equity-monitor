@@ -1,8 +1,12 @@
-// Types for bill analysis worker
+// Enum types matching database
+export type BatchState = 'running' | 'completed' | 'failed';
+export type ProcessingState = 'pending' | 'processing' | 'completed' | 'failed' | 'skipped';
+export type AnalysisState = 'pending' | 'completed' | 'skipped' | 'error';
+
+// Input types
 export interface Bill {
     bill_id: number;
     description: string;
-    bill_type_id: number;
     change_hash: string;
     status: string;
     session_year_start: string;
@@ -27,11 +31,29 @@ export interface Bill {
     }>;
 }
 
-export interface BillTokenEstimate {
-    descriptionTokens: number;
-    sponsorsCount: number;
-    subjectsCount: number;
-    amendmentsCount: number;
+// Analysis result types matching database schema
+export interface BillAnalysis {
+    bill_id: string;
+    overall_analysis: {
+        bias_score: number;
+        positive_impact_score: number;
+        confidence: 'High' | 'Medium' | 'Low';
+    };
+    demographic_categories: DemographicCategory[];
+}
+
+export interface DemographicCategory {
+    category: 'race' | 'religion' | 'gender' | 'age' | 'disability' | 'socioeconomic';
+    bias_score: number;
+    positive_impact_score: number;
+    subgroups: Subgroup[];
+}
+
+export interface Subgroup {
+    code: string;
+    bias_score: number;
+    positive_impact_score: number;
+    evidence: string;
 }
 
 export interface BatchMetrics {
@@ -40,7 +62,14 @@ export interface BatchMetrics {
     error?: string;
 }
 
-// Database state enums
-export type AnalysisState = 'pending' | 'completed' | 'skipped' | 'error';
-export type BatchState = 'running' | 'completed' | 'failed';
-export type ProcessingState = 'pending' | 'processing' | 'completed' | 'failed' | 'skipped'; 
+export interface AnalysisResult {
+    analyses: BillAnalysis[];
+    tokenCount: number;
+}
+
+export interface BillTokenEstimate {
+    descriptionTokens: number;
+    sponsorsCount: number;
+    subjectsCount: number;
+    amendmentsCount: number;
+} 
