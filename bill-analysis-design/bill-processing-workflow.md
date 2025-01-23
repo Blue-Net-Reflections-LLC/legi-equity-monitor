@@ -3,8 +3,8 @@ flowchart TD
     start([Job Starts])
     gather_context([Gather input context token window, e.g., 4M tokens for MiniMax Text 01])
     query_bills([Query bills in reverse chronological order])
-    check_tokens{Does description have < 20 tokens?}
-    skip_ineligible([Skip analysis for ineligible bills and record status])
+    check_content{Does bill have amendments OR description >= 20 tokens?}
+    skip_ineligible([Skip analysis and record status: 'insufficient_content'])
     check_new{Is bill new?}
     add_to_queue_new([Add new bill to processing queue with input data])
     check_modified{Is bill modified?}
@@ -15,16 +15,14 @@ flowchart TD
     validate_llm_response{Is there a 1:1 match between input and output bills?}
     log_error([Log explanation of mismatch and stop processing])
     store_results([Store results in database with timestamps and hashes])
-    check_full_processing{Is bill ready for full processing?}
-    record_ignored_types([Record ignored types such as Resolutions or Commendments])
     job_end([Record last processing time and finish job])
 
     %% Define connections
     start --> gather_context
     gather_context --> query_bills
-    query_bills --> check_tokens
-    check_tokens -- Yes --> skip_ineligible
-    check_tokens -- No --> check_new
+    query_bills --> check_content
+    check_content -- No --> skip_ineligible
+    check_content -- Yes --> check_new
     check_new -- Yes --> add_to_queue_new
     check_new -- No --> check_modified
     check_modified -- Yes --> add_to_queue_modified
@@ -35,11 +33,17 @@ flowchart TD
     process_llm --> validate_llm_response
     validate_llm_response -- No --> log_error
     validate_llm_response -- Yes --> store_results
-    store_results --> check_full_processing
-    check_full_processing -- Not Ready --> record_ignored_types
-    check_full_processing -- Ready --> job_end
+    store_results --> job_end
     skip_ineligible --> job_end
-    record_ignored_types --> job_end
     log_error --> job_end
 
+    %% Add notes
+    classDef note fill:#fff,stroke:#333,stroke-dasharray: 5 5;
+    class check_content note;
 ```
+
+### Key Changes:
+- Modified content check to include amendments
+- Bills with amendments will be analyzed even if description is short
+- Content from both description and amendments will be included in analysis input
+- Skip only if both description is short AND no amendments exist
