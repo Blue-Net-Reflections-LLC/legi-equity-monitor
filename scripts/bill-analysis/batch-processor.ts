@@ -61,6 +61,26 @@ export class BatchProcessor {
 
     private async initializeBatch(batchId: string, bills: Bill[]): Promise<void> {
         await this.sql.begin(async (sql) => {
+            // Create or update analysis status records
+            for (const bill of bills) {
+                await sql`
+                    INSERT INTO bill_analysis_status (
+                        bill_id, 
+                        current_change_hash,
+                        analysis_state
+                    ) 
+                    VALUES (
+                        ${bill.bill_id}, 
+                        ${bill.change_hash},
+                        'pending'
+                    )
+                    ON CONFLICT (bill_id) DO UPDATE 
+                    SET current_change_hash = ${bill.change_hash},
+                        analysis_state = 'pending'
+                `;
+            }
+
+            // Rest of initialization...
             await sql`
                 INSERT INTO bill_analysis_progress (
                     batch_id, start_time, total_bills, batch_state
@@ -85,14 +105,18 @@ export class BatchProcessor {
         state: ProcessingState,
         metrics?: BatchMetrics
     ): Promise<void> {
+        const updates = [];
+        updates.push(`processing_state = ${state}`);
+        updates.push(`attempt_count = attempt_count + 1`);
+        updates.push(`updated_at = NOW()`);
+        
+        if (metrics?.processingTime !== undefined) updates.push(`processing_time = ${metrics.processingTime}`);
+        if (metrics?.tokenCount !== undefined) updates.push(`token_count = ${metrics.tokenCount}`);
+        if (metrics?.error !== undefined) updates.push(`last_error = ${metrics.error}`);
+
         await this.sql`
             UPDATE bill_analysis_batch_items
-            SET processing_state = ${state},
-                processing_time = ${metrics?.processingTime},
-                token_count = ${metrics?.tokenCount},
-                last_error = ${metrics?.error},
-                attempt_count = attempt_count + 1,
-                updated_at = NOW()
+            SET ${this.sql(updates.join(', '))}
             WHERE batch_id = ${batchId} AND bill_id = ${billId}
         `;
     }
@@ -188,6 +212,32 @@ ${JSON.stringify(inputs, null, 2)}`;
         const analyses = result.analyses;
 
         await this.sql.begin(async (sql) => {
+            // Delete old analysis if it exists (in correct order)
+            await sql`
+                DELETE FROM bill_analysis_subgroup_scores 
+                WHERE category_score_id IN (
+                    SELECT category_score_id 
+                    FROM bill_analysis_category_scores 
+                    WHERE analysis_id IN (
+                        SELECT analysis_id 
+                        FROM bill_analysis_results 
+                        WHERE bill_id = ${billId}
+                    )
+                )
+            `;
+            await sql`
+                DELETE FROM bill_analysis_category_scores 
+                WHERE analysis_id IN (
+                    SELECT analysis_id 
+                    FROM bill_analysis_results 
+                    WHERE bill_id = ${billId}
+                )
+            `;
+            await sql`
+                DELETE FROM bill_analysis_results 
+                WHERE bill_id = ${billId}
+            `;
+
             const [analysisResult] = await sql`
                 INSERT INTO bill_analysis_results (
                     bill_id,

@@ -1,7 +1,7 @@
 import postgres from 'postgres';
 import { Bill } from './types';
 
-export async function getBillsForAnalysis(sql: postgres.Sql, limit: number): Promise<Bill[]> {
+export async function getBillsForAnalysis(sql: postgres.Sql, limit: number, offset = 0): Promise<Bill[]> {
     // Query to find bills with all required fields
     const bills = await sql<Bill[]>`
         WITH bill_data AS (
@@ -76,6 +76,7 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number): Pro
         FROM bill_data
         ORDER BY bill_id DESC
         LIMIT ${limit}
+        OFFSET ${offset}
     `;
 
     return bills;
