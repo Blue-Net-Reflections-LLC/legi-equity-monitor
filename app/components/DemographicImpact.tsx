@@ -32,15 +32,22 @@ export function DemographicImpact({ category, score, sentiment }: DemographicImp
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-1">
+      {/* Category label */}
+      <div className="mb-1">
         <span className="text-sm font-medium">{toTitleCase(category)}</span>
-        <span className="text-sm font-medium">{score}%</span>
       </div>
+      
+      {/* Progress bar */}
       <div className="w-full bg-neutral-200 dark:bg-neutral-700 h-2 rounded-full">
         <div 
           className={`${barColor} h-2 rounded-full transition-all`} 
           style={{ width: `${score}%` }}
         />
+      </div>
+
+      {/* Centered percentage */}
+      <div className="text-center mt-1">
+        <span className="text-sm font-medium">{score}%</span>
       </div>
     </div>
   );
