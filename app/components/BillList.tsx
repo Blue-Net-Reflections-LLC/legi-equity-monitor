@@ -15,7 +15,7 @@ export function BillList({ bills }: BillListProps) {
   const stateCode = pathname.split('/').filter(Boolean)[0];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-max">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:mx-0 -mx-6">
       {bills.map((bill) => (
         <BillCard key={bill.bill_id} bill={bill} />
       ))}

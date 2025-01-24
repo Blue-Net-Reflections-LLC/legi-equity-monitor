@@ -132,9 +132,16 @@ export function BillCard({ bill }: BillCardProps) {
                   const { Icon } = getImpactDisplay(bill.analysis_results);
                   return <Icon className="w-4 h-4" />;
                 })()}
-                {getImpactDisplay(bill.analysis_results).score >= 60 
-                  ? `${bill.analysis_results.overall_score}% ${getImpactDisplay(bill.analysis_results).label}`
-                  : 'Neutral'}
+                <span className="hidden lg:inline">
+                  {getImpactDisplay(bill.analysis_results).score >= 60 
+                    ? `${bill.analysis_results.overall_score}% ${getImpactDisplay(bill.analysis_results).label}`
+                    : 'Neutral'}
+                </span>
+                <span className="inline lg:hidden">
+                  {getImpactDisplay(bill.analysis_results).score >= 60 
+                    ? getImpactDisplay(bill.analysis_results).label
+                    : 'Neutral'}
+                </span>
               </span>
             ) : null}
           </div>
@@ -184,7 +191,7 @@ export function BillCard({ bill }: BillCardProps) {
                    `${bill.sponsors.length} ${bill.sponsors.length === 1 ? 'Sponsor' : 'Sponsors'}`}
                 </span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="hidden lg:flex items-center gap-1">
                 <Flag className="w-4 h-4" />
                 <span className="text-sm">{getPartyDisplay(bill.sponsors)}</span>
               </div>
