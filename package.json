@@ -7,13 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "analyze": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" node scripts/analyze-bills.ts"
+    "analyze": "npx tsx scripts/process-all-bills.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.0",
     "dotenv": "^16.3.1",
+    "encoding": "^0.1.13",
     "framer-motion": "^11.18.0",
     "lucide-react": "^0.471.1",
     "next": "14.2.16",
@@ -22,7 +23,8 @@
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^2.6.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0",

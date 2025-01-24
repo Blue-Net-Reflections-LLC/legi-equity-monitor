@@ -1,3 +1,6 @@
+# Bills Schema
+
+```sql
 --
 -- Database: legiscan_api
 --
@@ -1753,3 +1756,4 @@ CREATE TRIGGER trig_ls_bill_text_update BEFORE UPDATE ON ls_bill_text FOR EACH R
 CREATE TRIGGER trig_ls_bill_vote_update BEFORE UPDATE ON ls_bill_vote FOR EACH ROW EXECUTE PROCEDURE update_ts_column();
 CREATE TRIGGER trig_ls_people_update BEFORE UPDATE ON ls_people FOR EACH ROW EXECUTE PROCEDURE update_ts_column();
 CREATE TRIGGER trig_ls_signal_update BEFORE UPDATE ON ls_signal FOR EACH ROW EXECUTE PROCEDURE update_ts_column();
+```
