@@ -13,6 +13,7 @@ interface EnvConfig {
     openaiModel: string;
     openaiContextWindow: number;
     openaiMaxBatchSize: number;
+    randomOrder: boolean;
 }
 
 export function validateConfig(): EnvConfig {
@@ -45,6 +46,8 @@ export function validateConfig(): EnvConfig {
         throw new Error('BILLS_OPENAI_BATCH_SIZE must be between 1 and 5');
     }
 
+    const randomOrder = process.env.BILLS_RANDOM_ORDER === 'true';
+
     return {
         legiscanDbUrl: requiredEnvVars.legiscanDbUrl!,
         openaiApiKey: requiredEnvVars.openaiApiKey!,
@@ -52,5 +55,6 @@ export function validateConfig(): EnvConfig {
         openaiModel: requiredEnvVars.openaiModel!,
         openaiContextWindow: contextWindow,
         openaiMaxBatchSize: batchSize,
+        randomOrder,
     };
 } 

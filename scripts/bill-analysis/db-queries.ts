@@ -36,7 +36,7 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number): Pro
                         WHERE ba.bill_id = b.bill_id
                     )
                 )
-                ORDER BY b.bill_id DESC
+                ORDER BY ${sql(envConfig.randomOrder ? 'RANDOM()' : 'b.bill_id DESC')}
                 LIMIT ${limit}
                 FOR UPDATE SKIP LOCKED
             `;
