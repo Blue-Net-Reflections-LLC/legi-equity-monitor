@@ -1,5 +1,8 @@
 import postgres from 'postgres';
 import { Bill } from './types';
+import { validateConfig } from './config';
+
+const envConfig = validateConfig();
 
 interface BillId { bill_id: number }
 
@@ -30,13 +33,13 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number): Pro
                     )
                 )
                 AND (
-                    array_length(regexp_split_to_array(trim(b.description), '\s+'), 1) >= 20
+                    array_length(regexp_split_to_array(trim(b.description), '\s+'), 1) >= 10
                     OR EXISTS (
                         SELECT 1 FROM ls_bill_amendment ba 
                         WHERE ba.bill_id = b.bill_id
                     )
                 )
-                ORDER BY ${sql(envConfig.randomOrder ? 'RANDOM()' : 'b.bill_id DESC')}
+                ORDER BY ${envConfig.randomOrder ? sql`RANDOM()` : sql`b.bill_id DESC`}
                 LIMIT ${limit}
                 FOR UPDATE SKIP LOCKED
             `;
