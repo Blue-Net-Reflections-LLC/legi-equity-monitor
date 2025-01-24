@@ -134,6 +134,7 @@ export class BatchProcessor {
         // Format bills data according to established structure
         const inputs = bills.map(bill => ({
             bill_id: bill.bill_id.toString(),
+            title: bill.title,
             status: bill.status,
             session_year_start: bill.session_year_start,
             session_year_end: bill.session_year_end,

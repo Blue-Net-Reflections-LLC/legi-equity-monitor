@@ -6,6 +6,7 @@ export type AnalysisState = 'pending' | 'completed' | 'skipped' | 'error';
 // Input types
 export interface Bill {
     bill_id: number;
+    title: string;
     description: string;
     change_hash: string;
     status: string;

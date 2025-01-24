@@ -54,6 +54,7 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number): Pro
                     SELECT 
                         b.bill_id,
                         b.bill_type_id,
+                        b.title,
                         b.description,
                         b.change_hash,
                         b.status_id as status,
