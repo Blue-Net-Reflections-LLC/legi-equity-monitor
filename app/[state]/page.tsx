@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import BillList from "@/app/components/BillList";
+import { BillList } from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import { Bill } from "@/app/types";
