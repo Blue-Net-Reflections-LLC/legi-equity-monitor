@@ -57,7 +57,6 @@ export function BillCard({ bill }: BillCardProps) {
 
     return 'Non-partisan';
   };
-
   return (
     <Link 
       href={`/${stateCode}/bill/${bill.bill_id}`}
@@ -91,19 +90,30 @@ export function BillCard({ bill }: BillCardProps) {
             {bill.description}
           </p>
 
-          {/* Bill Type & Sponsors */}
-          <div className="flex items-center justify-between mt-4">
-            {/* Note: Committee info was added post-design, replacing redundant bill type */}
-            <div className="flex items-center gap-2">
-              {bill.pending_committee_name ? (
-                <>
-                  <Building2 className="w-4 h-4" />
-                  <span className="text-sm">{bill.pending_committee_name}</span>
-                </>
-              ) : null}
+          {/* Committee info */}
+          {bill.pending_committee_name && (
+            <div className="flex items-center gap-2 mt-4 text-neutral-600 dark:text-neutral-400">
+              <Building2 className="w-4 h-4" />
+              <span className="text-sm line-clamp-1" title={bill.pending_committee_name}>
+                {bill.pending_committee_name}
+              </span>
             </div>
+          )}
+
+          {/* Sponsors Info and Date */}
+          <div className="flex items-center justify-between mt-4">
+            {/* Date with label */}
+            <div className="text-sm text-neutral-600 dark:text-neutral-400">
+              {bill.updated && (
+                <>
+                  {new Date(bill.created).getTime() === new Date(bill.updated).getTime() ? 'Created' : 'Updated'}: {' '}
+                  {new Date(bill.updated).toLocaleDateString()}
+                </>
+              )}
+            </div>
+            
+            {/* Sponsors and Party */}
             <div className="flex items-center gap-4">
-              {/* Note: Sponsor count label was added post-design for better UX */}
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
                 <span className="text-sm">
@@ -114,9 +124,7 @@ export function BillCard({ bill }: BillCardProps) {
               </div>
               <div className="flex items-center gap-1">
                 <Flag className="w-4 h-4" />
-                <span className="text-sm">
-                  {getPartyDisplay(bill.sponsors)}
-                </span>
+                <span className="text-sm">{getPartyDisplay(bill.sponsors)}</span>
               </div>
             </div>
           </div>

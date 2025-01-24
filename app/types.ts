@@ -31,6 +31,8 @@ export interface Bill {
     party: string;
     type: 'Primary' | 'Co';
   }>;
+  created: Date;
+  updated: Date;
 }
 
 export interface BillWithImpacts extends Bill {

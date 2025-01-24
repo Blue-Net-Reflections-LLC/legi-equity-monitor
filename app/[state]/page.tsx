@@ -41,6 +41,8 @@ async function getBills(
       b.session_title,
       b.session_year_start,
       b.session_year_end,
+      b.updated,
+      b.created,
       (
         SELECT json_agg(json_build_object(
           'people_id', sp.people_id,
