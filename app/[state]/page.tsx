@@ -54,6 +54,7 @@ async function getBills(
       ) as sponsors
     FROM lsv_bill b
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    AND b.bill_type_id = 1  -- Only show bills
     ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
     ORDER BY b.status_date DESC NULLS LAST
     LIMIT ${pageSize} 
@@ -65,6 +66,7 @@ async function getBills(
     SELECT COUNT(DISTINCT b.bill_id) 
     FROM lsv_bill b
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    AND b.bill_type_id = 1  -- Only show bills
     ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
   ` as unknown as [{ count: string }];
 
