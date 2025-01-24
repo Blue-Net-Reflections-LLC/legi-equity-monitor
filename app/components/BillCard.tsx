@@ -28,14 +28,14 @@ export function BillCard({ bill }: BillCardProps) {
     return "text-red-500";
   };
 
-  const getPartyDisplay = (sponsors: any[]) => {
-    if (!sponsors?.length) return 'Unknown';
-    debugger
+  const getPartyDisplay = (sponsors: Array<{ people_id: number; party: string; type: string }> | undefined) => {
+    if (!sponsors?.length) return 'Not Available';
+    
     // Get ONLY primary sponsors
     const primarySponsors = sponsors.filter(s => s.type === 'Primary');
     
     // If no primary sponsors found
-    if (!primarySponsors.length) return 'Unknown';
+    if (!primarySponsors.length) return 'Not Available';
 
     // Count sponsors by party
     const partyCount = primarySponsors.reduce((acc, sponsor) => {
@@ -93,14 +93,24 @@ export function BillCard({ bill }: BillCardProps) {
 
           {/* Bill Type & Sponsors */}
           <div className="flex items-center justify-between mt-4">
+            {/* Note: Committee info was added post-design, replacing redundant bill type */}
             <div className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              <span className="text-sm">{bill.bill_type_name}</span>
+              {bill.pending_committee_name ? (
+                <>
+                  <Building2 className="w-4 h-4" />
+                  <span className="text-sm">{bill.pending_committee_name}</span>
+                </>
+              ) : null}
             </div>
             <div className="flex items-center gap-4">
+              {/* Note: Sponsor count label was added post-design for better UX */}
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
-                <span className="text-sm">{bill.sponsors?.length || 0}</span>
+                <span className="text-sm">
+                  {!bill.sponsors ? 'No Sponsors' : 
+                   bill.sponsors.length === 0 ? 'No Sponsors' : 
+                   `${bill.sponsors.length} ${bill.sponsors.length === 1 ? 'Sponsor' : 'Sponsors'}`}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <Flag className="w-4 h-4" />

@@ -26,6 +26,11 @@ export interface Bill {
   session_title: string;
   session_year_start: number;
   session_year_end: number;
+  sponsors?: Array<{
+    people_id: number;
+    party: string;
+    type: 'Primary' | 'Co';
+  }>;
 }
 
 export interface BillWithImpacts extends Bill {
