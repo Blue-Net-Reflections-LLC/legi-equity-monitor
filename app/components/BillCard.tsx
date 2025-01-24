@@ -70,11 +70,12 @@ export function BillCard({ bill }: BillCardProps) {
     return 'Non-partisan';
   };
 
-  const getImpactDisplay = (analysis: { overall_score: number, overall_sentiment: string, bias_detected: boolean }) => {
+  const getImpactDisplay = (analysis: { overall_score: number, overall_sentiment: string, bias_detected: boolean } | undefined) => {
     if (!analysis) return { 
       color: "text-neutral-500", 
       label: "Pending Analysis",
-      Icon: MinusCircle
+      Icon: MinusCircle,
+      score: 0
     };
     
     // Get the higher score between positive impact and bias
@@ -195,8 +196,9 @@ export function BillCard({ bill }: BillCardProps) {
           {/* Impact bars in a single row with fixed spacing */}
           <div className="flex items-start space-x-4">
             {bill.analysis_results?.categories && 
-              Object.entries(bill.analysis_results.categories)
+              Object.entries(bill.analysis_results?.categories ?? {})
                 .sort(([a], [b]) => {
+                  if (!a || !b) return 0;
                   const aIndex = CATEGORY_ORDER.indexOf(a);
                   const bIndex = CATEGORY_ORDER.indexOf(b);
                   return aIndex - bIndex;
