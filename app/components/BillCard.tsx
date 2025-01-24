@@ -103,8 +103,8 @@ export function BillCard({ bill }: BillCardProps) {
       href={`/${stateCode}/bill/${bill.bill_id}`}
       className="block transition-all hover:scale-[1.02]"
     >
-      <Card className="w-full transition-shadow hover:shadow-lg">
-        <CardHeader className="p-6">
+      <Card className="w-full h-full transition-shadow hover:shadow-lg flex flex-col">
+        <CardHeader className="p-6 flex-1">
           {/* Top Row: Bill Number, Status, Impact */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export function BillCard({ bill }: BillCardProps) {
 
           {/* Title with tooltip */}
           <h2 
-            className="text-xl font-semibold mt-4 line-clamp-1" 
+            className="text-xl font-semibold mt-4 line-clamp-1 min-h-[2rem]"
             title={bill.title}
           >
             {bill.title}
@@ -180,11 +180,18 @@ export function BillCard({ bill }: BillCardProps) {
         </CardHeader>
 
         <CardContent className="p-6 pt-0">
-          <div className="flex flex-wrap gap-6">
-            <DemographicImpact category="Race" score={impactScores.race} />
-            <DemographicImpact category="Age" score={impactScores.age} />
-            <DemographicImpact category="Income" score={impactScores.income} />
-            <DemographicImpact category="Disability" score={impactScores.disability} />
+          <div className="flex flex-wrap gap-y-4">
+            {bill.analysis_results?.categories && 
+              Object.entries(bill.analysis_results.categories).map(([category, data]) => (
+                <div key={category} className="w-1/3 pr-4 last:pr-0">
+                  <DemographicImpact 
+                    category={category}
+                    score={data.score}
+                    sentiment={data.sentiment}
+                  />
+                </div>
+              ))
+            }
           </div>
         </CardContent>
       </Card>

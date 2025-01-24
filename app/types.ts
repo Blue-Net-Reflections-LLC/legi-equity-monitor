@@ -37,6 +37,10 @@ export interface Bill {
     overall_score: number;
     overall_sentiment: 'POSITIVE' | 'NEGATIVE';
     bias_detected: boolean;
+    categories?: Record<string, {
+      score: number;
+      sentiment: 'POSITIVE' | 'NEGATIVE';
+    }>;
   };
 }
 

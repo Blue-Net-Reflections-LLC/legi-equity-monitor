@@ -70,7 +70,26 @@ async function getBills(
               THEN 'POSITIVE' 
               ELSE 'NEGATIVE'
             END,
-            'bias_detected', bar.overall_bias_score >= 0.6
+            'bias_detected', bar.overall_bias_score >= 0.6,
+            'categories', (
+              SELECT json_object_agg(
+                category,
+                json_build_object(
+                  'score', CASE 
+                    WHEN positive_impact_score >= bias_score THEN positive_impact_score * 100
+                    ELSE bias_score * 100
+                  END,
+                  'sentiment', CASE 
+                    WHEN positive_impact_score >= bias_score THEN 'POSITIVE'
+                    ELSE 'NEGATIVE'
+                  END
+                )
+              )
+              FROM bill_analysis_category_scores
+              WHERE analysis_id = bar.analysis_id
+              AND category IN ('race', 'religion', 'age', 'disability', 'gender', 
+                              'income', 'education', 'language', 'nationality')
+            )
           )
           ELSE NULL
         END

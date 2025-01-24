@@ -2,11 +2,21 @@ import { Users, Baby, DollarSign, Heart } from 'lucide-react';
 import { Progress } from '@/app/components/ui/progress';
 
 interface DemographicImpactProps {
-  category: 'Race' | 'Age' | 'Income' | 'Disability';
+  category: string;
   score: number;
+  sentiment: 'POSITIVE' | 'NEGATIVE';
 }
 
-export function DemographicImpact({ category, score }: DemographicImpactProps) {
+export function DemographicImpact({ category, score, sentiment }: DemographicImpactProps) {
+  const barColor = sentiment === 'POSITIVE' ? 'bg-emerald-500' : 'bg-red-500';
+  
+  const toTitleCase = (str: string) => {
+    return str
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const getIcon = () => {
     switch (category) {
       case 'Race':
@@ -21,15 +31,17 @@ export function DemographicImpact({ category, score }: DemographicImpactProps) {
   };
 
   return (
-    <div className="flex-1 min-w-[140px]">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center">
-          {getIcon()}
-          <span className="text-sm font-medium capitalize">{category}</span>
-        </div>
-        <span className="text-sm font-semibold">{score}%</span>
+    <div className="flex-1 min-w-[200px]">
+      <div className="flex justify-between mb-1">
+        <span className="text-sm font-medium">{toTitleCase(category)}</span>
+        <span className="text-sm font-medium">{score}%</span>
       </div>
-      <Progress value={score} className="h-2 rounded-full" />
+      <div className="w-full bg-neutral-200 dark:bg-neutral-700 h-2 rounded-full">
+        <div 
+          className={`${barColor} h-2 rounded-full transition-all`} 
+          style={{ width: `${score}%` }}
+        />
+      </div>
     </div>
   );
 } 
