@@ -9,6 +9,18 @@ interface BillCardProps {
   bill: Bill
 }
 
+const CATEGORY_ORDER = [
+  'race',
+  'religion',
+  'age',
+  'disability',
+  'gender',
+  'income',
+  'education',
+  'language',
+  'nationality'
+];
+
 export function BillCard({ bill }: BillCardProps) {
   const pathname = usePathname();
   const stateCode = pathname.split('/').filter(Boolean)[0];
@@ -180,17 +192,24 @@ export function BillCard({ bill }: BillCardProps) {
         </CardHeader>
 
         <CardContent className="p-6 pt-0">
-          <div className="flex flex-wrap gap-y-4">
+          {/* Impact bars in a single row with fixed spacing */}
+          <div className="flex items-start space-x-4">
             {bill.analysis_results?.categories && 
-              Object.entries(bill.analysis_results.categories).map(([category, data]) => (
-                <div key={category} className="w-1/3 pr-4 last:pr-0">
-                  <DemographicImpact 
-                    category={category}
-                    score={data.score}
-                    sentiment={data.sentiment}
-                  />
-                </div>
-              ))
+              Object.entries(bill.analysis_results.categories)
+                .sort(([a], [b]) => {
+                  const aIndex = CATEGORY_ORDER.indexOf(a);
+                  const bIndex = CATEGORY_ORDER.indexOf(b);
+                  return aIndex - bIndex;
+                })
+                .map(([category, data]) => (
+                  <div key={category} className="flex-1">
+                    <DemographicImpact 
+                      category={category}
+                      score={data.score}
+                      sentiment={data.sentiment}
+                    />
+                  </div>
+                ))
             }
           </div>
         </CardContent>

@@ -31,8 +31,8 @@ export function DemographicImpact({ category, score, sentiment }: DemographicImp
   };
 
   return (
-    <div className="flex-1 min-w-[200px]">
-      <div className="flex justify-between mb-1">
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-1">
         <span className="text-sm font-medium">{toTitleCase(category)}</span>
         <span className="text-sm font-medium">{score}%</span>
       </div>
