@@ -40,7 +40,18 @@ async function getBills(
       b.session_name,
       b.session_title,
       b.session_year_start,
-      b.session_year_end
+      b.session_year_end,
+      (
+        SELECT json_agg(json_build_object(
+          'people_id', sp.people_id,
+          'party', party.party_name,
+          'type', CASE WHEN sp.sponsor_order = 1 THEN 'Primary' ELSE 'Co' END
+        ))
+        FROM ls_bill_sponsor sp
+        JOIN ls_people p ON sp.people_id = p.people_id
+        JOIN ls_party party ON p.party_id = party.party_id
+        WHERE sp.bill_id = b.bill_id
+      ) as sponsors
     FROM lsv_bill b
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
     ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
