@@ -1,5 +1,6 @@
 import { Users, Baby, DollarSign, Heart } from 'lucide-react';
 import { Progress } from '@/app/components/ui/progress';
+import { useState, useEffect } from 'react';
 
 interface DemographicImpactProps {
   category: string;
@@ -8,8 +9,16 @@ interface DemographicImpactProps {
 }
 
 export function DemographicImpact({ category, score, sentiment }: DemographicImpactProps) {
+  const [currentWidth, setCurrentWidth] = useState(0);
   const barColor = sentiment === 'POSITIVE' ? 'bg-emerald-500' : 'bg-red-500';
   
+  useEffect(() => {
+    // Start animation after mount
+    requestAnimationFrame(() => {
+      setCurrentWidth(score);
+    });
+  }, [score]);
+
   const toTitleCase = (str: string) => {
     return str
       .split('_')
@@ -40,8 +49,8 @@ export function DemographicImpact({ category, score, sentiment }: DemographicImp
       {/* Progress bar */}
       <div className="w-full bg-neutral-200 dark:bg-neutral-700 h-2 rounded-full">
         <div 
-          className={`${barColor} h-2 rounded-full transition-all`} 
-          style={{ width: `${score}%` }}
+          className={`${barColor} h-2 rounded-full transition-all duration-750 linear`}
+          style={{ width: `${currentWidth}%` }}
         />
       </div>
 
