@@ -19,8 +19,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": ["./*"],
+      "@/components/*": ["app/components/*"],
+      "@/lib/*": ["lib/*"],
+      "@/ui/*": ["app/components/ui/*"]
+    },
+    "baseUrl": "."
   },
   "ts-node": {
     "esm": true,

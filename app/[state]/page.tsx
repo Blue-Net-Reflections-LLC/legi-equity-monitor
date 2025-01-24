@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import BillList from "@/app/components/BillList";
+import { BillList } from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import { Bill } from "@/app/types";
@@ -40,9 +40,63 @@ async function getBills(
       b.session_name,
       b.session_title,
       b.session_year_start,
-      b.session_year_end
+      b.session_year_end,
+      b.updated,
+      b.created,
+      (
+        SELECT json_agg(json_build_object(
+          'people_id', sp.people_id,
+          'party', party.party_name,
+          'type', CASE WHEN sp.sponsor_order = 1 THEN 'Primary' ELSE 'Co' END
+        ))
+        FROM ls_bill_sponsor sp
+        JOIN ls_people p ON sp.people_id = p.people_id
+        JOIN ls_party party ON p.party_id = party.party_id
+        WHERE sp.bill_id = b.bill_id
+      ) as sponsors,
+      (
+        SELECT CASE 
+          WHEN EXISTS (
+            SELECT 1 FROM bill_analysis_results bar WHERE bar.bill_id = b.bill_id
+          )
+          THEN json_build_object(
+            'overall_score', CASE 
+              WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
+              THEN bar.overall_positive_impact_score * 100
+              ELSE bar.overall_bias_score * 100
+            END,
+            'overall_sentiment', CASE 
+              WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
+              THEN 'POSITIVE' 
+              ELSE 'NEGATIVE'
+            END,
+            'bias_detected', bar.overall_bias_score >= 0.6,
+            'categories', (
+              SELECT json_object_agg(
+                category,
+                json_build_object(
+                  'score', CASE 
+                    WHEN positive_impact_score >= bias_score THEN positive_impact_score * 100
+                    ELSE bias_score * 100
+                  END,
+                  'sentiment', CASE 
+                    WHEN positive_impact_score >= bias_score THEN 'POSITIVE'
+                    ELSE 'NEGATIVE'
+                  END
+                )
+              )
+              FROM bill_analysis_category_scores
+              WHERE analysis_id = bar.analysis_id
+            )
+          )
+          ELSE NULL
+        END
+        FROM bill_analysis_results bar
+        WHERE bar.bill_id = b.bill_id
+      ) as analysis_results
     FROM lsv_bill b
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    AND b.bill_type_id = 1  -- Only show bills
     ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
     ORDER BY b.status_date DESC NULLS LAST
     LIMIT ${pageSize} 
@@ -54,6 +108,7 @@ async function getBills(
     SELECT COUNT(DISTINCT b.bill_id) 
     FROM lsv_bill b
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    AND b.bill_type_id = 1  -- Only show bills
     ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
   ` as unknown as [{ count: string }];
 
@@ -111,7 +166,7 @@ export default async function StatePage({
       </section>
 
       {/* Bills Section */}
-      <section className="py-4 px-4">
+      <section className="py-4 md:px-0 px-4">
         <div className="max-w-7xl mx-auto space-y-4">
           <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center">

@@ -1,5 +1,5 @@
 import sql from '@/lib/db';
-import BillList from '@/app/components/BillList';
+import { BillList } from '@/app/components/BillList';
 import SearchForm from '@/app/search/SearchForm';
 import { BillWithImpacts } from '@/app/types';
 
