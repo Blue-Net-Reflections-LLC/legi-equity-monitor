@@ -33,6 +33,11 @@ export interface Bill {
   }>;
   created: Date;
   updated: Date;
+  analysis_results?: {
+    overall_score: number;
+    overall_sentiment: 'POSITIVE' | 'NEGATIVE';
+    bias_detected: boolean;
+  };
 }
 
 export interface BillWithImpacts extends Bill {

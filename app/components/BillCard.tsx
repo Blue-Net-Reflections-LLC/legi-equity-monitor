@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Card, CardHeader, CardContent } from "@/app/components/ui/card"
 import { DemographicImpact } from "@/app/components/DemographicImpact"
-import { Building2, Users, Flag } from "lucide-react"
+import { Building2, Users, Flag, AlertTriangle, CheckCircle, MinusCircle } from "lucide-react"
 import { Bill } from "@/app/types"
 
 interface BillCardProps {
@@ -57,6 +57,47 @@ export function BillCard({ bill }: BillCardProps) {
 
     return 'Non-partisan';
   };
+
+  const getImpactDisplay = (analysis: { overall_score: number, overall_sentiment: string, bias_detected: boolean }) => {
+    if (!analysis) return { 
+      color: "text-neutral-500", 
+      label: "Pending Analysis",
+      Icon: MinusCircle
+    };
+    
+    // Get the higher score between positive impact and bias
+    const positiveScore = analysis.overall_sentiment === 'POSITIVE' ? analysis.overall_score : 0;
+    const biasScore = analysis.bias_detected ? analysis.overall_score : 0;
+    
+    // High positive impact (green)
+    if (positiveScore >= 60) {
+      return { 
+        color: "text-emerald-500", 
+        label: "Positive Impact",
+        Icon: CheckCircle,
+        score: positiveScore
+      };
+    }
+    
+    // High bias (red)
+    if (biasScore >= 60) {
+      return { 
+        color: "text-red-500", 
+        label: "High Bias",
+        Icon: AlertTriangle,
+        score: biasScore
+      };
+    }
+    
+    // Neutral - show the higher of the two scores
+    return { 
+      color: "text-neutral-500", 
+      label: "Neutral Impact",
+      Icon: MinusCircle,
+      score: Math.max(positiveScore, biasScore)
+    };
+  };
+
   return (
     <Link 
       href={`/${stateCode}/bill/${bill.bill_id}`}
@@ -72,9 +113,17 @@ export function BillCard({ bill }: BillCardProps) {
                 {bill.status_desc}
               </span>
             </div>
-            <span className={`${getImpactColor(impactScores.overall)}`}>
-              {impactScores.overall}% Impact
-            </span>
+            {bill.analysis_results ? (
+              <span className={`flex items-center gap-1 ${getImpactDisplay(bill.analysis_results).color}`}>
+                {(() => {
+                  const { Icon } = getImpactDisplay(bill.analysis_results);
+                  return <Icon className="w-4 h-4" />;
+                })()}
+                {getImpactDisplay(bill.analysis_results).score >= 60 
+                  ? `${bill.analysis_results.overall_score}% ${getImpactDisplay(bill.analysis_results).label}`
+                  : 'Neutral'}
+              </span>
+            ) : null}
           </div>
 
           {/* Title with tooltip */}

@@ -53,7 +53,30 @@ async function getBills(
         JOIN ls_people p ON sp.people_id = p.people_id
         JOIN ls_party party ON p.party_id = party.party_id
         WHERE sp.bill_id = b.bill_id
-      ) as sponsors
+      ) as sponsors,
+      (
+        SELECT CASE 
+          WHEN EXISTS (
+            SELECT 1 FROM bill_analysis_results bar WHERE bar.bill_id = b.bill_id
+          )
+          THEN json_build_object(
+            'overall_score', CASE 
+              WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
+              THEN bar.overall_positive_impact_score * 100
+              ELSE bar.overall_bias_score * 100
+            END,
+            'overall_sentiment', CASE 
+              WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
+              THEN 'POSITIVE' 
+              ELSE 'NEGATIVE'
+            END,
+            'bias_detected', bar.overall_bias_score >= 0.6
+          )
+          ELSE NULL
+        END
+        FROM bill_analysis_results bar
+        WHERE bar.bill_id = b.bill_id
+      ) as analysis_results
     FROM lsv_bill b
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
     AND b.bill_type_id = 1  -- Only show bills
