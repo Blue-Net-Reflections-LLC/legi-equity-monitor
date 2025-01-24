@@ -87,8 +87,6 @@ async function getBills(
               )
               FROM bill_analysis_category_scores
               WHERE analysis_id = bar.analysis_id
-              AND category IN ('race', 'religion', 'age', 'disability', 'gender', 
-                              'income', 'education', 'language', 'nationality')
             )
           )
           ELSE NULL

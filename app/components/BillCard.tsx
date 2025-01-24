@@ -25,21 +25,6 @@ export function BillCard({ bill }: BillCardProps) {
   const pathname = usePathname();
   const stateCode = pathname.split('/').filter(Boolean)[0];
 
-  // TODO: Get these from analysis results
-  const impactScores = {
-    overall: 80,
-    race: 75,
-    age: 85,
-    income: 80,
-    disability: 95
-  };
-
-  const getImpactColor = (score: number) => {
-    if (score >= 80) return "text-emerald-500";
-    if (score >= 60) return "text-amber-500";
-    return "text-red-500";
-  };
-
   const getPartyDisplay = (sponsors: Array<{ people_id: number; party: string; type: string }> | undefined) => {
     if (!sponsors?.length) return 'Not Available';
     

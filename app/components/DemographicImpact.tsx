@@ -1,5 +1,3 @@
-import { Users, Baby, DollarSign, Heart } from 'lucide-react';
-import { Progress } from '@/app/components/ui/progress';
 import { useState, useEffect } from 'react';
 
 interface DemographicImpactProps {
@@ -24,19 +22,6 @@ export function DemographicImpact({ category, score, sentiment }: DemographicImp
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
-  };
-
-  const getIcon = () => {
-    switch (category) {
-      case 'Race':
-        return <Users className="w-4 h-4 mr-2" />;
-      case 'Age':
-        return <Baby className="w-4 h-4 mr-2" />;
-      case 'Income':
-        return <DollarSign className="w-4 h-4 mr-2" />;
-      case 'Disability':
-        return <Heart className="w-4 h-4 mr-2" />;
-    }
   };
 
   return (
