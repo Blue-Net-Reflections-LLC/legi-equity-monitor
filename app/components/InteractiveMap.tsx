@@ -44,8 +44,8 @@ export default function InteractiveMap() {
       };
 
       document.addEventListener("mousemove", handleMouseMove);
-      const paths = document.querySelectorAll("path, circle, image");
-      paths.forEach(element => {
+      const paths = document.querySelector("#us-map")?.querySelectorAll("path, circle, image");
+      paths?.forEach(element => {
         element.addEventListener("mouseenter", handleHover);
         element.addEventListener("mouseleave", handleMouseLeave);
         element.addEventListener("click", handleStateClick);
@@ -74,7 +74,7 @@ export default function InteractiveMap() {
         preserveAspectRatio="xMinYMin meet"
         x="0"
         y="0"
-        viewBox="174 100 959 593"
+        viewBox="0 0 1100 700"
         className="w-full h-full"
       >
         <g id="states">
