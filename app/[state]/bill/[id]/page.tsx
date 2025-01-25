@@ -302,7 +302,7 @@ export default async function BillPage({
                 {bill.state_name} Legislature • {bill.session_title}
               </div>
               <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mt-2">
-                {bill.bill_number}: {bill.title}
+                {bill.bill_number}{bill.title !== bill.description && `: ${bill.title}`}
               </h1>
             </div>
             <BackButton />

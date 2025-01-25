@@ -44,6 +44,20 @@ const SUBGROUP_NAMES: Record<string, string> = {
   'CY': 'Children and Youth',
   'AD': 'Adults',
   'OA': 'Older Adults (Seniors)',
+  // Nationality
+  'IM': 'Immigrant Communities',
+  'NC': 'Naturalized Citizens',
+  'FN': 'Foreign Nationals',
+  // Sexual Orientation
+  'LQ': 'LGBTQ+',
+  'HT': 'Heterosexual',
+  'BI': 'Bisexual',
+  'PS': 'Pansexual',
+  'AS': 'Asexual',
+  // Veterans
+  'VT': 'Veterans (General)',
+  'DV': 'Disabled Veterans',
+  'RM': 'Retired Military Personnel',
   // Disability
   'PD': 'Physical Disabilities',
   'MH': 'Mental Health Challenges',
