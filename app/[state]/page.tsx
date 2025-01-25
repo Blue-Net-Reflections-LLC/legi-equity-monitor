@@ -13,9 +13,22 @@ async function getBills(
   } = {}
 ): Promise<{ bills: Bill[], totalCount: number }> {
   const offset = (page - 1) * pageSize;
-
+  
   // Get bills with pagination using LegiScan view
   const bills = await db`
+    WITH latest_history AS (
+      SELECT 
+        bill_id,
+        history_date as latest_action_date
+      FROM ls_bill_history
+      WHERE (bill_id, history_step) IN (
+        SELECT 
+          bill_id,
+          MAX(history_step)
+        FROM ls_bill_history
+        GROUP BY bill_id
+      )
+    )
     SELECT 
       b.bill_id::integer,
       b.bill_number,
@@ -43,6 +56,7 @@ async function getBills(
       b.session_year_end,
       b.updated,
       b.created,
+      h.latest_action_date,
       (
         SELECT json_agg(json_build_object(
           'people_id', sp.people_id,
@@ -95,10 +109,11 @@ async function getBills(
         WHERE bar.bill_id = b.bill_id
       ) as analysis_results
     FROM lsv_bill b
+    LEFT JOIN latest_history h ON b.bill_id = h.bill_id
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
     AND b.bill_type_id = 1  -- Only show bills
     ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
-    ORDER BY b.status_date DESC NULLS LAST
+    ORDER BY h.latest_action_date DESC NULLS LAST, b.bill_id DESC
     LIMIT ${pageSize} 
     OFFSET ${offset}
   ` as Bill[];
@@ -128,6 +143,7 @@ export default async function StatePage({
   const stateCode = params.state.toUpperCase();
   const page = parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1');
   const pageSize = 12;
+  const offset = (page - 1) * pageSize;
 
   const filters = {
     committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
@@ -171,7 +187,7 @@ export default async function StatePage({
           <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-500">
-                Showing {bills.length} of {totalCount} bills
+                Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}
               </div>
               {/* <FilterDrawer /> */}
             </div>

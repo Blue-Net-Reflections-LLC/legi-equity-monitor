@@ -10,7 +10,8 @@ export interface Bill {
   state_name: string;
   status_id: number;
   status_desc: string;
-  status_date: Date | null;
+  status_date: Date;
+  latest_action_date: Date;
   bill_type_id: number;
   bill_type_name: string;
   body_id: number | null;

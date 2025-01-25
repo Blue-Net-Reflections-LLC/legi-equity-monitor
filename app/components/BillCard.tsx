@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Card, CardHeader, CardContent } from "@/app/components/ui/card"
+import { Card, CardHeader } from "@/app/components/ui/card"
 import { DemographicImpact } from "@/app/components/DemographicImpact"
 import { Building2, Users, Flag, AlertTriangle, CheckCircle, MinusCircle } from "lucide-react"
 import { Bill } from "@/app/types"
@@ -8,18 +8,6 @@ import { Bill } from "@/app/types"
 interface BillCardProps {
   bill: Bill
 }
-
-const CATEGORY_ORDER = [
-  'race',
-  'religion',
-  'age',
-  'disability',
-  'gender',
-  'income',
-  'education',
-  'language',
-  'nationality'
-];
 
 export function BillCard({ bill }: BillCardProps) {
   const pathname = usePathname();
@@ -101,8 +89,8 @@ export function BillCard({ bill }: BillCardProps) {
       href={`/${stateCode}/bill/${bill.bill_id}`}
       className="block transition-all hover:scale-[1.02]"
     >
-      <Card className="w-full h-full transition-shadow hover:shadow-lg flex flex-col">
-        <CardHeader className="p-6 flex-1">
+      <Card className="w-full h-full transition-shadow hover:shadow-lg">
+        <CardHeader className="p-6">
           {/* Top Row: Bill Number, Status, Impact */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -133,16 +121,22 @@ export function BillCard({ bill }: BillCardProps) {
 
           {/* Title with tooltip */}
           <h2 
-            className="text-xl font-semibold mt-4 line-clamp-1 min-h-[2rem]"
+            className={`text-xl font-semibold mt-4 leading-7 ${
+              bill.description === bill.title 
+                ? 'line-clamp-2 mb-2' 
+                : 'line-clamp-1'
+            }`}
             title={bill.title}
           >
             {bill.title}
           </h2>
 
           {/* Description with truncation */}
-          <p className="text-neutral-600 dark:text-neutral-400 mt-2 line-clamp-2">
-            {bill.description}
-          </p>
+          {bill.description !== bill.title && (
+            <p className="text-neutral-600 dark:text-neutral-400 mt-2 line-clamp-2">
+              {bill.description}
+            </p>
+          )}
 
           {/* Committee info */}
           {bill.pending_committee_name && (
@@ -155,58 +149,68 @@ export function BillCard({ bill }: BillCardProps) {
           )}
 
           {/* Sponsors Info and Date */}
-          <div className="flex items-center justify-between mt-4">
-            {/* Date with label */}
-            <div className="text-sm text-neutral-600 dark:text-neutral-400">
-              {bill.updated && (
-                <>
-                  {new Date(bill.created).getTime() === new Date(bill.updated).getTime() ? 'Created' : 'Updated'}: {' '}
-                  {new Date(bill.updated).toLocaleDateString()}
-                </>
-              )}
+          <div className="grid grid-cols-3 gap-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg mt-4">
+            {/* Action Date */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Date
+              </div>
+              <div className="text-sm">
+                {new Date(bill.latest_action_date).toLocaleDateString()}
+              </div>
             </div>
             
-            {/* Sponsors and Party */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
+            {/* Sponsors */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
                 <Users className="w-4 h-4" />
-                <span className="text-sm">
-                  {!bill.sponsors ? 'No Sponsors' : 
-                   bill.sponsors.length === 0 ? 'No Sponsors' : 
-                   `${bill.sponsors.length} ${bill.sponsors.length === 1 ? 'Sponsor' : 'Sponsors'}`}
-                </span>
+                Support
               </div>
-              <div className="hidden lg:flex items-center gap-1">
+              <div className="text-sm">
+                {!bill.sponsors ? 'No Sponsors' : 
+                 bill.sponsors.length === 0 ? 'No Sponsors' : 
+                 `${bill.sponsors.length} ${bill.sponsors.length === 1 ? 'Sponsor' : 'Sponsors'}`}
+              </div>
+            </div>
+
+            {/* Party */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
                 <Flag className="w-4 h-4" />
-                <span className="text-sm">{getPartyDisplay(bill.sponsors)}</span>
+                Party
+              </div>
+              <div className="text-sm">
+                {getPartyDisplay(bill.sponsors)}
               </div>
             </div>
           </div>
-        </CardHeader>
 
-        <CardContent className="p-6 pt-0">
-          {/* Impact bars in a single row with fixed spacing */}
-          <div className="flex items-start space-x-4">
-            {bill.analysis_results?.categories && 
-              Object.entries(bill.analysis_results?.categories ?? {})
-                .sort(([a], [b]) => {
-                  if (!a || !b) return 0;
-                  const aIndex = CATEGORY_ORDER.indexOf(a);
-                  const bIndex = CATEGORY_ORDER.indexOf(b);
-                  return aIndex - bIndex;
-                })
-                .map(([category, data]) => (
-                  <div key={category} className="flex-1">
-                    <DemographicImpact 
-                      category={category}
-                      score={data.score}
-                      sentiment={data.sentiment}
-                    />
-                  </div>
-                ))
-            }
-          </div>
-        </CardContent>
+          {/* Impact bars - items fill space based on count, max 3 per row */}
+          {bill.analysis_results?.categories && (
+            <div className="mt-4">
+              <div 
+                className="grid gap-4"
+                style={{
+                  gridTemplateColumns: `repeat(${Math.min(Object.keys(bill.analysis_results.categories).length, 3)}, 1fr)`
+                }}
+              >
+                {Object.entries(bill.analysis_results?.categories ?? {})
+                  .map(([category, data]) => (
+                    <div key={category}>
+                      <DemographicImpact 
+                        category={category}
+                        score={data.score}
+                        sentiment={data.sentiment}
+                      />
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </CardHeader>
       </Card>
     </Link>
   )
