@@ -19,9 +19,47 @@ interface BillAnalysis {
   }>;
 }
 
-function ScoreBar({ score, label }: { score: number; label: string }) {
+const SUBGROUP_NAMES: Record<string, string> = {
+  // Race
+  'BH': 'Black/African American',
+  'AP': 'Asian/Pacific Islander',
+  'LX': 'Latinx',
+  'WH': 'White',
+  'IN': 'Indigenous/Native American',
+  // Religion
+  'MU': 'Muslim',
+  'CH': 'Christian',
+  'JW': 'Jewish',
+  'HI': 'Hindu',
+  'BD': 'Buddhist',
+  'SK': 'Sikh',
+  'AT': 'Atheist/Agnostic',
+  // Gender
+  'ML': 'Male',
+  'FM': 'Female',
+  'TG': 'Transgender',
+  'NB': 'Nonbinary',
+  'GQ': 'Genderqueer',
+  // Age
+  'CY': 'Children and Youth',
+  'AD': 'Adults',
+  'OA': 'Older Adults (Seniors)',
+  // Disability
+  'PD': 'Physical Disabilities',
+  'MH': 'Mental Health Challenges',
+  'DD': 'Developmental Disabilities'
+};
+
+function ScoreBar({ score, label, sentiment }: { score: number; label: string; sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' }) {
   const percentage = Math.round(score * 100);
-  const barColor = score > 0.66 ? 'bg-green-500' : score > 0.33 ? 'bg-yellow-500' : 'bg-red-500';
+  const barColor = 
+    percentage >= 60 
+      ? sentiment === 'POSITIVE'
+        ? 'bg-emerald-500'
+        : sentiment === 'NEGATIVE'
+          ? 'bg-red-500'
+          : 'bg-neutral-500'
+      : 'bg-neutral-500';
 
   return (
     <div className="flex items-center gap-2">
@@ -35,24 +73,46 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
 }
 
 function CategorySection({ category }: { category: BillAnalysis['demographic_categories'][0] }) {
+  const getSentimentAndScore = (positive: number, bias: number): { score: number; sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' } => {
+    const score = Math.max(positive, bias);
+    return {
+      score,
+      sentiment: score >= 0.6 
+        ? (positive >= bias ? 'POSITIVE' : 'NEGATIVE')
+        : 'NEUTRAL'
+    } as const;
+  };
+
+  const categoryAnalysis = getSentimentAndScore(category.positive_impact_score, category.bias_score);
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold capitalize">{category.category}</h3>
       <div className="space-y-2">
-        <ScoreBar score={category.positive_impact_score} label="Positive Impact" />
-        <ScoreBar score={1 - category.bias_score} label="Fairness" />
+        <ScoreBar 
+          score={categoryAnalysis.score} 
+          label="Impact Score" 
+          sentiment={categoryAnalysis.sentiment}
+        />
       </div>
       <div className="space-y-4 mt-4">
-        {category.subgroups.map((subgroup) => (
-          <div key={subgroup.code} className="border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">
-            <h4 className="text-sm font-medium">{subgroup.code}</h4>
-            <div className="space-y-2 mt-2">
-              <ScoreBar score={subgroup.positive_impact_score} label="Positive Impact" />
-              <ScoreBar score={1 - subgroup.bias_score} label="Fairness" />
+        {category.subgroups.map((subgroup) => {
+          const subgroupAnalysis = getSentimentAndScore(subgroup.positive_impact_score, subgroup.bias_score);
+          
+          return (
+            <div key={subgroup.code} className="border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">
+              <h4 className="text-sm font-medium">{SUBGROUP_NAMES[subgroup.code] || subgroup.code}</h4>
+              <div className="space-y-2 mt-2">
+                <ScoreBar 
+                  score={subgroupAnalysis.score} 
+                  label="Impact Score" 
+                  sentiment={subgroupAnalysis.sentiment}
+                />
+              </div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">{subgroup.evidence}</p>
             </div>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">{subgroup.evidence}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -63,13 +123,23 @@ export default function BillAnalysis({ analysis }: { analysis: BillAnalysis | nu
     return null;
   }
 
+  const overallAnalysis = {
+    score: Math.max(analysis.overall_analysis.positive_impact_score, analysis.overall_analysis.bias_score),
+    sentiment: analysis.overall_analysis.positive_impact_score >= analysis.overall_analysis.bias_score 
+      ? 'POSITIVE' 
+      : 'NEGATIVE'
+  } as const;
+
   return (
     <Card className="p-6 space-y-6">
       <div>
         <h2 className="text-xl font-bold mb-4">Impact Analysis</h2>
         <div className="space-y-2">
-          <ScoreBar score={analysis.overall_analysis.positive_impact_score} label="Overall Impact" />
-          <ScoreBar score={1 - analysis.overall_analysis.bias_score} label="Overall Fairness" />
+          <ScoreBar 
+            score={overallAnalysis.score} 
+            label="Overall Impact" 
+            sentiment={overallAnalysis.sentiment}
+          />
         </div>
         <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
           Confidence Level: {analysis.overall_analysis.confidence}
