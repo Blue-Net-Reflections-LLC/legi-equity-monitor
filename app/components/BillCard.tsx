@@ -133,16 +133,22 @@ export function BillCard({ bill }: BillCardProps) {
 
           {/* Title with tooltip */}
           <h2 
-            className="text-xl font-semibold mt-4 line-clamp-1 min-h-[2rem]"
+            className={`text-xl font-semibold mt-4 leading-7 ${
+              bill.description === bill.title 
+                ? 'line-clamp-2 mb-2' 
+                : 'line-clamp-1'
+            }`}
             title={bill.title}
           >
             {bill.title}
           </h2>
 
           {/* Description with truncation */}
-          <p className="text-neutral-600 dark:text-neutral-400 mt-2 line-clamp-2">
-            {bill.description}
-          </p>
+          {bill.description !== bill.title && (
+            <p className="text-neutral-600 dark:text-neutral-400 mt-2 line-clamp-2">
+              {bill.description}
+            </p>
+          )}
 
           {/* Committee info */}
           {bill.pending_committee_name && (
