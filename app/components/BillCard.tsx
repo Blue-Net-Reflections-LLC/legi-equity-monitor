@@ -101,8 +101,8 @@ export function BillCard({ bill }: BillCardProps) {
       href={`/${stateCode}/bill/${bill.bill_id}`}
       className="block transition-all hover:scale-[1.02]"
     >
-      <Card className="w-full h-full transition-shadow hover:shadow-lg flex flex-col">
-        <CardHeader className="p-6 flex-1">
+      <Card className="w-full h-full transition-shadow hover:shadow-lg">
+        <CardHeader className="p-6">
           {/* Top Row: Bill Number, Status, Impact */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export function BillCard({ bill }: BillCardProps) {
 
           {/* Committee info */}
           {bill.pending_committee_name && (
-            <div className="flex items-center gap-2 mt-4 mb-6 text-neutral-600 dark:text-neutral-400">
+            <div className="flex items-center gap-2 mt-4 text-neutral-600 dark:text-neutral-400">
               <Building2 className="w-4 h-4" />
               <span className="text-sm line-clamp-1" title={bill.pending_committee_name}>
                 {bill.pending_committee_name}
@@ -161,7 +161,7 @@ export function BillCard({ bill }: BillCardProps) {
           )}
 
           {/* Sponsors Info and Date */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+          <div className="grid grid-cols-3 gap-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg mt-4">
             {/* Action Date */}
             <div className="flex flex-col">
               <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
@@ -199,31 +199,36 @@ export function BillCard({ bill }: BillCardProps) {
               </div>
             </div>
           </div>
-        </CardHeader>
 
-        <CardContent className="p-6 pt-0">
-          {/* Impact bars in a single row with fixed spacing */}
-          <div className="flex items-start space-x-4">
-            {bill.analysis_results?.categories && 
-              Object.entries(bill.analysis_results?.categories ?? {})
-                .sort(([a], [b]) => {
-                  if (!a || !b) return 0;
-                  const aIndex = CATEGORY_ORDER.indexOf(a);
-                  const bIndex = CATEGORY_ORDER.indexOf(b);
-                  return aIndex - bIndex;
-                })
-                .map(([category, data]) => (
-                  <div key={category} className="flex-1">
-                    <DemographicImpact 
-                      category={category}
-                      score={data.score}
-                      sentiment={data.sentiment}
-                    />
-                  </div>
-                ))
-            }
-          </div>
-        </CardContent>
+          {/* Impact bars - items fill space based on count, max 3 per row */}
+          {bill.analysis_results?.categories && (
+            <div className="mt-4">
+              <div 
+                className="grid gap-4"
+                style={{
+                  gridTemplateColumns: `repeat(${Math.min(Object.keys(bill.analysis_results.categories).length, 3)}, 1fr)`
+                }}
+              >
+                {Object.entries(bill.analysis_results?.categories ?? {})
+                  .sort(([a], [b]) => {
+                    if (!a || !b) return 0;
+                    const aIndex = CATEGORY_ORDER.indexOf(a);
+                    const bIndex = CATEGORY_ORDER.indexOf(b);
+                    return aIndex - bIndex;
+                  })
+                  .map(([category, data]) => (
+                    <div key={category}>
+                      <DemographicImpact 
+                        category={category}
+                        score={data.score}
+                        sentiment={data.sentiment}
+                      />
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </CardHeader>
       </Card>
     </Link>
   )
