@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Card, CardHeader, CardContent } from "@/app/components/ui/card"
+import { Card, CardHeader } from "@/app/components/ui/card"
 import { DemographicImpact } from "@/app/components/DemographicImpact"
 import { Building2, Users, Flag, AlertTriangle, CheckCircle, MinusCircle } from "lucide-react"
 import { Bill } from "@/app/types"
@@ -8,18 +8,6 @@ import { Bill } from "@/app/types"
 interface BillCardProps {
   bill: Bill
 }
-
-const CATEGORY_ORDER = [
-  'race',
-  'religion',
-  'age',
-  'disability',
-  'gender',
-  'income',
-  'education',
-  'language',
-  'nationality'
-];
 
 export function BillCard({ bill }: BillCardProps) {
   const pathname = usePathname();
@@ -210,12 +198,6 @@ export function BillCard({ bill }: BillCardProps) {
                 }}
               >
                 {Object.entries(bill.analysis_results?.categories ?? {})
-                  .sort(([a], [b]) => {
-                    if (!a || !b) return 0;
-                    const aIndex = CATEGORY_ORDER.indexOf(a);
-                    const bIndex = CATEGORY_ORDER.indexOf(b);
-                    return aIndex - bIndex;
-                  })
                   .map(([category, data]) => (
                     <div key={category}>
                       <DemographicImpact 
