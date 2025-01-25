@@ -5,6 +5,7 @@ import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from './BackButton';
 import SponsorList from './SponsorList';
 import RollCallVotes from './RollCallVotes';
+import BillAnalysis from './BillAnalysis';
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -78,6 +79,25 @@ interface BillDocument {
   size: number;
   legiscan_url: string;
   state_url: string;
+}
+
+interface BillAnalysis {
+  overall_analysis: {
+    bias_score: number;
+    positive_impact_score: number;
+    confidence: 'High' | 'Medium' | 'Low';
+  };
+  demographic_categories: Array<{
+    category: 'race' | 'religion' | 'gender' | 'age' | 'disability' | 'socioeconomic';
+    bias_score: number;
+    positive_impact_score: number;
+    subgroups: Array<{
+      code: string;
+      bias_score: number;
+      positive_impact_score: number;
+      evidence: string;
+    }>;
+  }>;
 }
 
 async function getBillDocuments(billId: string): Promise<BillDocument[]> {
@@ -209,6 +229,49 @@ async function getBillHistory(billId: string): Promise<BillHistory[]> {
   `;
 }
 
+async function getBillAnalysis(billId: string): Promise<BillAnalysis | null> {
+  const [result] = await db`
+    SELECT 
+      bar.overall_bias_score,
+      bar.overall_positive_impact_score,
+      bar.confidence,
+      json_agg(
+        json_build_object(
+          'category', bacs.category,
+          'bias_score', bacs.bias_score,
+          'positive_impact_score', bacs.positive_impact_score,
+          'subgroups', (
+            SELECT json_agg(
+              json_build_object(
+                'code', bass.subgroup_code,
+                'bias_score', bass.bias_score,
+                'positive_impact_score', bass.positive_impact_score,
+                'evidence', bass.evidence
+              )
+            )
+            FROM bill_analysis_subgroup_scores bass
+            WHERE bass.category_score_id = bacs.category_score_id
+          )
+        )
+      ) as demographic_categories
+    FROM bill_analysis_results bar
+    LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+    WHERE bar.bill_id = ${billId}
+    GROUP BY bar.analysis_id, bar.overall_bias_score, bar.overall_positive_impact_score, bar.confidence
+  `;
+
+  if (!result) return null;
+
+  return {
+    overall_analysis: {
+      bias_score: result.overall_bias_score,
+      positive_impact_score: result.overall_positive_impact_score,
+      confidence: result.confidence
+    },
+    demographic_categories: result.demographic_categories || []
+  };
+}
+
 export default async function BillPage({ 
   params 
 }: { 
@@ -216,12 +279,13 @@ export default async function BillPage({
 }) {
   const stateCode = params.state.toUpperCase();
   
-  const [bill, sponsors, rollCalls, history, documents] = await Promise.all([
+  const [bill, sponsors, rollCalls, history, documents, analysis] = await Promise.all([
     getBill(stateCode, params.id),
     getSponsors(params.id),
     getRollCalls(params.id),
     getBillHistory(params.id),
-    getBillDocuments(params.id)
+    getBillDocuments(params.id),
+    getBillAnalysis(params.id)
   ]);
   
   if (!bill) {
@@ -257,12 +321,7 @@ export default async function BillPage({
               </div>
             </Card>
 
-            {sponsors.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Sponsors</h2>
-                <SponsorList sponsors={sponsors} />
-              </Card>
-            )}
+            <BillAnalysis analysis={analysis} />
 
             {rollCalls.length > 0 && (
               <Card className="p-6">
@@ -321,15 +380,6 @@ export default async function BillPage({
 
                 <div>
                   <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Type
-                  </div>
-                  <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                    {bill.bill_type_name} ({bill.bill_type_abbr})
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                     Chamber
                   </div>
                   <div className="mt-1 text-zinc-900 dark:text-zinc-100">
@@ -352,13 +402,7 @@ export default async function BillPage({
                     </div>
                   </div>
                 )}
-              </div>
-            </Card>
 
-            {/* Session Card */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Session Information</h3>
-              <div className="space-y-4">
                 <div>
                   <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                     Session
@@ -366,22 +410,10 @@ export default async function BillPage({
                   <div className="mt-1 text-zinc-900 dark:text-zinc-100">
                     {bill.session_title}
                   </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Period
-                  </div>
                   <div className="mt-1 text-zinc-900 dark:text-zinc-100">
                     {bill.session_year_start}-{bill.session_year_end}
                   </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Session Type
-                  </div>
-                  <div className="mt-1 flex gap-2">
+                  <div className="mt-2 flex gap-2">
                     {bill.session_special === 1 && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                         Special Session
@@ -401,6 +433,17 @@ export default async function BillPage({
                 </div>
               </div>
             </Card>
+
+            {/* Sponsors Card */}
+            {sponsors.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Sponsors</h2>
+                <SponsorList sponsors={sponsors.sort((a, b) => 
+                  a.sponsor_type_desc === 'Primary Sponsor' ? -1 : 
+                  b.sponsor_type_desc === 'Primary Sponsor' ? 1 : 0
+                )} />
+              </Card>
+            )}
 
             {/* Documents Card */}
             {documents.length > 0 && (
