@@ -157,13 +157,8 @@ export function BillCard({ bill }: BillCardProps) {
           {/* Sponsors Info and Date */}
           <div className="flex items-center justify-between mt-4">
             {/* Date with label */}
-            <div className="text-sm text-neutral-600 dark:text-neutral-400">
-              {bill.updated && (
-                <>
-                  {new Date(bill.created).getTime() === new Date(bill.updated).getTime() ? 'Created' : 'Updated'}: {' '}
-                  {new Date(bill.updated).toLocaleDateString()}
-                </>
-              )}
+            <div className="text-sm text-neutral-600 dark:text-zinc-400">
+              Action Date: {new Date(bill.latest_action_date).toLocaleDateString()}
             </div>
             
             {/* Sponsors and Party */}
