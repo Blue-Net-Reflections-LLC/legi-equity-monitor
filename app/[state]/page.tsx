@@ -143,6 +143,7 @@ export default async function StatePage({
   const stateCode = params.state.toUpperCase();
   const page = parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1');
   const pageSize = 12;
+  const offset = (page - 1) * pageSize;
 
   const filters = {
     committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
@@ -186,7 +187,7 @@ export default async function StatePage({
           <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-500">
-                Showing {bills.length} of {totalCount} bills
+                Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}
               </div>
               {/* <FilterDrawer /> */}
             </div>
