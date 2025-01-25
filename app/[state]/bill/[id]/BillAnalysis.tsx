@@ -110,7 +110,7 @@ function CategorySection({ category }: { category: BillAnalysis['demographic_cat
         />
       </div>
       <div className="space-y-4 mt-4">
-        {category.subgroups.map((subgroup) => {
+        {category.subgroups?.filter(Boolean).map((subgroup) => {
           const subgroupAnalysis = getSentimentAndScore(subgroup.positive_impact_score, subgroup.bias_score);
           
           return (
