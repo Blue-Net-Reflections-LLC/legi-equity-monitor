@@ -81,6 +81,18 @@ interface BillDocument {
   state_url: string;
 }
 
+interface Amendment {
+  amendment_id: number;
+  amendment_date: Date;
+  amendment_title: string;
+  amendment_desc: string;
+  adopted: number;
+  mime_type: string;
+  mime_ext: string;
+  legiscan_url: string;
+  state_url: string;
+}
+
 interface BillAnalysis {
   overall_analysis: {
     bias_score: number;
@@ -144,6 +156,13 @@ async function getBillDocuments(billId: string): Promise<BillDocument[]> {
 
 async function getBill(stateCode: string, billId: string): Promise<Bill | null> {
   const [bill] = await db`
+    WITH first_history AS (
+      SELECT history_date
+      FROM lsv_bill_history
+      WHERE bill_id = ${billId}
+      ORDER BY history_step ASC
+      LIMIT 1
+    )
     SELECT 
       b.bill_id,
       b.bill_number,
@@ -153,7 +172,10 @@ async function getBill(stateCode: string, billId: string): Promise<Bill | null> 
       b.state_name,
       b.status_id,
       b.status_desc,
-      b.status_date,
+      CASE 
+        WHEN b.status_desc = 'Introduced' THEN fh.history_date
+        ELSE b.status_date
+      END as status_date,
       b.bill_type_id,
       b.bill_type_name,
       b.bill_type_abbr,
@@ -175,6 +197,7 @@ async function getBill(stateCode: string, billId: string): Promise<Bill | null> 
       b.session_sine_die,
       b.session_prior
     FROM lsv_bill b
+    LEFT JOIN first_history fh ON true
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
     AND b.bill_id = ${billId}
   `;
@@ -229,6 +252,24 @@ async function getBillHistory(billId: string): Promise<BillHistory[]> {
   `;
 }
 
+async function getAmendments(billId: string): Promise<Amendment[]> {
+  return db`
+    SELECT 
+      amendment_id,
+      amendment_date,
+      amendment_title,
+      amendment_desc,
+      adopted,
+      mime_type,
+      mime_ext,
+      legiscan_url,
+      state_url
+    FROM lsv_bill_amendment
+    WHERE bill_id = ${billId}
+    ORDER BY amendment_date DESC
+  `;
+}
+
 async function getBillAnalysis(billId: string): Promise<BillAnalysis | null> {
   const [result] = await db`
     SELECT 
@@ -279,13 +320,14 @@ export default async function BillPage({
 }) {
   const stateCode = params.state.toUpperCase();
   
-  const [bill, sponsors, rollCalls, history, documents, analysis] = await Promise.all([
+  const [bill, sponsors, rollCalls, history, documents, analysis, amendments] = await Promise.all([
     getBill(stateCode, params.id),
     getSponsors(params.id),
     getRollCalls(params.id),
     getBillHistory(params.id),
     getBillDocuments(params.id),
-    getBillAnalysis(params.id)
+    getBillAnalysis(params.id),
+    getAmendments(params.id)
   ]);
   
   if (!bill) {
@@ -323,37 +365,106 @@ export default async function BillPage({
 
             <BillAnalysis analysis={analysis} />
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {history.length > 0 && (
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Bill History</h2>
+                  <div className="relative">
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700" />
+                    <div className="space-y-6">
+                      {history.map((event) => (
+                        <div key={event.history_step} className="relative pl-8">
+                          <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 ring-4 ring-white dark:ring-zinc-900" />
+                          <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                            {new Date(event.history_date).toLocaleDateString()}
+                          </div>
+                          <div className="mt-1 text-zinc-900 dark:text-zinc-100">
+                            {event.history_action}
+                          </div>
+                          {event.history_body_name && (
+                            <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                              {event.history_body_name}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {amendments.length > 0 && (
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Amendments</h2>
+                  <div className="space-y-4">
+                    {amendments.map((amendment) => (
+                      <div 
+                        key={amendment.amendment_id}
+                        className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium text-zinc-900 dark:text-white">
+                              {amendment.amendment_title}
+                            </h3>
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                              {amendment.amendment_desc}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              {amendment.amendment_date && (
+                                <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                                  {new Date(amendment.amendment_date).toLocaleDateString()}
+                                </span>
+                              )}
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                amendment.adopted 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                              }`}>
+                                {amendment.adopted ? 'Adopted' : 'Not Adopted'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          {amendment.legiscan_url && (
+                            <a 
+                              href={amendment.legiscan_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+                            >
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                              View on LegiScan
+                            </a>
+                          )}
+                          {amendment.state_url && (
+                            <a 
+                              href={amendment.state_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-md text-zinc-900 bg-zinc-100 hover:bg-zinc-200 dark:text-zinc-100 dark:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors"
+                            >
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                              View on State Site
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
+
             {rollCalls.length > 0 && (
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Roll Call Votes</h2>
                 <RollCallVotes rollCalls={rollCalls} />
-              </Card>
-            )}
-
-            {history.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Bill History</h2>
-                <div className="relative">
-                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700" />
-                  <div className="space-y-6">
-                    {history.map((event) => (
-                      <div key={event.history_step} className="relative pl-8">
-                        <div className="absolute left-2.5 top-2 w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400 ring-4 ring-white dark:ring-zinc-900" />
-                        <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                          {new Date(event.history_date).toLocaleDateString()}
-                        </div>
-                        <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                          {event.history_action}
-                        </div>
-                        {event.history_body_name && (
-                          <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                            {event.history_body_name}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </Card>
             )}
           </div>
@@ -404,15 +515,6 @@ export default async function BillPage({
                 )}
 
                 <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Session
-                  </div>
-                  <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                    {bill.session_title}
-                  </div>
-                  <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                    {bill.session_year_start}-{bill.session_year_end}
-                  </div>
                   <div className="mt-2 flex gap-2">
                     {bill.session_special === 1 && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
