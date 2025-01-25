@@ -152,7 +152,7 @@ export function BillCard({ bill }: BillCardProps) {
 
           {/* Committee info */}
           {bill.pending_committee_name && (
-            <div className="flex items-center gap-2 mt-4 text-neutral-600 dark:text-neutral-400">
+            <div className="flex items-center gap-2 mt-4 mb-6 text-neutral-600 dark:text-neutral-400">
               <Building2 className="w-4 h-4" />
               <span className="text-sm line-clamp-1" title={bill.pending_committee_name}>
                 {bill.pending_committee_name}
@@ -161,25 +161,41 @@ export function BillCard({ bill }: BillCardProps) {
           )}
 
           {/* Sponsors Info and Date */}
-          <div className="flex items-center justify-between mt-4">
-            {/* Date with label */}
-            <div className="text-sm text-neutral-600 dark:text-zinc-400">
-              Action Date: {new Date(bill.latest_action_date).toLocaleDateString()}
+          <div className="grid grid-cols-3 gap-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
+            {/* Action Date */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Date
+              </div>
+              <div className="text-sm">
+                {new Date(bill.latest_action_date).toLocaleDateString()}
+              </div>
             </div>
             
-            {/* Sponsors and Party */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
+            {/* Sponsors */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
                 <Users className="w-4 h-4" />
-                <span className="text-sm">
-                  {!bill.sponsors ? 'No Sponsors' : 
-                   bill.sponsors.length === 0 ? 'No Sponsors' : 
-                   `${bill.sponsors.length} ${bill.sponsors.length === 1 ? 'Sponsor' : 'Sponsors'}`}
-                </span>
+                Support
               </div>
-              <div className="hidden lg:flex items-center gap-1">
+              <div className="text-sm">
+                {!bill.sponsors ? 'No Sponsors' : 
+                 bill.sponsors.length === 0 ? 'No Sponsors' : 
+                 `${bill.sponsors.length} ${bill.sponsors.length === 1 ? 'Sponsor' : 'Sponsors'}`}
+              </div>
+            </div>
+
+            {/* Party */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
                 <Flag className="w-4 h-4" />
-                <span className="text-sm">{getPartyDisplay(bill.sponsors)}</span>
+                Party
+              </div>
+              <div className="text-sm">
+                {getPartyDisplay(bill.sponsors)}
               </div>
             </div>
           </div>
