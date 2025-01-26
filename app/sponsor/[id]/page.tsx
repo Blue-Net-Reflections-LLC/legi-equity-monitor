@@ -7,12 +7,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { OverallChart, CategoryChart } from '@/app/components/analytics/SponsorCharts';
 import { SubgroupBarChart } from '@/app/components/analytics/SubgroupBarChart';
+import { VotingHistory } from '@/app/components/sponsor/VotingHistory';
 
 interface SubgroupScore {
   subgroup_code: string;
   bias_score: number;
   positive_impact_score: number;
-  evidence: string | null;
+  evidence: string;
 }
 
 interface Sponsor {
@@ -69,7 +70,21 @@ interface SponsorAnalytics {
   }[];
 }
 
-function aggregateAnalytics(bills: (SponsoredBill | VotedBill)[]): SponsorAnalytics {
+interface CategoryData {
+  category: string;
+  bills: {
+    bill_id: number;
+    bill_number: string;
+    subgroups: SubgroupScore[];
+  }[];
+}
+
+interface VoteCount {
+  vote: string;
+  count: number;
+}
+
+function aggregateAnalytics(bills: SponsoredBill[]): SponsorAnalytics {
   const overallCounts = {
     positive: 0,
     bias: 0,
@@ -246,7 +261,7 @@ async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
   return Array.from(billMap.values());
 }
 
-function transformBillsToCategories(bills: (SponsoredBill | VotedBill)[]): CategoryData[] {
+function transformBillsToCategories(bills: SponsoredBill[]): CategoryData[] {
   const categoryMap = new Map<string, CategoryData>();
   
   bills.forEach(bill => {
@@ -271,6 +286,27 @@ function transformBillsToCategories(bills: (SponsoredBill | VotedBill)[]): Categ
   return Array.from(categoryMap.values());
 }
 
+async function getVoteCounts(peopleId: string): Promise<VoteCount[]> {
+  const counts = await db`
+    SELECT
+      CASE 
+        WHEN bvd.vote_id = 1 THEN 'Yea'
+        WHEN bvd.vote_id = 2 THEN 'Nay'
+        WHEN bvd.vote_id = 3 THEN 'Not Voting'
+        ELSE 'Other'
+      END as vote,
+      COUNT(*)::int as count
+    FROM ls_bill b
+    INNER JOIN ls_bill_vote bv ON b.bill_id = bv.bill_id
+    INNER JOIN ls_bill_vote_detail bvd ON bv.roll_call_id = bvd.roll_call_id
+    WHERE bvd.people_id = ${peopleId}
+    AND b.bill_type_id = 1
+    GROUP BY bvd.vote_id
+    ORDER BY vote
+  ` as unknown as VoteCount[];
+  return counts;
+}
+
 export default async function SponsorPage({ 
   params 
 }: { 
@@ -282,7 +318,11 @@ export default async function SponsorPage({
     notFound();
   }
 
-  const sponsoredBills = await getSponsoredBills(params.id);
+  const [sponsoredBills, voteCounts] = await Promise.all([
+    getSponsoredBills(params.id),
+    getVoteCounts(params.id)
+  ]);
+
   const sponsoredAnalytics = aggregateAnalytics(sponsoredBills);
 
   return (
@@ -382,6 +422,27 @@ export default async function SponsorPage({
                     {sponsoredBills.length}
                   </div>
                 </div>
+                <div>
+                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    Voting Pattern
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    {voteCounts.map(({ vote, count }) => (
+                      <div 
+                        key={vote}
+                        className={`text-sm px-2 py-1 rounded ${
+                          vote === 'Yea' 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                            : vote === 'Nay'
+                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                            : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
+                        }`}
+                      >
+                        {vote}: {count}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </Card>
           </div>
@@ -450,8 +511,8 @@ export default async function SponsorPage({
                                     : Math.abs(bill.overall_bias_score || 0) > Math.abs(bill.overall_positive_impact_score || 0)
                                       ? `Bias: ${bill.overall_bias_score}`
                                       : `Positive: ${bill.overall_positive_impact_score}`
-                                }
-                              </span>
+                                  }
+                                </span>
                               )}
                               {bill.categories?.length > 0 && (
                                 <svg 
@@ -502,12 +563,10 @@ export default async function SponsorPage({
                 </div>
               </Card>
 
-              {/* Voting History - Placeholder for AJAX implementation */}
+              {/* Voting History */}
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Recent Votes</h2>
-                <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Loading voting history...
-                </div>
+                <VotingHistory sponsorId={params.id} />
               </Card>
             </div>
           </div>
@@ -515,4 +574,4 @@ export default async function SponsorPage({
       </div>
     </div>
   );
-} 
+}
