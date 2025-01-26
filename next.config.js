@@ -5,6 +5,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'static.votesmart.org',
+        pathname: '/canphoto/**',
         pathname: '/static/canphoto/**',
       },
     ],
