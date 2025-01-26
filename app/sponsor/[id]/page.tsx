@@ -1,21 +1,19 @@
 import db from "@/lib/db";
 import { notFound } from "next/navigation";
-import { Card } from "@/app/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from '@/app/[state]/bill/[id]/BackButton';
 import Link from 'next/link';
 import Image from 'next/image';
 import { OverallChart, CategoryChart } from '@/app/components/analytics/SponsorCharts';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
+import { SubgroupBarChart } from '@/app/components/analytics/SubgroupBarChart';
+
+interface SubgroupScore {
+  subgroup_code: string;
+  bias_score: number;
+  positive_impact_score: number;
+  evidence: string | null;
+}
 
 interface Sponsor {
   people_id: number;
@@ -39,6 +37,7 @@ interface CategoryScore {
   category: string;
   bias_score: number;
   positive_impact_score: number;
+  subgroups: SubgroupScore[];
 }
 
 interface SponsoredBill {
@@ -200,7 +199,22 @@ async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
       bar.confidence,
       bacs.category,
       bacs.bias_score,
-      bacs.positive_impact_score
+      bacs.positive_impact_score,
+      COALESCE(
+        (
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'subgroup_code', bass.subgroup_code,
+              'bias_score', bass.bias_score,
+              'positive_impact_score', bass.positive_impact_score,
+              'evidence', bass.evidence
+            )
+          )
+          FROM bill_analysis_subgroup_scores bass
+          WHERE bass.category_score_id = bacs.category_score_id
+        ),
+        '[]'::jsonb
+      ) as subgroups
     FROM ls_bill b
     INNER JOIN ls_bill_sponsor bs ON b.bill_id = bs.bill_id
     INNER JOIN ls_sponsor_type spt ON bs.sponsor_type_id = spt.sponsor_type_id
@@ -213,7 +227,7 @@ async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
     AND b.bill_type_id = 1
     ORDER BY h.latest_history_date DESC NULLS LAST, b.bill_id DESC
     LIMIT 50
-  ` as unknown as (SponsoredBill & CategoryScore)[];
+  ` as unknown as (SponsoredBill & CategoryScore & { subgroups: SubgroupScore[] })[];
 
   // Group the categories by bill
   const billMap = new Map<number, SponsoredBill>();
@@ -223,6 +237,7 @@ async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
       category, 
       bias_score, 
       positive_impact_score,
+      subgroups,
       ...billData 
     } = row;
 
@@ -237,7 +252,8 @@ async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
       billMap.get(billData.bill_id)!.categories.push({
         category,
         bias_score,
-        positive_impact_score
+        positive_impact_score,
+        subgroups: subgroups || []
       });
     }
   }
@@ -247,6 +263,23 @@ async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
 
 async function getVotingHistory(peopleId: string): Promise<VotedBill[]> {
   const votes = await db`
+    WITH category_scores AS (
+      SELECT 
+        bacs.analysis_id,
+        bacs.category,
+        bacs.bias_score,
+        bacs.positive_impact_score,
+        json_agg(json_build_object(
+          'subgroup_code', bass.subgroup_code,
+          'bias_score', bass.bias_score,
+          'positive_impact_score', bass.positive_impact_score,
+          'evidence', bass.evidence
+        )) as subgroups
+      FROM bill_analysis_category_scores bacs
+      LEFT JOIN bill_analysis_subgroup_scores bass 
+        ON bacs.category_score_id = bass.category_score_id
+      GROUP BY bacs.analysis_id, bacs.category, bacs.bias_score, bacs.positive_impact_score
+    )
     SELECT
       b.bill_id,
       b.bill_number,
@@ -262,20 +295,21 @@ async function getVotingHistory(peopleId: string): Promise<VotedBill[]> {
       END as vote,
       bar.overall_bias_score,
       bar.overall_positive_impact_score,
-      bacs.category,
-      bacs.bias_score,
-      bacs.positive_impact_score,
+      cs.category,
+      cs.bias_score,
+      cs.positive_impact_score,
+      cs.subgroups,
       bv.roll_call_id
     FROM ls_bill b
     INNER JOIN ls_bill_vote bv ON b.bill_id = bv.bill_id
     INNER JOIN ls_bill_vote_detail bvd ON bv.roll_call_id = bvd.roll_call_id
     INNER JOIN ls_state st ON b.state_id = st.state_id
     LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
-    LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+    LEFT JOIN category_scores cs ON bar.analysis_id = cs.analysis_id
     WHERE bvd.people_id = ${peopleId}
     ORDER BY bv.roll_call_date DESC
     LIMIT 50
-  ` as unknown as (VotedBill & CategoryScore & { roll_call_id: number })[];
+  ` as unknown as (VotedBill & CategoryScore & { subgroups: SubgroupScore[]; roll_call_id: number })[];
 
   // Group the categories by bill and roll call
   const voteMap = new Map<string, VotedBill>();
@@ -285,6 +319,7 @@ async function getVotingHistory(peopleId: string): Promise<VotedBill[]> {
       category, 
       bias_score, 
       positive_impact_score,
+      subgroups,
       roll_call_id,
       ...voteData 
     } = row;
@@ -302,7 +337,8 @@ async function getVotingHistory(peopleId: string): Promise<VotedBill[]> {
       voteMap.get(voteKey)!.categories.push({
         category,
         bias_score,
-        positive_impact_score
+        positive_impact_score,
+        subgroups: subgroups || []
       });
     }
   }
@@ -693,6 +729,64 @@ export default async function SponsorPage({
                 )}
               </div>
             </Card>
+
+            {/* Subgroup Bar Charts */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sponsored Bills Subgroups</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SubgroupBarChart 
+                    title="Subgroup Impact Distribution" 
+                    data={Object.entries(
+                      sponsoredBills.reduce((acc, bill) => {
+                        bill.categories.forEach(cat => {
+                          if (!acc[cat.category]) {
+                            acc[cat.category] = { category: cat.category, bills: [] };
+                          }
+                          if (cat.subgroups && cat.subgroups.length > 0) {
+                            acc[cat.category].bills.push({
+                              bill_id: bill.bill_id,
+                              bill_number: bill.bill_number,
+                              subgroups: cat.subgroups
+                            });
+                          }
+                        });
+                        return acc;
+                      }, {} as Record<string, { category: string; bills: any[] }>)
+                    ).map(([_, value]) => value)}
+                  />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Voting History Subgroups</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SubgroupBarChart 
+                    title="Subgroup Impact Distribution" 
+                    data={Object.entries(
+                      votingHistory.reduce((acc, bill) => {
+                        bill.categories.forEach(cat => {
+                          if (!acc[cat.category]) {
+                            acc[cat.category] = { category: cat.category, bills: [] };
+                          }
+                          if (cat.subgroups && cat.subgroups.length > 0) {
+                            acc[cat.category].bills.push({
+                              bill_id: bill.bill_id,
+                              bill_number: bill.bill_number,
+                              subgroups: cat.subgroups
+                            });
+                          }
+                        });
+                        return acc;
+                      }, {} as Record<string, { category: string; bills: any[] }>)
+                    ).map(([_, value]) => value)}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
