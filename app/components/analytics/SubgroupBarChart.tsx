@@ -37,7 +37,7 @@ const categorySubgroups: Record<string, string[]> = {
   nationality: ['IM', 'NC', 'FN'],
   sexual_orientation: ['LQ', 'HT', 'BI', 'PS', 'AS'],
   disability: ['PD', 'MH', 'DD'],
-  veteran: ['VT', 'DV', 'RM']
+  veterans: ['VT', 'DV', 'RM']
 };
 
 // Map subgroup codes to readable names
@@ -87,7 +87,6 @@ const subgroupNames: Record<string, string> = {
 };
 
 export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
-  // Process data to count subgroups within each category
   const categorySubgroupCounts = data.reduce((acc, categoryData) => {
     // Skip if category is not recognized
     const categoryKey = categoryData.category.toLowerCase();
@@ -96,11 +95,11 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
       return acc;
     }
 
-    const subgroupCounts: Record<string, { positive: number; bias: number }> = {};
+    const subgroupCounts: Record<string, { positive: number; bias: number; neutral: number }> = {};
     
     // Initialize all possible subgroups for this category
     categorySubgroups[categoryKey].forEach(code => {
-      subgroupCounts[code] = { positive: 0, bias: 0 };
+      subgroupCounts[code] = { positive: 0, bias: 0, neutral: 0 };
     });
     
     // Process each bill's subgroups
@@ -115,10 +114,12 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
         const biasScore = Math.abs(subgroup.bias_score);
         const positiveScore = Math.abs(subgroup.positive_impact_score);
 
-        if (biasScore >= 0.6) {
+        // Mark as neutral if scores are equal OR both below 0.6
+        if (biasScore === positiveScore || (biasScore < 0.6 && positiveScore < 0.6)) {
+          subgroupCounts[subgroup.subgroup_code].neutral++;
+        } else if (biasScore > positiveScore) {
           subgroupCounts[subgroup.subgroup_code].bias++;
-        }
-        if (positiveScore >= 0.6) {
+        } else {
           subgroupCounts[subgroup.subgroup_code].positive++;
         }
       });
@@ -126,17 +127,17 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
 
     // Only include subgroups that have counts
     const filteredCounts = Object.entries(subgroupCounts)
-      .filter(([_, counts]) => counts.positive > 0 || counts.bias > 0)
+      .filter(([_, counts]) => counts.positive > 0 || counts.bias > 0 || counts.neutral > 0)
       .reduce((obj, [code, counts]) => {
         obj[code] = counts;
         return obj;
-      }, {} as Record<string, { positive: number; bias: number }>);
+      }, {} as Record<string, { positive: number; bias: number; neutral: number }>);
 
     if (Object.keys(filteredCounts).length > 0) {
       acc[categoryData.category] = filteredCounts;
     }
     return acc;
-  }, {} as Record<string, Record<string, { positive: number; bias: number }>>);
+  }, {} as Record<string, Record<string, { positive: number; bias: number; neutral: number }>>);
 
   // Create a chart for each category
   return (
@@ -149,6 +150,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
         const labels = Object.keys(subgroups).map(code => subgroupNames[code] || code);
         const positiveData = Object.values(subgroups).map(counts => counts.positive);
         const biasData = Object.values(subgroups).map(counts => counts.bias);
+        const neutralData = Object.values(subgroups).map(counts => counts.neutral);
 
         const chartData = {
           labels,
@@ -157,11 +159,22 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
               label: 'Positive Impact',
               data: positiveData,
               backgroundColor: 'rgb(34, 197, 94)', // green-500
+              barPercentage: 0.8,
+              categoryPercentage: 0.9
             },
             {
               label: 'Bias',
               data: biasData,
               backgroundColor: 'rgb(239, 68, 68)', // red-500
+              barPercentage: 0.8,
+              categoryPercentage: 0.9
+            },
+            {
+              label: 'Equal Impact',
+              data: neutralData,
+              backgroundColor: 'rgb(156, 163, 175)', // gray-400
+              barPercentage: 0.8,
+              categoryPercentage: 0.9
             },
           ],
         };
@@ -179,13 +192,13 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
               },
               ticks: {
                 stepSize: 1,
-              },
+              }
             },
             y: {
               stacked: false,
               grid: {
                 display: false,
-              },
+              }
             },
           },
           plugins: {

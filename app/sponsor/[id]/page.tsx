@@ -97,14 +97,13 @@ function aggregateAnalytics(bills: (SponsoredBill | VotedBill)[]): SponsorAnalyt
       const biasScore = Math.abs(bill.overall_bias_score || 0);
       const positiveScore = Math.abs(bill.overall_positive_impact_score || 0);
 
-      if (biasScore === positiveScore) {
+      // Mark as neutral if scores are equal OR both below 0.6
+      if (biasScore === positiveScore || (biasScore < 0.6 && positiveScore < 0.6)) {
         overallCounts.neutral++;
-      } else if (biasScore > positiveScore && biasScore >= 0.6) {
+      } else if (biasScore > positiveScore) {
         overallCounts.bias++;
-      } else if (positiveScore > biasScore && positiveScore >= 0.6) {
-        overallCounts.positive++;
       } else {
-        overallCounts.neutral++;
+        overallCounts.positive++;
       }
     }
 
@@ -118,14 +117,13 @@ function aggregateAnalytics(bills: (SponsoredBill | VotedBill)[]): SponsorAnalyt
       const biasScore = Math.abs(cat.bias_score);
       const positiveScore = Math.abs(cat.positive_impact_score);
 
-      if (biasScore === positiveScore) {
+      // Mark as neutral if scores are equal OR both below 0.6
+      if (biasScore === positiveScore || (biasScore < 0.6 && positiveScore < 0.6)) {
         counts.neutral++;
-      } else if (biasScore > positiveScore && biasScore >= 0.6) {
+      } else if (biasScore > positiveScore) {
         counts.bias++;
-      } else if (positiveScore > biasScore && positiveScore >= 0.6) {
-        counts.positive++;
       } else {
-        counts.neutral++;
+        counts.positive++;
       }
     }
   }
@@ -346,6 +344,31 @@ async function getVotingHistory(peopleId: string): Promise<VotedBill[]> {
   return Array.from(voteMap.values());
 }
 
+function transformBillsToCategories(bills: (SponsoredBill | VotedBill)[]): CategoryData[] {
+  const categoryMap = new Map<string, CategoryData>();
+  
+  bills.forEach(bill => {
+    bill.categories.forEach(cat => {
+      if (!categoryMap.has(cat.category)) {
+        categoryMap.set(cat.category, {
+          category: cat.category,
+          bills: []
+        });
+      }
+      
+      if (cat.subgroups && cat.subgroups.length > 0) {
+        categoryMap.get(cat.category)!.bills.push({
+          bill_id: bill.bill_id,
+          bill_number: bill.bill_number,
+          subgroups: cat.subgroups
+        });
+      }
+    });
+  });
+  
+  return Array.from(categoryMap.values());
+}
+
 export default async function SponsorPage({ 
   params 
 }: { 
@@ -539,6 +562,26 @@ export default async function SponsorPage({
               </Card>
             </div>
 
+            {/* Subgroup Bar Charts */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sponsored Bills Subgroups</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SubgroupBarChart data={transformBillsToCategories(sponsoredBills)} />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Voting History Subgroups</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SubgroupBarChart data={transformBillsToCategories(votingHistory)} />
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Sponsored Bills */}
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Sponsored Bills</h2>
@@ -729,64 +772,6 @@ export default async function SponsorPage({
                 )}
               </div>
             </Card>
-
-            {/* Subgroup Bar Charts */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sponsored Bills Subgroups</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SubgroupBarChart 
-                    title="Subgroup Impact Distribution" 
-                    data={Object.entries(
-                      sponsoredBills.reduce((acc, bill) => {
-                        bill.categories.forEach(cat => {
-                          if (!acc[cat.category]) {
-                            acc[cat.category] = { category: cat.category, bills: [] };
-                          }
-                          if (cat.subgroups && cat.subgroups.length > 0) {
-                            acc[cat.category].bills.push({
-                              bill_id: bill.bill_id,
-                              bill_number: bill.bill_number,
-                              subgroups: cat.subgroups
-                            });
-                          }
-                        });
-                        return acc;
-                      }, {} as Record<string, { category: string; bills: any[] }>)
-                    ).map(([_, value]) => value)}
-                  />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Voting History Subgroups</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SubgroupBarChart 
-                    title="Subgroup Impact Distribution" 
-                    data={Object.entries(
-                      votingHistory.reduce((acc, bill) => {
-                        bill.categories.forEach(cat => {
-                          if (!acc[cat.category]) {
-                            acc[cat.category] = { category: cat.category, bills: [] };
-                          }
-                          if (cat.subgroups && cat.subgroups.length > 0) {
-                            acc[cat.category].bills.push({
-                              bill_id: bill.bill_id,
-                              bill_number: bill.bill_number,
-                              subgroups: cat.subgroups
-                            });
-                          }
-                        });
-                        return acc;
-                      }, {} as Record<string, { category: string; bills: any[] }>)
-                    ).map(([_, value]) => value)}
-                  />
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </div>
       </div>
