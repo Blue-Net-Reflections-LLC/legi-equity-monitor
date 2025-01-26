@@ -545,39 +545,13 @@ export default async function SponsorPage({
                 </div>
               </Card>
 
-              <Card className="p-4">
-                <h2 className="text-xl font-semibold mb-3">Voting History Analysis</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]">
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Overall Impact</h3>
-                    <OverallChart data={votingAnalytics.overallCounts} />
-                  </div>
-                  <div className="h-full">
-                    <h3 className="text-lg font-medium mb-2">Category Breakdown</h3>
-                    <div className="h-[calc(100%-2rem)]">
-                      <CategoryChart data={votingAnalytics.categoryBreakdown} />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Subgroup Bar Charts */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {/* Sponsored Bills Subgroups */}
               <Card>
                 <CardHeader>
                   <CardTitle>Sponsored Bills Subgroups</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <SubgroupBarChart data={transformBillsToCategories(sponsoredBills)} />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Voting History Subgroups</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SubgroupBarChart data={transformBillsToCategories(votingHistory)} />
                 </CardContent>
               </Card>
             </div>
@@ -676,6 +650,26 @@ export default async function SponsorPage({
             {/* Voting History */}
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Recent Votes</h2>
+              
+              {/* Voting Analysis Charts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Overall Impact</h3>
+                  <OverallChart data={votingAnalytics.overallCounts} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Category Breakdown</h3>
+                  <CategoryChart data={votingAnalytics.categoryBreakdown} />
+                </div>
+              </div>
+
+              {/* Voting History Subgroups */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-4">Subgroup Analysis</h3>
+                <SubgroupBarChart data={transformBillsToCategories(votingHistory)} />
+              </div>
+
+              {/* Voting History List */}
               <div className="space-y-4">
                 {votingHistory.length === 0 ? (
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">

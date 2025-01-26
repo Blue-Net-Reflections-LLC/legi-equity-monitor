@@ -141,7 +141,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
 
   // Create a chart for each category
   return (
-    <div className="space-y-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {Object.entries(categorySubgroupCounts).map(([category, subgroups]) => {
         const categoryName = category.split('_')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -156,7 +156,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
           labels,
           datasets: [
             {
-              label: 'Positive Impact',
+              label: 'Positive',
               data: positiveData,
               backgroundColor: 'rgb(34, 197, 94)', // green-500
               barPercentage: 0.8,
@@ -170,7 +170,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
               categoryPercentage: 0.9
             },
             {
-              label: 'Equal Impact',
+              label: 'Neutral',
               data: neutralData,
               backgroundColor: 'rgb(156, 163, 175)', // gray-400
               barPercentage: 0.8,
