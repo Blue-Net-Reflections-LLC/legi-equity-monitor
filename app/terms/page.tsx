@@ -51,7 +51,7 @@ export default function TermsPage() {
                 <h2 className="text-2xl font-bold mb-4">3. Disclaimer</h2>
                 <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-700">
                   <p className="mb-4">
-                    The materials on VoterAI's website are provided on an 'as is' basis. VoterAI makes no 
+                    The materials on VoterAI&apos;s website are provided on an &apos;as is&apos; basis. VoterAI makes no 
                     warranties, expressed or implied, and hereby disclaims and negates all other warranties including:
                   </p>
                   <ul className="list-disc pl-6 space-y-2">

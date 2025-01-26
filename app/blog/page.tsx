@@ -33,7 +33,7 @@ export default function BlogPage() {
               Coming Soon
             </h2>
             <p className="text-lg text-zinc-700 dark:text-zinc-300 mb-4">
-              We're crafting a space where data meets storytelling, where complex legislation transforms into clear insights.
+              We&apos;re crafting a space where data meets storytelling, where complex legislation transforms into clear insights.
             </p>
           </div>
 

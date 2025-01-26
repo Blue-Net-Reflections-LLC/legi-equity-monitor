@@ -56,7 +56,7 @@ export default function ContactPage() {
                 <h2 className="text-2xl font-bold m-0">Coming Soon: Impact Blog</h2>
               </div>
               <p className="text-lg leading-relaxed mb-6">
-                We're evolving our platform to include in-depth analysis of bills that have severe impacts across the nation. 
+                We&apos;re evolving our platform to include in-depth analysis of bills that have severe impacts across the nation. 
                 Our upcoming blog will feature:
               </p>
               <ul className="list-disc pl-6 space-y-2 mb-6">

@@ -23,7 +23,7 @@ export default function AboutPage() {
               <p className="text-lg leading-relaxed">
                 VoterAI represents a groundbreaking collaboration between VoterAI and Bluenetreflection, 
                 dedicated to revolutionizing how we understand and interact with legislative processes. 
-                Through advanced AI analysis, we're making complex legislative information accessible and 
+                Through advanced AI analysis, we&apos;re making complex legislative information accessible and 
                 meaningful to everyone.
               </p>
             </div>
@@ -70,6 +70,14 @@ export default function AboutPage() {
                 As we continue to evolve, our goal remains constant: to create a more transparent, 
                 accessible, and equitable legislative process. We invite you to join us in this 
                 mission to strengthen democratic participation through technology and insight.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-8 rounded-lg">
+              <h2 className="text-3xl font-bold mb-6">Upcoming Blog</h2>
+              <p className="text-lg leading-relaxed">
+                We&apos;re evolving our platform to include in-depth analysis of bills that have severe impacts across the nation. 
+                Our upcoming blog will feature:
               </p>
             </div>
           </div>
