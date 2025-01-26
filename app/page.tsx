@@ -19,10 +19,10 @@ export default function Home() {
               LegiEquity
             </h1>
             <p className="font-light text-xl md:text-3xl text-zinc-700 dark:text-neutral-200 text-center max-w-3xl mx-auto">
-              Illuminating legislative impact through AI-powered racial equity analysis
+              AI-powered analysis of legislation&apos;s impact on demographic equity
             </p>
             <p className="text-base md:text-xl text-zinc-600 dark:text-neutral-300 text-center max-w-2xl mx-auto mt-4">
-              Explore how state legislation affects different communities across the United States
+              Understand how bills and laws affect communities across age, disability, gender, race, and religion
             </p>
           </AnimatedContent>
         </AuroraBackground>

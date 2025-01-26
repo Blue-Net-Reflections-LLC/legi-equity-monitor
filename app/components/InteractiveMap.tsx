@@ -14,7 +14,7 @@ export default function InteractiveMap() {
       
       const handleHover = (e: React.MouseEvent<SVGElement> | Event) => {
         const target = e.target as HTMLElement;
-        if (target.tagName === "path" || target.tagName === "circle") {
+        if (target.tagName === "path" || target.tagName === "circle" || target.tagName === "image") {
           if (infoBox) {
             infoBox.style.display = "block";
             infoBox.innerHTML = target.getAttribute("data-info") || "";
@@ -37,17 +37,15 @@ export default function InteractiveMap() {
 
       const handleStateClick = (e: React.MouseEvent<SVGElement> | Event) => {
         const target = e.target as HTMLElement;
-        if (target.tagName === "path" || target.tagName === "circle") {
-          const stateId = target.id?.toLowerCase();
-          if (stateId) {
-            router.push(`/${stateId}`);
-          }
+        if (target.tagName === "path" || target.tagName === "circle" || target.tagName === "image") {
+          const stateId = target.id.toLowerCase();
+          router.push(`/${stateId}`);
         }
       };
 
       document.addEventListener("mousemove", handleMouseMove);
-      const paths = document.querySelectorAll("path, circle");
-      paths.forEach(element => {
+      const paths = document.querySelector("#us-map")?.querySelectorAll("path, circle, image");
+      paths?.forEach(element => {
         element.addEventListener("mouseenter", handleHover);
         element.addEventListener("mouseleave", handleMouseLeave);
         element.addEventListener("click", handleStateClick);
@@ -76,7 +74,7 @@ export default function InteractiveMap() {
         preserveAspectRatio="xMinYMin meet"
         x="0"
         y="0"
-        viewBox="174 100 959 593"
+        viewBox="0 0 1100 700"
         className="w-full h-full"
       >
         <g id="states">
@@ -136,7 +134,20 @@ export default function InteractiveMap() {
             <path id="VA" data-info="<div>State: Virginia</div><div>Capital: Richmond</div>" fill="#D3D3D3" d="M1002.9,369.2l-0.1-1.9l6.5-2.5l-0.8,3.2l-2.9,3.8l-0.4,4.6l0.5,3.4l-1.8,5l-2.2,1.9l-1.5-4.6   l0.4-5.4l1.6-4.2L1002.9,369.2z M1005.2,397.5L947,410.1l-37.4,5.3l-6.7-0.4l-2.6,1.9l-7.3,0.2l-8.4,1l-8.9,1l8.5-4.9l0-2.1   l1.5-2.1l10.6-11.5l3.9,4.5l3.8,1l2.5-1.1l2.2-1.3l2.5,1.3l3.9-1.4l1.9-4.6l2.6,0.5l2.9-2.1l1.8,0.5l2.8-3.7l0.3-2.1l-1-1.3l1-1.9   l5.3-12.3l0.6-5.7l1.2-0.5l2.2,2.4l3.9-0.3l1.9-7.6l2.8-0.6l1-2.7l2.6-2.3l1.3-2.3l1.5-3.4l0.1-5.1l9.8,3.8   c0.7,0.3,0.7-4.8,0.7-4.8l4.1,1.4l-0.5,2.6l8.2,2.9l1.3,1.8l-0.9,3.7l-1.3,1.3l-0.5,1.7l0.5,2.4l2,1.3l3.9,1.4l2.9,1l4.9,0.9   l2.2,2.1l3.2,0.4l0.9,1.2l-0.4,4.7l1.4,1.1l-0.5,1.9l1.2,0.8l-0.2,1.4l-2.7-0.1l0.1,1.6l2.3,1.5l0.1,1.4l1.8,1.8l0.5,2.5l-2.6,1.4   l1.6,1.5l5.8-1.7L1005.2,397.5z"/>
             <g id="DC">
                 <path id="path58" fill="#D3D3D3" d="M975.8,353.8l-1.1-1.6l-1-0.8l1.1-1.6l2.2,1.5L975.8,353.8z"/>
-                <circle id="circle60" data-info="<div>Washington DC</div>" fill="#D3D3D3" stroke="#FFFFFF" stroke-width="1.5" cx="975.3" cy="351.8" r="5"/>
+                <circle id="DC" data-info="<div>Washington DC</div>" fill="#D3D3D3" stroke="#FFFFFF" strokeWidth="1.5" cx="975.3" cy="351.8" r="5"/>
+            </g>
+            {/* Add US Congress Seal */}
+            <g id="US">
+                <image 
+                    id="us"
+                    data-info="<div>US Congress</div>"
+                    href="/images/Seal_of_the_United_States_Congress.svg"
+                    x="1015"
+                    y="330"
+                    width="64"
+                    height="64"
+                    style={{ cursor: "pointer" }}
+                />
             </g>
           </g>
       </svg>

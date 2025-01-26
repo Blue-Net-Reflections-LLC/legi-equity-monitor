@@ -176,7 +176,7 @@ export default async function StatePage({
             {stateName} Bills
           </h1>
           <p className="text-sm md:text-base text-zinc-700 dark:text-neutral-200 text-center mt-1">
-            Analyzing legislative impact on racial equity
+            Analyzing legislative impact on demographic equity
           </p>
         </AuroraBackground>
       </section>
