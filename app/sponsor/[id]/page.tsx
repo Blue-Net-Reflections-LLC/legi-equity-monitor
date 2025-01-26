@@ -5,6 +5,17 @@ import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from '@/app/[state]/bill/[id]/BackButton';
 import Link from 'next/link';
 import Image from 'next/image';
+import { OverallChart, CategoryChart } from '@/app/components/analytics/SponsorCharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 interface Sponsor {
   people_id: number;
@@ -55,6 +66,88 @@ interface VotedBill {
   overall_bias_score: number | null;
   overall_positive_impact_score: number | null;
   categories: CategoryScore[];
+}
+
+interface SponsorAnalytics {
+  overallCounts: {
+    name: string;
+    positive: number;
+    bias: number;
+    neutral: number;
+  }[];
+  categoryBreakdown: {
+    name: string;
+    positive: number;
+    bias: number;
+    neutral: number;
+  }[];
+}
+
+function aggregateAnalytics(bills: (SponsoredBill | VotedBill)[]): SponsorAnalytics {
+  const overallCounts = {
+    positive: 0,
+    bias: 0,
+    neutral: 0
+  };
+
+  const categoryMap = new Map<string, { positive: number; bias: number; neutral: number }>();
+
+  for (const bill of bills) {
+    // Count overall scores
+    if (bill.overall_bias_score !== null || bill.overall_positive_impact_score !== null) {
+      const biasScore = Math.abs(bill.overall_bias_score || 0);
+      const positiveScore = Math.abs(bill.overall_positive_impact_score || 0);
+
+      if (biasScore === positiveScore) {
+        overallCounts.neutral++;
+      } else if (biasScore > positiveScore && biasScore >= 0.6) {
+        overallCounts.bias++;
+      } else if (positiveScore > biasScore && positiveScore >= 0.6) {
+        overallCounts.positive++;
+      } else {
+        overallCounts.neutral++;
+      }
+    }
+
+    // Count category scores
+    for (const cat of bill.categories || []) {
+      if (!categoryMap.has(cat.category)) {
+        categoryMap.set(cat.category, { positive: 0, bias: 0, neutral: 0 });
+      }
+      
+      const counts = categoryMap.get(cat.category)!;
+      const biasScore = Math.abs(cat.bias_score);
+      const positiveScore = Math.abs(cat.positive_impact_score);
+
+      if (biasScore === positiveScore) {
+        counts.neutral++;
+      } else if (biasScore > positiveScore && biasScore >= 0.6) {
+        counts.bias++;
+      } else if (positiveScore > biasScore && positiveScore >= 0.6) {
+        counts.positive++;
+      } else {
+        counts.neutral++;
+      }
+    }
+  }
+
+  // Convert category map to sorted array
+  const categoryBreakdown = Array.from(categoryMap.entries())
+    .map(([category, counts]) => ({
+      name: category.split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' '),
+      ...counts
+    }))
+    .sort((a, b) => (b.positive + b.bias) - (a.positive + a.bias));
+
+  return {
+    overallCounts: [{
+      name: 'Overall',
+      ...overallCounts
+    }],
+    categoryBreakdown
+  };
 }
 
 async function getSponsor(peopleId: string): Promise<Sponsor | null> {
@@ -233,6 +326,9 @@ export default async function SponsorPage({
     getVotingHistory(params.id)
   ]);
 
+  const sponsoredAnalytics = aggregateAnalytics(sponsoredBills);
+  const votingAnalytics = aggregateAnalytics(votingHistory);
+
   return (
     <div className="py-8 min-h-screen bg-white dark:bg-zinc-900">
       <AuroraBackground className="h-[12vh] min-h-[96px] flex items-center justify-center">
@@ -372,67 +468,40 @@ export default async function SponsorPage({
 
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Personal Information</h2>
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Full Name
-                  </div>
-                  <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                    {[
-                      sponsor.first_name,
-                      sponsor.middle_name,
-                      sponsor.last_name,
-                      sponsor.suffix
-                    ].filter(Boolean).join(" ")}
-                    {sponsor.nickname && (
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400 ml-2">
-                        (&ldquo;{sponsor.nickname}&rdquo;)
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Role
-                  </div>
-                  <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                    {sponsor.role_name}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Party
-                  </div>
-                  <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                    {sponsor.party_name}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    State
-                  </div>
-                  <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                    {sponsor.state_name}
-                  </div>
-                </div>
-
-                {sponsor.district && (
+            {/* Analytics Section */}
+            <div className="grid grid-cols-1 gap-6">
+              <Card className="p-4">
+                <h2 className="text-xl font-semibold mb-3">Sponsored Bills Analysis</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]">
                   <div>
-                    <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                      District
-                    </div>
-                    <div className="mt-1 text-zinc-900 dark:text-zinc-100">
-                      {sponsor.district}
+                    <h3 className="text-lg font-medium mb-2">Overall Impact</h3>
+                    <OverallChart data={sponsoredAnalytics.overallCounts} />
+                  </div>
+                  <div className="h-full">
+                    <h3 className="text-lg font-medium mb-2">Category Breakdown</h3>
+                    <div className="h-[calc(100%-2rem)]">
+                      <CategoryChart data={sponsoredAnalytics.categoryBreakdown} />
                     </div>
                   </div>
-                )}
-              </div>
-            </Card>
+                </div>
+              </Card>
+
+              <Card className="p-4">
+                <h2 className="text-xl font-semibold mb-3">Voting History Analysis</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]">
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Overall Impact</h3>
+                    <OverallChart data={votingAnalytics.overallCounts} />
+                  </div>
+                  <div className="h-full">
+                    <h3 className="text-lg font-medium mb-2">Category Breakdown</h3>
+                    <div className="h-[calc(100%-2rem)]">
+                      <CategoryChart data={votingAnalytics.categoryBreakdown} />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
 
             {/* Sponsored Bills */}
             <Card className="p-6">
