@@ -17,8 +17,18 @@ export default function Header() {
               </Link>
             </li>
             <li>
-              <Link href="/search" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                Search
+              <Link href="/about" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                About
+              </Link>
+            </li>
+            <li>
+              <Link href="/blog" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                Impact Blog
+              </Link>
+            </li>
+            <li>
+              <Link href="/contact" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                Contact
               </Link>
             </li>
           </ul>
