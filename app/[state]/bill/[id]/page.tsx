@@ -47,6 +47,7 @@ interface Sponsor {
   party_name: string;
   role_name: string;
   sponsor_type_desc: string;
+  votesmart_id: string | null;
 }
 
 interface RollCall {
@@ -214,8 +215,10 @@ async function getSponsors(billId: string): Promise<Sponsor[]> {
       bs.name,
       bs.party_name,
       bs.role_name,
-      bs.sponsor_type_desc
+      bs.sponsor_type_desc,
+      p.votesmart_id
     FROM lsv_bill_sponsor bs
+    LEFT JOIN ls_people p ON bs.people_id = p.people_id
     WHERE bs.bill_id = ${billId}
     ORDER BY bs.sponsor_order
   `;
