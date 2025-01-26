@@ -31,6 +31,7 @@ interface SponsoredBill {
   state_abbr: string;
   status_desc: string;
   sponsor_type_desc: string;
+  latest_history_date: Date | null;
 }
 
 interface VotedBill {
@@ -73,19 +74,30 @@ async function getSponsor(peopleId: string): Promise<Sponsor | null> {
 
 async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
   const bills = await db`
+    WITH latest_history AS (
+      SELECT 
+        bill_id,
+        MAX(history_date) as latest_history_date
+      FROM ls_bill_history
+      GROUP BY bill_id
+    )
     SELECT DISTINCT
       b.bill_id,
       b.bill_number,
       b.title,
       st.state_abbr,
-      b.status_date,
-      spt.sponsor_type_desc
+      p.progress_desc as status_desc,
+      spt.sponsor_type_desc,
+      h.latest_history_date
     FROM ls_bill b
     INNER JOIN ls_bill_sponsor bs ON b.bill_id = bs.bill_id
     INNER JOIN ls_sponsor_type spt ON bs.sponsor_type_id = spt.sponsor_type_id
     INNER JOIN ls_state st ON b.state_id = st.state_id
+    LEFT JOIN latest_history h ON b.bill_id = h.bill_id
+    LEFT JOIN ls_progress p ON b.status_id = p.progress_event_id
     WHERE bs.people_id = ${peopleId}
-    ORDER BY b.status_date DESC
+    AND b.bill_type_id = 1
+    ORDER BY h.latest_history_date DESC NULLS LAST, b.bill_id DESC
     LIMIT 50
   ` as unknown as SponsoredBill[];
 
