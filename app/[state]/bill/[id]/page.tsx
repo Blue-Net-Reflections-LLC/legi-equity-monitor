@@ -6,6 +6,7 @@ import BackButton from './BackButton';
 import SponsorList from './SponsorList';
 import RollCallVotes from './RollCallVotes';
 import BillAnalysis from './BillAnalysis';
+import { Footer } from "@/app/components/layout/Footer";
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -631,6 +632,7 @@ export default async function BillPage({
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 } 

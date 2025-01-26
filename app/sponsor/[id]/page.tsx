@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { OverallChart, CategoryChart } from '@/app/components/analytics/SponsorCharts';
 import { SubgroupBarChart } from '@/app/components/analytics/SubgroupBarChart';
 import { VotingHistory } from '@/app/components/sponsor/VotingHistory';
+import { Footer } from "@/app/components/layout/Footer";
 
 interface SubgroupScore {
   subgroup_code: string;
@@ -574,6 +575,7 @@ export default async function SponsorPage({
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

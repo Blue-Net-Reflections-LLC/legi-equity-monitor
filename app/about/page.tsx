@@ -1,45 +1,89 @@
+import { Footer } from "@/app/components/layout/Footer";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
-import AnimatedContent from "@/app/components/AnimatedContent";
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-900 pt-8">
-      <section className="h-[50vh]">
+      {/* Hero Section */}
+      <section className="h-[30vh] relative">
         <AuroraBackground>
-          <AnimatedContent>
+          <div className="absolute inset-0 flex items-center justify-center">
             <h1 className="text-4xl md:text-6xl font-bold text-zinc-900 dark:text-white text-center">
-              About LegiEquity
+              About Us
             </h1>
-            <p className="text-xl text-zinc-700 dark:text-neutral-200 text-center mt-4 max-w-3xl mx-auto">
-              Empowering transparency in legislative impact analysis
-            </p>
-          </AnimatedContent>
+          </div>
         </AuroraBackground>
       </section>
 
-      <section className="py-16 px-4">
-        <div className="max-w-3xl mx-auto prose dark:prose-invert">
-          <h2>Our Mission</h2>
-          <p>
-            LegiEquity is dedicated to making legislative impact analysis accessible and transparent. 
-            We use AI-powered analysis to understand how bills affect different racial communities, 
-            helping citizens and lawmakers make informed decisions.
-          </p>
+      <main className="max-w-7xl mx-auto px-4 py-12">
+        <div className="w-full lg:w-3/4 mx-auto">
+          <div className="prose dark:prose-invert max-w-none">
+            <div className="mb-12">
+              <h2 className="text-3xl font-bold mb-6">Our Vision</h2>
+              <p className="text-lg leading-relaxed">
+                VoterAI represents a groundbreaking collaboration between VoterAI and Bluenetreflection, 
+                dedicated to revolutionizing how we understand and interact with legislative processes. 
+                Through advanced AI analysis, we&apos;re making complex legislative information accessible and 
+                meaningful to everyone.
+              </p>
+            </div>
 
-          <h2>How It Works</h2>
-          <p>
-            Our platform analyzes bills using advanced natural language processing to identify potential 
-            impacts on different racial communities. Each analysis considers direct and indirect effects, 
-            providing a comprehensive view of legislative impact.
-          </p>
+            <div className="grid md:grid-cols-2 gap-8 mb-12">
+              <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-lg">
+                <h3 className="text-xl font-semibold mb-4">Our Mission</h3>
+                <p>
+                  We strive to democratize legislative analysis by providing clear, unbiased insights 
+                  into how bills impact different communities. Our platform empowers citizens, 
+                  legislators, and advocacy groups with data-driven understanding of legislative effects.
+                </p>
+              </div>
 
-          <h2>Current Coverage</h2>
-          <p>
-            We currently analyze bills from Georgia, with plans to expand to other states. Our goal is 
-            to provide nationwide coverage while maintaining the highest standards of accuracy and insight.
-          </p>
+              <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-lg">
+                <h3 className="text-xl font-semibold mb-4">Technology</h3>
+                <p>
+                  Using state-of-the-art AI and machine learning, we analyze legislative text to identify 
+                  potential impacts across various demographic groups. Our technology provides unprecedented 
+                  insight into the real-world effects of legislation.
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-12">
+              <h2 className="text-3xl font-bold mb-6">Our Commitment</h2>
+              <div className="space-y-4">
+                <p className="text-lg">
+                  We are committed to:
+                </p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>Providing unbiased, data-driven analysis of legislation</li>
+                  <li>Making legislative information accessible to all</li>
+                  <li>Promoting transparency in the legislative process</li>
+                  <li>Supporting informed decision-making in democracy</li>
+                  <li>Protecting privacy and maintaining ethical standards</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-8 rounded-lg">
+              <h2 className="text-3xl font-bold mb-6">Looking Forward</h2>
+              <p className="text-lg leading-relaxed">
+                As we continue to evolve, our goal remains constant: to create a more transparent, 
+                accessible, and equitable legislative process. We invite you to join us in this 
+                mission to strengthen democratic participation through technology and insight.
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-8 rounded-lg">
+              <h2 className="text-3xl font-bold mb-6">Upcoming Blog</h2>
+              <p className="text-lg leading-relaxed">
+                We&apos;re evolving our platform to include in-depth analysis of bills that have severe impacts across the nation. 
+                Our upcoming blog will feature:
+              </p>
+            </div>
+          </div>
         </div>
-      </section>
+      </main>
+      <Footer />
     </div>
   );
 } 

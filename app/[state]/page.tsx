@@ -3,6 +3,7 @@ import { BillList } from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import { Bill } from "@/app/types";
+import { Footer } from "@/app/components/layout/Footer";
 
 async function getBills(
   stateCode: string,
@@ -168,7 +169,7 @@ export default async function StatePage({
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-white dark:bg-zinc-900">
       {/* Hero Section with Aurora */}
       <section className="h-[10vh] min-h-[80px]">
         <AuroraBackground>
@@ -259,6 +260,7 @@ export default async function StatePage({
           />
         </div>
       </section>
-    </>
+      <Footer />
+    </div>
   );
 } 
