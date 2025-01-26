@@ -52,6 +52,9 @@ interface VotedBill {
   vote_date: Date;
   vote_desc: string;
   vote: string;
+  overall_bias_score: number | null;
+  overall_positive_impact_score: number | null;
+  categories: CategoryScore[];
 }
 
 async function getSponsor(peopleId: string): Promise<Sponsor | null> {
@@ -151,7 +154,7 @@ async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
 
 async function getVotingHistory(peopleId: string): Promise<VotedBill[]> {
   const votes = await db`
-    SELECT DISTINCT
+    SELECT
       b.bill_id,
       b.bill_number,
       b.title,
@@ -163,17 +166,55 @@ async function getVotingHistory(peopleId: string): Promise<VotedBill[]> {
         WHEN bvd.vote_id = 2 THEN 'Nay'
         WHEN bvd.vote_id = 3 THEN 'Not Voting'
         ELSE 'Other'
-      END as vote
+      END as vote,
+      bar.overall_bias_score,
+      bar.overall_positive_impact_score,
+      bacs.category,
+      bacs.bias_score,
+      bacs.positive_impact_score,
+      bv.roll_call_id
     FROM ls_bill b
     INNER JOIN ls_bill_vote bv ON b.bill_id = bv.bill_id
     INNER JOIN ls_bill_vote_detail bvd ON bv.roll_call_id = bvd.roll_call_id
     INNER JOIN ls_state st ON b.state_id = st.state_id
+    LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+    LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
     WHERE bvd.people_id = ${peopleId}
     ORDER BY bv.roll_call_date DESC
     LIMIT 50
-  ` as unknown as VotedBill[];
+  ` as unknown as (VotedBill & CategoryScore & { roll_call_id: number })[];
 
-  return votes;
+  // Group the categories by bill and roll call
+  const voteMap = new Map<string, VotedBill>();
+  
+  for (const row of votes) {
+    const { 
+      category, 
+      bias_score, 
+      positive_impact_score,
+      roll_call_id,
+      ...voteData 
+    } = row;
+
+    const voteKey = `${voteData.bill_id}-${roll_call_id}`;
+
+    if (!voteMap.has(voteKey)) {
+      voteMap.set(voteKey, {
+        ...voteData,
+        categories: []
+      });
+    }
+
+    if (category) {
+      voteMap.get(voteKey)!.categories.push({
+        category,
+        bias_score,
+        positive_impact_score
+      });
+    }
+  }
+
+  return Array.from(voteMap.values());
 }
 
 export default async function SponsorPage({ 
@@ -508,6 +549,61 @@ export default async function SponsorPage({
                             <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
                               {vote.title}
                             </div>
+                            {(vote.overall_bias_score !== null || vote.overall_positive_impact_score !== null) && (
+                              <div className="flex flex-wrap gap-2 mt-2 items-center">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  vote.overall_bias_score === vote.overall_positive_impact_score
+                                    ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                    : Math.abs(vote.overall_bias_score || 0) > Math.abs(vote.overall_positive_impact_score || 0)
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                }`}>
+                                  {vote.overall_bias_score === vote.overall_positive_impact_score
+                                    ? 'Neutral'
+                                    : Math.abs(vote.overall_bias_score || 0) > Math.abs(vote.overall_positive_impact_score || 0)
+                                      ? `Bias: ${vote.overall_bias_score}`
+                                      : `Positive: ${vote.overall_positive_impact_score}`
+                                  }
+                                </span>
+                                {vote.categories?.length > 0 && (
+                                  <svg 
+                                    className="w-4 h-4 text-zinc-400 dark:text-zinc-500" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path 
+                                      strokeLinecap="round" 
+                                      strokeLinejoin="round" 
+                                      strokeWidth={2} 
+                                      d="M14 5l7 7-7 7M3 12h18"
+                                    />
+                                  </svg>
+                                )}
+                                {vote.categories?.map((cat) => (
+                                  <span 
+                                    key={cat.category}
+                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                      cat.bias_score === cat.positive_impact_score
+                                        ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                        : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
+                                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                          : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                    }`}
+                                  >
+                                    {cat.category.split('_')
+                                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                      .join(' ')}: {
+                                      cat.bias_score === cat.positive_impact_score
+                                        ? 'Neutral'
+                                        : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
+                                          ? cat.bias_score
+                                          : cat.positive_impact_score
+                                    }
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className={`text-sm font-medium px-2 py-1 rounded ${
                             vote.vote === 'Yea' 
