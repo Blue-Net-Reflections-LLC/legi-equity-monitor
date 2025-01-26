@@ -501,7 +501,7 @@ export default async function SponsorPage({
                               {(bill.overall_bias_score !== null || bill.overall_positive_impact_score !== null) && (
                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                   bill.overall_bias_score === bill.overall_positive_impact_score
-                                    ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                    ? 'bg-gray-400 text-white dark:bg-gray-400 dark:text-white'
                                     : Math.abs(bill.overall_bias_score || 0) > Math.abs(bill.overall_positive_impact_score || 0)
                                       ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                       : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -509,8 +509,8 @@ export default async function SponsorPage({
                                   {bill.overall_bias_score === bill.overall_positive_impact_score
                                     ? 'Neutral'
                                     : Math.abs(bill.overall_bias_score || 0) > Math.abs(bill.overall_positive_impact_score || 0)
-                                      ? `Bias: ${bill.overall_bias_score}`
-                                      : `Positive: ${bill.overall_positive_impact_score}`
+                                      ? 'Bias'
+                                      : 'Positive'
                                   }
                                 </span>
                               )}
@@ -534,7 +534,7 @@ export default async function SponsorPage({
                                   key={cat.category}
                                   className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                     cat.bias_score === cat.positive_impact_score
-                                      ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                      ? 'bg-gray-400 text-white dark:bg-gray-400 dark:text-white'
                                       : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
                                         ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                         : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -542,13 +542,7 @@ export default async function SponsorPage({
                                 >
                                   {cat.category.split('_')
                                     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                    .join(' ')}: {
-                                    cat.bias_score === cat.positive_impact_score
-                                      ? 'Neutral'
-                                      : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
-                                        ? cat.bias_score
-                                        : cat.positive_impact_score
-                                  }
+                                    .join(' ')}
                                 </span>
                               ))}
                             </div>

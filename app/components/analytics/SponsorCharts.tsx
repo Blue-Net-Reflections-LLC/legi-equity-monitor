@@ -76,7 +76,7 @@ export function OverallChart({ data }: { data: ChartData[] }) {
       {
         label: 'Neutral',
         data: data.map(d => d.neutral),
-        backgroundColor: '#71717a',
+        backgroundColor: '#9ca3af',
       },
     ],
   };
@@ -105,7 +105,7 @@ export function CategoryChart({ data }: { data: ChartData[] }) {
       {
         label: 'Neutral',
         data: data.map(d => d.neutral),
-        backgroundColor: '#71717a',
+        backgroundColor: '#9ca3af',
       },
     ],
   };

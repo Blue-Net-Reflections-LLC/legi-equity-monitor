@@ -172,7 +172,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
             {
               label: 'Neutral',
               data: neutralData,
-              backgroundColor: 'rgb(156, 163, 175)', // gray-400
+              backgroundColor: '#9ca3af', // gray-400
               barPercentage: 0.8,
               categoryPercentage: 0.9
             },
