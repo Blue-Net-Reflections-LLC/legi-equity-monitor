@@ -18,16 +18,16 @@ export default function ContactPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-12">
         <div className="w-full lg:w-3/4 mx-auto">
-          <div className="prose dark:prose-invert max-w-none">
+          <div className="space-y-12">
             {/* Email Section */}
             <section className="mb-16">
               <div className="flex items-center space-x-2 mb-6">
-                <Mail className="w-6 h-6" />
-                <h2 className="text-2xl font-bold m-0">Get in Touch</h2>
+                <Mail className="w-6 h-6 text-zinc-900 dark:text-white" />
+                <h2 className="text-2xl font-bold m-0 text-zinc-900 dark:text-white">Get in Touch</h2>
               </div>
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold mb-2">VoterAI</h3>
+                  <h3 className="text-xl font-semibold mb-2 text-zinc-900 dark:text-white">VoterAI</h3>
                   <a 
                     href="mailto:info@voterai.chat"
                     className="inline-flex items-center space-x-1 text-blue-600 dark:text-blue-400 hover:underline"
@@ -37,7 +37,7 @@ export default function ContactPage() {
                   </a>
                 </div>
                 <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold mb-2">Bluenetreflection</h3>
+                  <h3 className="text-xl font-semibold mb-2 text-zinc-900 dark:text-white">Bluenetreflection</h3>
                   <a 
                     href="mailto:info@blunetreflections.com"
                     className="inline-flex items-center space-x-1 text-blue-600 dark:text-blue-400 hover:underline"
@@ -52,14 +52,14 @@ export default function ContactPage() {
             {/* Blog Announcement Section */}
             <section className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-8 rounded-lg">
               <div className="flex items-center space-x-2 mb-6">
-                <Newspaper className="w-6 h-6" />
-                <h2 className="text-2xl font-bold m-0">Coming Soon: Impact Blog</h2>
+                <Newspaper className="w-6 h-6 text-zinc-900 dark:text-white" />
+                <h2 className="text-2xl font-bold m-0 text-zinc-900 dark:text-white">Coming Soon: Impact Blog</h2>
               </div>
-              <p className="text-lg leading-relaxed mb-6">
+              <p className="text-lg leading-relaxed mb-6 text-zinc-700 dark:text-zinc-300">
                 We&apos;re evolving our platform to include in-depth analysis of bills that have severe impacts across the nation. 
                 Our upcoming blog will feature:
               </p>
-              <ul className="list-disc pl-6 space-y-2 mb-6">
+              <ul className="list-disc pl-6 space-y-2 mb-6 text-zinc-700 dark:text-zinc-300">
                 <li>Detailed analysis of high-impact legislation</li>
                 <li>Expert insights on legislative trends</li>
                 <li>Community perspectives and discussions</li>
