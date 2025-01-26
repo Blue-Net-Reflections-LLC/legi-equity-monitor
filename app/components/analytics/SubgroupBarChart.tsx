@@ -2,6 +2,7 @@
 
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import type { TooltipItem } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -24,7 +25,6 @@ interface CategoryData {
 }
 
 export interface SubgroupBarChartProps {
-  title?: string;
   data: CategoryData[];
 }
 
@@ -86,7 +86,7 @@ const subgroupNames: Record<string, string> = {
   RM: 'Retired Military Personnel'
 };
 
-export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
+export const SubgroupBarChart = ({ data }: SubgroupBarChartProps) => {
   const categorySubgroupCounts = data.reduce((acc, categoryData) => {
     // Skip if category is not recognized
     const categoryKey = categoryData.category.toLowerCase();
@@ -127,7 +127,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
 
     // Only include subgroups that have counts
     const filteredCounts = Object.entries(subgroupCounts)
-      .filter(([_, counts]) => counts.positive > 0 || counts.bias > 0 || counts.neutral > 0)
+      .filter(([, counts]) => counts.positive > 0 || counts.bias > 0 || counts.neutral > 0)
       .reduce((obj, [code, counts]) => {
         obj[code] = counts;
         return obj;
@@ -220,7 +220,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
             },
             tooltip: {
               callbacks: {
-                label: (context: any) => {
+                label: (context: TooltipItem<'bar'>) => {
                   return `${context.dataset.label}: ${context.parsed.x} bills`;
                 },
               },

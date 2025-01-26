@@ -1,6 +1,6 @@
 import db from "@/lib/db";
 import { notFound } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardContent } from "@/app/components/ui/card";
+import { Card } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from '@/app/[state]/bill/[id]/BackButton';
 import Link from 'next/link';

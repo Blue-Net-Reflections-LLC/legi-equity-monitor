@@ -10,6 +10,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import type { TooltipItem } from 'chart.js';
 
 ChartJS.register(
   CategoryScale,
@@ -178,7 +179,7 @@ export function SubgroupChart({ data }: { data: SubgroupData[] }) {
       ...chartOptions.plugins,
       tooltip: {
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'bar'>) => {
             const item = data.find(
               d => d.category === categories[context.dataIndex] && 
                    d.subgroup === context.dataset.label
