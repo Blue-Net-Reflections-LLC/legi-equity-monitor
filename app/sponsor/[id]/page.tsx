@@ -54,19 +54,6 @@ interface SponsoredBill {
   categories: CategoryScore[];
 }
 
-interface VotedBill {
-  bill_id: number;
-  bill_number: string;
-  title: string;
-  state_abbr: string;
-  vote_date: Date;
-  vote_desc: string;
-  vote: string;
-  overall_bias_score: number | null;
-  overall_positive_impact_score: number | null;
-  categories: CategoryScore[];
-}
-
 interface SponsorAnalytics {
   overallCounts: {
     name: string;
@@ -259,91 +246,6 @@ async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
   return Array.from(billMap.values());
 }
 
-async function getVotingHistory(peopleId: string): Promise<VotedBill[]> {
-  const votes = await db`
-    WITH category_scores AS (
-      SELECT 
-        bacs.analysis_id,
-        bacs.category,
-        bacs.bias_score,
-        bacs.positive_impact_score,
-        json_agg(json_build_object(
-          'subgroup_code', bass.subgroup_code,
-          'bias_score', bass.bias_score,
-          'positive_impact_score', bass.positive_impact_score,
-          'evidence', bass.evidence
-        )) as subgroups
-      FROM bill_analysis_category_scores bacs
-      LEFT JOIN bill_analysis_subgroup_scores bass 
-        ON bacs.category_score_id = bass.category_score_id
-      GROUP BY bacs.analysis_id, bacs.category, bacs.bias_score, bacs.positive_impact_score
-    )
-    SELECT
-      b.bill_id,
-      b.bill_number,
-      b.title,
-      st.state_abbr,
-      bv.roll_call_date as vote_date,
-      bv.roll_call_desc as vote_desc,
-      CASE 
-        WHEN bvd.vote_id = 1 THEN 'Yea'
-        WHEN bvd.vote_id = 2 THEN 'Nay'
-        WHEN bvd.vote_id = 3 THEN 'Not Voting'
-        ELSE 'Other'
-      END as vote,
-      bar.overall_bias_score,
-      bar.overall_positive_impact_score,
-      cs.category,
-      cs.bias_score,
-      cs.positive_impact_score,
-      cs.subgroups,
-      bv.roll_call_id
-    FROM ls_bill b
-    INNER JOIN ls_bill_vote bv ON b.bill_id = bv.bill_id
-    INNER JOIN ls_bill_vote_detail bvd ON bv.roll_call_id = bvd.roll_call_id
-    INNER JOIN ls_state st ON b.state_id = st.state_id
-    LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
-    LEFT JOIN category_scores cs ON bar.analysis_id = cs.analysis_id
-    WHERE bvd.people_id = ${peopleId}
-    ORDER BY bv.roll_call_date DESC
-    LIMIT 50
-  ` as unknown as (VotedBill & CategoryScore & { subgroups: SubgroupScore[]; roll_call_id: number })[];
-
-  // Group the categories by bill and roll call
-  const voteMap = new Map<string, VotedBill>();
-  
-  for (const row of votes) {
-    const { 
-      category, 
-      bias_score, 
-      positive_impact_score,
-      subgroups,
-      roll_call_id,
-      ...voteData 
-    } = row;
-
-    const voteKey = `${voteData.bill_id}-${roll_call_id}`;
-
-    if (!voteMap.has(voteKey)) {
-      voteMap.set(voteKey, {
-        ...voteData,
-        categories: []
-      });
-    }
-
-    if (category) {
-      voteMap.get(voteKey)!.categories.push({
-        category,
-        bias_score,
-        positive_impact_score,
-        subgroups: subgroups || []
-      });
-    }
-  }
-
-  return Array.from(voteMap.values());
-}
-
 function transformBillsToCategories(bills: (SponsoredBill | VotedBill)[]): CategoryData[] {
   const categoryMap = new Map<string, CategoryData>();
   
@@ -380,13 +282,8 @@ export default async function SponsorPage({
     notFound();
   }
 
-  const [sponsoredBills, votingHistory] = await Promise.all([
-    getSponsoredBills(params.id),
-    getVotingHistory(params.id)
-  ]);
-
+  const sponsoredBills = await getSponsoredBills(params.id);
   const sponsoredAnalytics = aggregateAnalytics(sponsoredBills);
-  const votingAnalytics = aggregateAnalytics(votingHistory);
 
   return (
     <div className="py-8 min-h-screen bg-white dark:bg-zinc-900">
@@ -485,42 +382,6 @@ export default async function SponsorPage({
                     {sponsoredBills.length}
                   </div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Votes Cast
-                  </div>
-                  <div className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {votingHistory.length}
-                  </div>
-                </div>
-                {votingHistory.length > 0 && (
-                  <div>
-                    <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                      Voting Pattern
-                    </div>
-                    <div className="mt-2 flex gap-2">
-                      {Object.entries(
-                        votingHistory.reduce((acc, vote) => {
-                          acc[vote.vote] = (acc[vote.vote] || 0) + 1;
-                          return acc;
-                        }, {} as Record<string, number>)
-                      ).map(([vote, count]) => (
-                        <div 
-                          key={vote}
-                          className={`text-sm px-2 py-1 rounded ${
-                            vote === 'Yea' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                              : vote === 'Nay'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                              : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                          }`}
-                        >
-                          {vote}: {count}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </Card>
           </div>
@@ -641,123 +502,11 @@ export default async function SponsorPage({
                 </div>
               </Card>
 
-              {/* Voting History */}
+              {/* Voting History - Placeholder for AJAX implementation */}
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Recent Votes</h2>
-                
-                {/* Voting Analysis Charts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Overall Impact</h3>
-                    <OverallChart data={votingAnalytics.overallCounts} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Category Breakdown</h3>
-                    <CategoryChart data={votingAnalytics.categoryBreakdown} />
-                  </div>
-                </div>
-
-                {/* Voting History Subgroups */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-4">Subgroup Analysis</h3>
-                  <SubgroupBarChart data={transformBillsToCategories(votingHistory)} />
-                </div>
-
-                {/* Voting History List */}
-                <div className="space-y-4">
-                  {votingHistory.length === 0 ? (
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      No voting history available
-                    </p>
-                  ) : (
-                    votingHistory.map((vote) => (
-                      <Link
-                        key={`${vote.bill_id}-${vote.vote_date}`}
-                        href={`/${vote.state_abbr}/bill/${vote.bill_id}`}
-                        className="block"
-                      >
-                        <div className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="font-medium text-zinc-900 dark:text-white">
-                                {vote.bill_number}
-                              </div>
-                              <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                                {vote.title}
-                              </div>
-                              {(vote.overall_bias_score !== null || vote.overall_positive_impact_score !== null) && (
-                                <div className="flex flex-wrap gap-2 mt-2 items-center">
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                    vote.overall_bias_score === vote.overall_positive_impact_score
-                                      ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                                      : Math.abs(vote.overall_bias_score || 0) > Math.abs(vote.overall_positive_impact_score || 0)
-                                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                  }`}>
-                                    {vote.overall_bias_score === vote.overall_positive_impact_score
-                                      ? 'Neutral'
-                                      : Math.abs(vote.overall_bias_score || 0) > Math.abs(vote.overall_positive_impact_score || 0)
-                                        ? `Bias: ${vote.overall_bias_score}`
-                                        : `Positive: ${vote.overall_positive_impact_score}`
-                                    }
-                                  </span>
-                                  {vote.categories?.length > 0 && (
-                                    <svg 
-                                      className="w-4 h-4 text-zinc-400 dark:text-zinc-500" 
-                                      fill="none" 
-                                      stroke="currentColor" 
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path 
-                                        strokeLinecap="round" 
-                                        strokeLinejoin="round" 
-                                        strokeWidth={2} 
-                                        d="M14 5l7 7-7 7M3 12h18"
-                                      />
-                                    </svg>
-                                  )}
-                                  {vote.categories?.map((cat) => (
-                                    <span 
-                                      key={cat.category}
-                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                        cat.bias_score === cat.positive_impact_score
-                                          ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                                          : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
-                                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                            : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                      }`}
-                                    >
-                                      {cat.category.split('_')
-                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                        .join(' ')}: {
-                                        cat.bias_score === cat.positive_impact_score
-                                          ? 'Neutral'
-                                          : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
-                                            ? cat.bias_score
-                                            : cat.positive_impact_score
-                                      }
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <div className={`text-sm font-medium px-2 py-1 rounded ${
-                              vote.vote === 'Yea' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                                : vote.vote === 'Nay'
-                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                                : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                            }`}>
-                              {vote.vote}
-                            </div>
-                          </div>
-                          <div className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                            {new Date(vote.vote_date).toLocaleDateString()} • {vote.vote_desc}
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  )}
+                <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                  Loading voting history...
                 </div>
               </Card>
             </div>
