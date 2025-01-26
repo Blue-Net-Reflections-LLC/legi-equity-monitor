@@ -426,21 +426,29 @@ export default async function SponsorPage({
                   <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                     Voting Pattern
                   </div>
-                  <div className="mt-2 flex gap-2">
-                    {voteCounts.map(({ vote, count }) => (
-                      <div 
-                        key={vote}
-                        className={`text-sm px-2 py-1 rounded ${
-                          vote === 'Yea' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                            : vote === 'Nay'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                            : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                        }`}
-                      >
-                        {vote}: {count}
+                  <div className="mt-2">
+                    {voteCounts.length > 0 ? (
+                      <div className="flex gap-2">
+                        {voteCounts.map(({ vote, count }) => (
+                          <div 
+                            key={vote}
+                            className={`text-sm px-2 py-1 rounded ${
+                              vote === 'Yea' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                                : vote === 'Nay'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                                : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
+                            }`}
+                          >
+                            {vote}: {count}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                        No voting data available
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
