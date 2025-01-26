@@ -80,17 +80,17 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
                     href={`/sponsor/${sponsor.people_id}`}
                     className="block"
                   >
-                    <div className="flex items-center justify-between p-3 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
-                      <div>
-                        <div className="font-medium text-zinc-900 dark:text-white">
+                    <div className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
+                      <div className="flex flex-col">
+                        <div className="inline-flex items-center px-2 py-1 mb-2 self-start rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">
+                          {sponsor.party_name}
+                        </div>
+                        <div className="font-medium text-zinc-900 dark:text-white text-lg mb-1">
                           {sponsor.name}
                         </div>
                         <div className="text-sm text-zinc-500 dark:text-zinc-400">
                           {sponsor.role_name}
                         </div>
-                      </div>
-                      <div className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                        {sponsor.party_name}
                       </div>
                     </div>
                   </Link>
