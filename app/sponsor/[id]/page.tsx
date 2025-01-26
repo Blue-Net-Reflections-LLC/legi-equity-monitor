@@ -543,229 +543,224 @@ export default async function SponsorPage({
                     </div>
                   </div>
                 </div>
-              </Card>
 
-              {/* Sponsored Bills Subgroups */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sponsored Bills Subgroups</CardTitle>
-                </CardHeader>
-                <CardContent>
+                <div className="mt-6">
+                  <h3 className="text-lg font-medium mb-4">Demographic Breakdown</h3>
                   <SubgroupBarChart data={transformBillsToCategories(sponsoredBills)} />
-                </CardContent>
+                </div>
               </Card>
-            </div>
 
-            {/* Sponsored Bills */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Sponsored Bills</h2>
-              <div className="space-y-4">
-                {sponsoredBills.length === 0 ? (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    No bills sponsored
-                  </p>
-                ) : (
-                  sponsoredBills.map((bill) => (
-                    <Link
-                      key={bill.bill_id}
-                      href={`/${bill.state_abbr}/bill/${bill.bill_id}`}
-                      className="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
-                    >
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-grow">
-                          <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 mb-1">
-                            <span>{bill.state_abbr} {bill.bill_number}</span>
-                            <span>•</span>
-                            <span>{bill.status_desc}</span>
-                          </div>
-                          <h3 className="font-medium text-zinc-900 dark:text-white">
-                            {bill.title}
-                          </h3>
-                          <div className="flex flex-wrap gap-2 mt-2 items-center">
-                            {(bill.overall_bias_score !== null || bill.overall_positive_impact_score !== null) && (
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                bill.overall_bias_score === bill.overall_positive_impact_score
-                                  ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                                  : Math.abs(bill.overall_bias_score || 0) > Math.abs(bill.overall_positive_impact_score || 0)
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                    : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              }`}>
-                                {bill.overall_bias_score === bill.overall_positive_impact_score
-                                  ? 'Neutral'
-                                  : Math.abs(bill.overall_bias_score || 0) > Math.abs(bill.overall_positive_impact_score || 0)
-                                    ? `Bias: ${bill.overall_bias_score}`
-                                    : `Positive: ${bill.overall_positive_impact_score}`
-                                }
-                              </span>
-                            )}
-                            {bill.categories?.length > 0 && (
-                              <svg 
-                                className="w-4 h-4 text-zinc-400 dark:text-zinc-500" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                viewBox="0 0 24 24"
-                              >
-                                <path 
-                                  strokeLinecap="round" 
-                                  strokeLinejoin="round" 
-                                  strokeWidth={2} 
-                                  d="M14 5l7 7-7 7M3 12h18"
-                                />
-                              </svg>
-                            )}
-                            {bill.categories?.map((cat) => (
-                              <span 
-                                key={cat.category}
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  cat.bias_score === cat.positive_impact_score
-                                    ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                                    : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
-                                      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                }`}
-                              >
-                                {cat.category.split('_')
-                                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                  .join(' ')}: {
-                                  cat.bias_score === cat.positive_impact_score
-                                    ? 'Neutral'
-                                    : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
-                                      ? cat.bias_score
-                                      : cat.positive_impact_score
-                                }
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-sm text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-                          {bill.sponsor_type_desc}
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </Card>
-
-            {/* Voting History */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Recent Votes</h2>
-              
-              {/* Voting Analysis Charts */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Overall Impact</h3>
-                  <OverallChart data={votingAnalytics.overallCounts} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Category Breakdown</h3>
-                  <CategoryChart data={votingAnalytics.categoryBreakdown} />
-                </div>
-              </div>
-
-              {/* Voting History Subgroups */}
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-4">Subgroup Analysis</h3>
-                <SubgroupBarChart data={transformBillsToCategories(votingHistory)} />
-              </div>
-
-              {/* Voting History List */}
-              <div className="space-y-4">
-                {votingHistory.length === 0 ? (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    No voting history available
-                  </p>
-                ) : (
-                  votingHistory.map((vote) => (
-                    <Link
-                      key={`${vote.bill_id}-${vote.vote_date}`}
-                      href={`/${vote.state_abbr}/bill/${vote.bill_id}`}
-                      className="block"
-                    >
-                      <div className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium text-zinc-900 dark:text-white">
-                              {vote.bill_number}
+              {/* Sponsored Bills */}
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Sponsored Bills</h2>
+                <div className="space-y-4">
+                  {sponsoredBills.length === 0 ? (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      No bills sponsored
+                    </p>
+                  ) : (
+                    sponsoredBills.map((bill) => (
+                      <Link
+                        key={bill.bill_id}
+                        href={`/${bill.state_abbr}/bill/${bill.bill_id}`}
+                        className="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                      >
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-grow">
+                            <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 mb-1">
+                              <span>{bill.state_abbr} {bill.bill_number}</span>
+                              <span>•</span>
+                              <span>{bill.status_desc}</span>
                             </div>
-                            <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                              {vote.title}
-                            </div>
-                            {(vote.overall_bias_score !== null || vote.overall_positive_impact_score !== null) && (
-                              <div className="flex flex-wrap gap-2 mt-2 items-center">
+                            <h3 className="font-medium text-zinc-900 dark:text-white">
+                              {bill.title}
+                            </h3>
+                            <div className="flex flex-wrap gap-2 mt-2 items-center">
+                              {(bill.overall_bias_score !== null || bill.overall_positive_impact_score !== null) && (
                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  vote.overall_bias_score === vote.overall_positive_impact_score
+                                  bill.overall_bias_score === bill.overall_positive_impact_score
                                     ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                                    : Math.abs(vote.overall_bias_score || 0) > Math.abs(vote.overall_positive_impact_score || 0)
+                                    : Math.abs(bill.overall_bias_score || 0) > Math.abs(bill.overall_positive_impact_score || 0)
                                       ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                       : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                 }`}>
-                                  {vote.overall_bias_score === vote.overall_positive_impact_score
+                                  {bill.overall_bias_score === bill.overall_positive_impact_score
                                     ? 'Neutral'
-                                    : Math.abs(vote.overall_bias_score || 0) > Math.abs(vote.overall_positive_impact_score || 0)
-                                      ? `Bias: ${vote.overall_bias_score}`
-                                      : `Positive: ${vote.overall_positive_impact_score}`
+                                    : Math.abs(bill.overall_bias_score || 0) > Math.abs(bill.overall_positive_impact_score || 0)
+                                      ? `Bias: ${bill.overall_bias_score}`
+                                      : `Positive: ${bill.overall_positive_impact_score}`
+                                }
+                              </span>
+                              )}
+                              {bill.categories?.length > 0 && (
+                                <svg 
+                                  className="w-4 h-4 text-zinc-400 dark:text-zinc-500" 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round" 
+                                    strokeWidth={2} 
+                                    d="M14 5l7 7-7 7M3 12h18"
+                                  />
+                                </svg>
+                              )}
+                              {bill.categories?.map((cat) => (
+                                <span 
+                                  key={cat.category}
+                                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    cat.bias_score === cat.positive_impact_score
+                                      ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                      : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
+                                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                  }`}
+                                >
+                                  {cat.category.split('_')
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                    .join(' ')}: {
+                                    cat.bias_score === cat.positive_impact_score
+                                      ? 'Neutral'
+                                      : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
+                                        ? cat.bias_score
+                                        : cat.positive_impact_score
                                   }
                                 </span>
-                                {vote.categories?.length > 0 && (
-                                  <svg 
-                                    className="w-4 h-4 text-zinc-400 dark:text-zinc-500" 
-                                    fill="none" 
-                                    stroke="currentColor" 
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path 
-                                      strokeLinecap="round" 
-                                      strokeLinejoin="round" 
-                                      strokeWidth={2} 
-                                      d="M14 5l7 7-7 7M3 12h18"
-                                    />
-                                  </svg>
-                                )}
-                                {vote.categories?.map((cat) => (
-                                  <span 
-                                    key={cat.category}
-                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                      cat.bias_score === cat.positive_impact_score
-                                        ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                                        : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
-                                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                          : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                    }`}
-                                  >
-                                    {cat.category.split('_')
-                                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                      .join(' ')}: {
-                                      cat.bias_score === cat.positive_impact_score
-                                        ? 'Neutral'
-                                        : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
-                                          ? cat.bias_score
-                                          : cat.positive_impact_score
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-sm text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                            {bill.sponsor_type_desc}
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              {/* Voting History */}
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Recent Votes</h2>
+                
+                {/* Voting Analysis Charts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Overall Impact</h3>
+                    <OverallChart data={votingAnalytics.overallCounts} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Category Breakdown</h3>
+                    <CategoryChart data={votingAnalytics.categoryBreakdown} />
+                  </div>
+                </div>
+
+                {/* Voting History Subgroups */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium mb-4">Subgroup Analysis</h3>
+                  <SubgroupBarChart data={transformBillsToCategories(votingHistory)} />
+                </div>
+
+                {/* Voting History List */}
+                <div className="space-y-4">
+                  {votingHistory.length === 0 ? (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      No voting history available
+                    </p>
+                  ) : (
+                    votingHistory.map((vote) => (
+                      <Link
+                        key={`${vote.bill_id}-${vote.vote_date}`}
+                        href={`/${vote.state_abbr}/bill/${vote.bill_id}`}
+                        className="block"
+                      >
+                        <div className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-medium text-zinc-900 dark:text-white">
+                                {vote.bill_number}
+                              </div>
+                              <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                                {vote.title}
+                              </div>
+                              {(vote.overall_bias_score !== null || vote.overall_positive_impact_score !== null) && (
+                                <div className="flex flex-wrap gap-2 mt-2 items-center">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    vote.overall_bias_score === vote.overall_positive_impact_score
+                                      ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                      : Math.abs(vote.overall_bias_score || 0) > Math.abs(vote.overall_positive_impact_score || 0)
+                                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                  }`}>
+                                    {vote.overall_bias_score === vote.overall_positive_impact_score
+                                      ? 'Neutral'
+                                      : Math.abs(vote.overall_bias_score || 0) > Math.abs(vote.overall_positive_impact_score || 0)
+                                        ? `Bias: ${vote.overall_bias_score}`
+                                        : `Positive: ${vote.overall_positive_impact_score}`
                                     }
                                   </span>
-                                ))}
-                              </div>
-                            )}
+                                  {vote.categories?.length > 0 && (
+                                    <svg 
+                                      className="w-4 h-4 text-zinc-400 dark:text-zinc-500" 
+                                      fill="none" 
+                                      stroke="currentColor" 
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round" 
+                                        strokeWidth={2} 
+                                        d="M14 5l7 7-7 7M3 12h18"
+                                      />
+                                    </svg>
+                                  )}
+                                  {vote.categories?.map((cat) => (
+                                    <span 
+                                      key={cat.category}
+                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                        cat.bias_score === cat.positive_impact_score
+                                          ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                          : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
+                                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                            : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                      }`}
+                                    >
+                                      {cat.category.split('_')
+                                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                        .join(' ')}: {
+                                        cat.bias_score === cat.positive_impact_score
+                                          ? 'Neutral'
+                                          : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
+                                            ? cat.bias_score
+                                            : cat.positive_impact_score
+                                      }
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className={`text-sm font-medium px-2 py-1 rounded ${
+                              vote.vote === 'Yea' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                                : vote.vote === 'Nay'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                                : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
+                            }`}>
+                              {vote.vote}
+                            </div>
                           </div>
-                          <div className={`text-sm font-medium px-2 py-1 rounded ${
-                            vote.vote === 'Yea' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                              : vote.vote === 'Nay'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                              : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                          }`}>
-                            {vote.vote}
+                          <div className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                            {new Date(vote.vote_date).toLocaleDateString()} • {vote.vote_desc}
                           </div>
                         </div>
-                        <div className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                          {new Date(vote.vote_date).toLocaleDateString()} • {vote.vote_desc}
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </Card>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
       </div>

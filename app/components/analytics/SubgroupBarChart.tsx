@@ -185,7 +185,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
           indexAxis: 'y' as const,
           scales: {
             x: {
-              stacked: false,
+              stacked: true,
               grid: {
                 display: true,
                 color: 'rgba(156, 163, 175, 0.1)',
@@ -195,7 +195,7 @@ export const SubgroupBarChart = ({ title, data }: SubgroupBarChartProps) => {
               }
             },
             y: {
-              stacked: false,
+              stacked: true,
               grid: {
                 display: false,
               }
