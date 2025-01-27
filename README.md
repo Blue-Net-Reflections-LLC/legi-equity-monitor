@@ -49,7 +49,7 @@ Our analysis system evaluates bills across two main dimensions:
 
 ## About
 
-LegiEquity is a collaboration between VoterAI and Bluenetreflection, focused on bringing transparency and insight to legislative analysis through advanced AI technology.
+LegiEquity is a collaboration between VoterAI and Blue Net Reflections, LLC, focused on bringing transparency and insight to legislative analysis through advanced AI technology.
 
 For more information, visit https://legiequity.us
 
@@ -88,4 +88,4 @@ Required environment variables:
 
 ## License
 
-Copyright © 2025 Blue Net Reflections LLC. All rights reserved.
+Copyright © 2025 Blue Net Reflections, LLC. All rights reserved.
