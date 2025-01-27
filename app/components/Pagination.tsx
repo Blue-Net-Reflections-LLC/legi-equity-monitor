@@ -11,7 +11,7 @@ interface PaginationProps {
   className?: string;
   searchParams?: { [key: string]: string | string[] | undefined };
   handlePageChange?: (page: number) => void;
-  isLoading: boolean;
+  isLoading?: boolean;
 }
 
 export default function Pagination({ currentPage, totalItems, pageSize, className = '', searchParams = {}, handlePageChange, isLoading }: PaginationProps) {
@@ -47,6 +47,7 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
             variant="outline" 
             size="sm" 
             className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            disabled={isLoading}
           >
             1
           </Button>
@@ -64,7 +65,7 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
           <Button
             size="sm"
             variant={currentPage === i ? "default" : "outline"}
-            disabled={currentPage === i}
+            disabled={currentPage === i || isLoading}
             className={currentPage === i 
               ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               : "text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
@@ -85,6 +86,7 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
             variant="outline" 
             size="sm" 
             className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            disabled={isLoading}
           >
             {totalPages}
           </Button>
@@ -106,7 +108,7 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
         <Button
           variant="outline"
           size="sm"
-          disabled={currentPage === 1}
+          disabled={currentPage === 1 || isLoading}
           className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
         >
           Prev
@@ -122,7 +124,7 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
         <Button
           variant="outline"
           size="sm"
-          disabled={currentPage === totalPages}
+          disabled={currentPage === totalPages || isLoading}
           className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
         >
           Next
@@ -131,4 +133,3 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
     </nav>
   );
 }
-
