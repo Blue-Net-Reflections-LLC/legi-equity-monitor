@@ -37,7 +37,7 @@ export default function ContactPage() {
                   </a>
                 </div>
                 <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-lg">
-                  <h3 className="text-xl font-semibold mb-2 text-zinc-900 dark:text-white">Bluenetreflection</h3>
+                  <h3 className="text-xl font-semibold mb-2 text-zinc-900 dark:text-white">Blue Net Reflections, LLC</h3>
                   <a 
                     href="mailto:info@blunetreflections.com"
                     className="inline-flex items-center space-x-1 text-blue-600 dark:text-blue-400 hover:underline"
