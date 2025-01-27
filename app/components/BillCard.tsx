@@ -59,7 +59,7 @@ export function BillCard({ bill }: BillCardProps) {
     if (positiveScore >= 60) {
       return { 
         color: "text-emerald-500", 
-        label: "Positive Impact",
+        label: "Positive",
         Icon: CheckCircle,
         score: positiveScore
       };
@@ -69,7 +69,7 @@ export function BillCard({ bill }: BillCardProps) {
     if (biasScore >= 60) {
       return { 
         color: "text-red-500", 
-        label: "High Bias",
+        label: "Bias",
         Icon: AlertTriangle,
         score: biasScore
       };
@@ -94,7 +94,7 @@ export function BillCard({ bill }: BillCardProps) {
           {/* Top Row: Bill Number, Status, Impact */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold">{bill.bill_number}</span>
+              <span className="text-lg font-semibold dark:font-medium">{bill.bill_number}</span>
               <span className="text-sm px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 rounded">
                 {bill.status_desc}
               </span>
@@ -121,7 +121,7 @@ export function BillCard({ bill }: BillCardProps) {
 
           {/* Title with tooltip */}
           <h2 
-            className={`text-xl font-semibold mt-4 leading-7 ${
+            className={`text-base font-semibold dark:font-medium mt-4 leading-7 ${
               bill.description === bill.title 
                 ? 'line-clamp-2 mb-2' 
                 : 'line-clamp-1'
@@ -133,7 +133,7 @@ export function BillCard({ bill }: BillCardProps) {
 
           {/* Description with truncation */}
           {bill.description !== bill.title && (
-            <p className="text-neutral-600 dark:text-neutral-400 mt-2 line-clamp-2">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2 line-clamp-2">
               {bill.description}
             </p>
           )}
@@ -149,7 +149,7 @@ export function BillCard({ bill }: BillCardProps) {
           )}
 
           {/* Sponsors Info and Date */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg mt-4">
+          <div className="grid grid-cols-3 gap-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg !my-4">
             {/* Action Date */}
             <div className="flex flex-col">
               <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
