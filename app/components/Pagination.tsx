@@ -90,7 +90,7 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
   };
 
   return (
-    <nav className={`flex justify-center items-center gap-1pb-6 pb-6 pt-2   ${className}`}>
+    <nav className={`flex justify-center items-center gap-1pb-6 pb-6 pt-2  ${className}`}>
       <Button
         variant="outline"
         size="sm"
