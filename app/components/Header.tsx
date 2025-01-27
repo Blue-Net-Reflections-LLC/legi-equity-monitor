@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Scale } from 'lucide-react'
+import { ThemeToggle } from './ThemeToggle'
 
 export default function Header() {
   return (
@@ -9,7 +10,7 @@ export default function Header() {
           <Scale size={24} className="text-zinc-900 dark:text-white" />
           <span className="text-xl font-bold text-zinc-900 dark:text-white">LegiEquity</span>
         </Link>
-        <nav>
+        <nav className="flex items-center space-x-4">
           <ul className="flex space-x-4">
             <li>
               <Link href="/" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
@@ -17,11 +18,22 @@ export default function Header() {
               </Link>
             </li>
             <li>
-              <Link href="/search" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                Search
+              <Link href="/about" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                About
+              </Link>
+            </li>
+            <li>
+              <Link href="/blog" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                Impact Blog
+              </Link>
+            </li>
+            <li>
+              <Link href="/contact" className="text-zinc-700 dark:text-neutral-200 hover:text-zinc-900 dark:hover:text-white transition-colors">
+                Contact
               </Link>
             </li>
           </ul>
+          <ThemeToggle showTooltip />
         </nav>
       </div>
     </header>

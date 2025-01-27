@@ -19,13 +19,23 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": ["./*"],
+      "@/components/*": ["app/components/*"],
+      "@/lib/*": ["lib/*"],
+      "@/ui/*": ["app/components/ui/*"]
+    },
+    "baseUrl": "."
   },
   "ts-node": {
     "esm": true,
     "experimentalSpecifiers": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "scripts/**/*"
+  ],
   "exclude": ["node_modules"]
 }

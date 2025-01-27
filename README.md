@@ -1,35 +1,67 @@
-# Legislative Equity Monitor
+# ⚖ LegiEquity - Legislative Impact Analysis
 
-A web application that leverages Large Language Models (LLMs) to analyze the racial equity impact of legislative bills. The system uses AI to process bill text and identify potential impacts on different racial and ethnic communities, providing data-driven insights into legislative effects.
+LegiEquity provides comprehensive analysis of legislative bills across all 50 states, DC, and the US Congress, focusing on their impact on various demographic groups and categories.
+
+Visit us at: https://legiequity.us
+
+## Coverage
+
+- All 50 US States
+- District of Columbia
+- US Congress
+- State-level analysis (Coming Soon)
 
 ## Features
 
-- AI-powered bill analysis using OpenAI's GPT models
-- Automated racial equity impact assessment
-- Impact severity classification (mild to urgent)
-- Sentiment analysis (positive/negative impacts)
-- Interactive dashboard with filtering capabilities
-- Detailed bill analysis with sponsor information and voting records
-- Impact severity indicators for different demographic groups
+### Bill Analysis
+- Detailed analysis of bills' impact on different demographic groups
+- Category-based classification and scoring
+- Positive impact and bias assessment
+- Evidence-based scoring with source citations
 
-## Analysis Approach
+### Demographic Impact Scoring
+Our analysis system evaluates bills across two main dimensions:
 
-The system employs Large Language Models to:
-1. Process and understand legislative bill text
-2. Analyze potential impacts on different racial and ethnic communities
-3. Classify the severity and type of impact for each demographic group
-4. Generate detailed explanations of identified impacts
-5. Provide evidence-based reasoning for impact assessments
+1. **Category Level Analysis**
+   - Bills are analyzed within broad categories (e.g., Race, Religion, Gender, Age, Disability, Veterans)
+   - Each category receives an overall impact score based on aggregated subgroup analysis
+   - Scores indicate whether the bill has a positive impact or potential bias
 
-## Technology Stack
+2. **Demographic Subgroup Analysis**
+   - Detailed analysis of impact on specific subgroups within each category
+   - Each subgroup receives individual scores for:
+     - Positive Impact (0-100%): Measures beneficial effects
+     - Bias Score (0-100%): Identifies potential negative impacts
+   - Neutral scoring when impact is minimal or balanced
 
+### Sponsor Analysis
+- Comprehensive voting history analysis
+- Demographic impact breakdown of sponsored bills
+- Category-wise analysis of legislative focus
+- Overall positive impact and bias assessment
+
+## Coming Soon
+
+- Enhanced Search and Filtering
+- State-level Analytics Dashboard
+- Impact Blog
+- API Access
+
+## About
+
+LegiEquity is a collaboration between VoterAI and Blue Net Reflections, LLC, focused on bringing transparency and insight to legislative analysis through advanced AI technology.
+
+For more information, visit https://legiequity.us
+
+## Development Setup
+
+### Technology Stack
 - Next.js 14
 - TypeScript
 - PostgreSQL
-- OpenAI GPT API for AI analysis
-- Tailwind CSS for styling
+- Tailwind CSS
 
-## Getting Started
+### Getting Started
 
 1. Clone the repository
 2. Install dependencies:
@@ -45,19 +77,15 @@ The system employs Large Language Models to:
    npm run dev
    ```
 
-## Environment Variables
-
+### Environment Variables
 Required environment variables:
 - `DATABASE_URL`: PostgreSQL connection string
-- `OPENAI_API_KEY`: OpenAI API key for LLM analysis
 
-## Scripts
-
+### Scripts
 - `npm run dev`: Start development server
 - `npm run build`: Build for production
 - `npm run start`: Start production server
-- `npm run analyze`: Run AI-powered bill analysis script
 
 ## License
 
-Copyright © 2024 Blue Net Reflections LLC. All rights reserved.
+Copyright © 2025 Blue Net Reflections, LLC. All rights reserved.

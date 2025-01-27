@@ -36,8 +36,16 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
     // Always show first page
     if (currentPage > 3) {
       pages.push(
-        <Button key={1} variant="outline" size="sm" onClick={() => onPageChange(1)}>1</Button>,
-        <span key="leftEllipsis" className="px-2">...</span>
+        <Button 
+          key={1} 
+          variant="outline" 
+          size="sm" 
+          onClick={() => onPageChange(1)}
+          className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          1
+        </Button>,
+        <span key="leftEllipsis" className="px-2 text-zinc-600 dark:text-zinc-400">...</span>
       );
     }
     
@@ -51,6 +59,11 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
           size="sm"
           variant={currentPage === i ? "default" : "outline"}
           onClick={() => onPageChange(i)}
+          disabled={currentPage === i}
+          className={currentPage === i 
+            ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            : "text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          }
         >
           {i}
         </Button>
@@ -60,8 +73,14 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
     // Always show last page
     if (currentPage < totalPages - 2) {
       pages.push(
-        <span key="rightEllipsis" className="px-2">...</span>,
-        <Button key={totalPages} variant="outline" size="sm" onClick={() => onPageChange(totalPages)}>
+        <span key="rightEllipsis" className="px-2 text-zinc-600 dark:text-zinc-400">...</span>,
+        <Button 
+          key={totalPages} 
+          variant="outline" 
+          size="sm" 
+          onClick={() => onPageChange(totalPages)}
+          className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
           {totalPages}
         </Button>
       );
@@ -71,12 +90,13 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
   };
 
   return (
-    <nav className={`flex justify-center items-center gap-1 ${className}`}>
+    <nav className={`flex justify-center items-center gap-1pb-6 pb-6 pt-2  ${className}`}>
       <Button
         variant="outline"
         size="sm"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
+        className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
       >
         Prev
       </Button>
@@ -86,6 +106,7 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
         size="sm"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
+        className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
       >
         Next
       </Button>
