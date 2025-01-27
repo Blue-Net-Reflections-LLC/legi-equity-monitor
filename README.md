@@ -1,6 +1,8 @@
-# VoterAI - Legislative Impact Analysis
+# ⚖ LegiEquity - Legislative Impact Analysis
 
-VoterAI provides comprehensive analysis of legislative bills across all 50 states, DC, and the US Congress, focusing on their impact on various demographic groups and categories.
+LegiEquity provides comprehensive analysis of legislative bills across all 50 states, DC, and the US Congress, focusing on their impact on various demographic groups and categories.
+
+Visit us at: https://legiequity.us
 
 ## Coverage
 
@@ -47,9 +49,9 @@ Our analysis system evaluates bills across two main dimensions:
 
 ## About
 
-VoterAI is a collaboration between VoterAI and Bluenetreflection, focused on bringing transparency and insight to legislative analysis through advanced AI technology.
+LegiEquity is a collaboration between VoterAI and Bluenetreflection, focused on bringing transparency and insight to legislative analysis through advanced AI technology.
 
-For more information, contact us at info@voterai.chat
+For more information, visit https://legiequity.us
 
 ## Development Setup
 
@@ -86,4 +88,4 @@ Required environment variables:
 
 ## License
 
-Copyright © 2024 Blue Net Reflections LLC. All rights reserved.
+Copyright © 2025 Blue Net Reflections LLC. All rights reserved.
