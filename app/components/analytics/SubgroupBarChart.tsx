@@ -189,15 +189,30 @@ export const SubgroupBarChart = ({ data }: SubgroupBarChartProps) => {
               grid: {
                 display: true,
                 color: 'rgba(156, 163, 175, 0.1)',
+                drawBorder: true,
+                borderColor: 'rgba(156, 163, 175, 0.2)'
               },
               ticks: {
                 stepSize: 1,
+                color: 'rgba(156, 163, 175, 0.8)'
+              },
+              border: {
+                color: 'rgba(156, 163, 175, 0.2)'
               }
             },
             y: {
               stacked: true,
               grid: {
-                display: false,
+                display: true,
+                drawBorder: true,
+                color: 'rgba(156, 163, 175, 0.1)',
+                borderColor: 'rgba(156, 163, 175, 0.2)'
+              },
+              ticks: {
+                color: 'rgba(156, 163, 175, 0.8)'
+              },
+              border: {
+                color: 'rgba(156, 163, 175, 0.2)'
               }
             },
           },
@@ -205,6 +220,7 @@ export const SubgroupBarChart = ({ data }: SubgroupBarChartProps) => {
             title: {
               display: true,
               text: categoryName,
+              color: 'rgba(156, 163, 175, 0.8)',
               font: {
                 size: 16,
               },
@@ -216,6 +232,7 @@ export const SubgroupBarChart = ({ data }: SubgroupBarChartProps) => {
               position: 'bottom' as const,
               labels: {
                 padding: 20,
+                color: 'rgba(156, 163, 175, 0.8)'
               },
             },
             tooltip: {
@@ -229,7 +246,7 @@ export const SubgroupBarChart = ({ data }: SubgroupBarChartProps) => {
         };
 
         return (
-          <div key={category} className="bg-white dark:bg-zinc-800 p-4 rounded-lg">
+          <div key={category} className="rounded-lg">
             <div className="h-[200px]">
               <Bar data={chartData} options={options} />
             </div>

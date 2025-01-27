@@ -24,6 +24,7 @@ export function SponsoredBillsList({ bills }: { bills: Bill[] }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [isClient, setIsClient] = useState(false);
   const billsContainerRef = useRef<HTMLDivElement>(null);
+  const previousPage = useRef(currentPage);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -31,12 +32,15 @@ export function SponsoredBillsList({ bills }: { bills: Bill[] }) {
   }, []);
 
   useEffect(() => {
-    if (billsContainerRef.current) {
-      const yOffset = -70;
-      const y = billsContainerRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+    if (isClient && previousPage.current !== currentPage) {
+      if (billsContainerRef.current) {
+        const yOffset = -70;
+        const y = billsContainerRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+      previousPage.current = currentPage;
     }
-  }, [currentPage]);
+  }, [currentPage, isClient]);
 
   const totalPages = Math.ceil(bills.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -62,7 +66,7 @@ export function SponsoredBillsList({ bills }: { bills: Bill[] }) {
                   <Link
                     key={bill.bill_id}
                     href={`/${bill.state_abbr}/bill/${bill.bill_id}`}
-                    className="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                    className="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all"
                   >
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-grow">
@@ -149,7 +153,7 @@ export function SponsoredBillsList({ bills }: { bills: Bill[] }) {
             <Link
               key={bill.bill_id}
               href={`/${bill.state_abbr}/bill/${bill.bill_id}`}
-              className="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+              className="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all"
             >
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-grow">

@@ -25,22 +25,53 @@ const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
+    title: {
+      display: true,
+      text: 'Overall',
+      color: 'rgba(156, 163, 175, 0.8)',
+      font: {
+        size: 16,
+      },
+      padding: {
+        bottom: 16,
+      },
+    },
     legend: {
       position: 'bottom' as const,
+      labels: {
+        padding: 20,
+        color: 'rgba(156, 163, 175, 0.8)'
+      },
     },
   },
   scales: {
     x: {
       grid: {
         display: true,
-        color: 'rgba(0, 0, 0, 0.1)',
+        color: 'rgba(156, 163, 175, 0.1)',
+        drawBorder: true,
+        borderColor: 'rgba(156, 163, 175, 0.2)'
       },
+      ticks: {
+        color: 'rgba(156, 163, 175, 0.8)'
+      },
+      border: {
+        color: 'rgba(156, 163, 175, 0.2)'
+      }
     },
     y: {
       grid: {
         display: true,
-        color: 'rgba(0, 0, 0, 0.1)',
+        color: 'rgba(156, 163, 175, 0.1)',
+        drawBorder: true,
+        borderColor: 'rgba(156, 163, 175, 0.2)'
       },
+      ticks: {
+        color: 'rgba(156, 163, 175, 0.8)'
+      },
+      border: {
+        color: 'rgba(156, 163, 175, 0.2)'
+      }
     },
   },
 };
@@ -114,20 +145,43 @@ export function CategoryChart({ data }: { data: ChartData[] }) {
   const categoryOptions = {
     ...chartOptions,
     indexAxis: 'y' as const,
+    plugins: {
+      ...chartOptions.plugins,
+      title: {
+        ...chartOptions.plugins.title,
+        text: 'Category Breakdown',
+      },
+    },
     scales: {
       x: {
         stacked: true,
         grid: {
           display: true,
-          color: 'rgba(0, 0, 0, 0.1)',
+          color: 'rgba(156, 163, 175, 0.1)',
+          drawBorder: true,
+          borderColor: 'rgba(156, 163, 175, 0.2)'
         },
+        ticks: {
+          color: 'rgba(156, 163, 175, 0.8)'
+        },
+        border: {
+          color: 'rgba(156, 163, 175, 0.2)'
+        }
       },
       y: {
         stacked: true,
         grid: {
           display: true,
-          color: 'rgba(0, 0, 0, 0.1)',
+          color: 'rgba(156, 163, 175, 0.1)',
+          drawBorder: true,
+          borderColor: 'rgba(156, 163, 175, 0.2)'
         },
+        ticks: {
+          color: 'rgba(156, 163, 175, 0.8)'
+        },
+        border: {
+          color: 'rgba(156, 163, 175, 0.2)'
+        }
       },
     },
   };

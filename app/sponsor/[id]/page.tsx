@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { Card } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from '@/app/[state]/bill/[id]/BackButton';
-import Link from 'next/link';
 import Image from 'next/image';
 import { OverallChart, CategoryChart } from '@/app/components/analytics/SponsorCharts';
 import { SubgroupBarChart } from '@/app/components/analytics/SubgroupBarChart';
@@ -462,22 +461,19 @@ export default async function SponsorPage({
             {/* Analytics Section */}
             <div className="grid grid-cols-1 gap-6">
               <Card className="p-4">
-                <h2 className="text-xl font-semibold mb-3">Sponsored Bills Analysis</h2>
+                <h2 className="text-xl font-semibold mb-8">Sponsored Bills Analysis</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]">
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Overall Impact</h3>
                     <OverallChart data={sponsoredAnalytics.overallCounts} />
                   </div>
                   <div className="h-full">
-                    <h3 className="text-lg font-medium mb-2">Category Breakdown</h3>
                     <div className="h-[calc(100%-2rem)]">
                       <CategoryChart data={sponsoredAnalytics.categoryBreakdown} />
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6">
-                  <h3 className="text-lg font-medium mb-4">Demographic Breakdown</h3>
+                <div className="">
                   <SubgroupBarChart data={transformBillsToCategories(sponsoredBills)} />
                 </div>
               </Card>
