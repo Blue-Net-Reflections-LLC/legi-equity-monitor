@@ -1,7 +1,8 @@
 'use client';
 
 import { Button } from "./ui/button";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 interface PaginationProps {
   currentPage: number;
@@ -9,16 +10,17 @@ interface PaginationProps {
   pageSize: number;
   className?: string;
   searchParams?: { [key: string]: string | string[] | undefined };
+  handlePageChange?: (page: number) => void;
+  isLoading?: boolean;
 }
 
-export default function Pagination({ currentPage, totalItems, pageSize, className = '', searchParams = {} }: PaginationProps) {
-  const router = useRouter();
+export default function Pagination({ currentPage, totalItems, pageSize, className = '', searchParams = {}, handlePageChange, isLoading }: PaginationProps) {
   const pathname = usePathname();
 
   const totalPages = Math.ceil(totalItems / pageSize);
   if (totalPages <= 1) return null;
 
-  const onPageChange = (page: number) => {
+  const getPageUrl = (page: number) => {
     const params = new URLSearchParams();
     // Preserve all existing search params except page
     Object.entries(searchParams).forEach(([key, value]) => {
@@ -27,7 +29,11 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
       }
     });
     params.set('page', page.toString());
-    router.push(`${pathname}?${params.toString()}`);
+    return `${pathname}?${params.toString()}`;
+  };
+
+  const onPageClick = (page: number) => {
+    handlePageChange?.(page);
   };
 
   const renderPageNumbers = () => {
@@ -36,15 +42,16 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
     // Always show first page
     if (currentPage > 3) {
       pages.push(
-        <Button 
-          key={1} 
-          variant="outline" 
-          size="sm" 
-          onClick={() => onPageChange(1)}
-          className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-        >
-          1
-        </Button>,
+        <Link key={1} href={getPageUrl(1)} onClick={() => onPageClick(1)}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            disabled={isLoading}
+          >
+            1
+          </Button>
+        </Link>,
         <span key="leftEllipsis" className="px-2 text-zinc-600 dark:text-zinc-400">...</span>
       );
     }
@@ -54,19 +61,19 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
          i <= Math.min(totalPages, currentPage + 1); 
          i++) {
       pages.push(
-        <Button
-          key={i}
-          size="sm"
-          variant={currentPage === i ? "default" : "outline"}
-          onClick={() => onPageChange(i)}
-          disabled={currentPage === i}
-          className={currentPage === i 
-            ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            : "text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          }
-        >
-          {i}
-        </Button>
+        <Link key={i} href={getPageUrl(i)} onClick={() => onPageClick(i)}>
+          <Button
+            size="sm"
+            variant={currentPage === i ? "default" : "outline"}
+            disabled={currentPage === i || isLoading}
+            className={currentPage === i 
+              ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              : "text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            }
+          >
+            {i}
+          </Button>
+        </Link>
       );
     }
     
@@ -74,15 +81,16 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
     if (currentPage < totalPages - 2) {
       pages.push(
         <span key="rightEllipsis" className="px-2 text-zinc-600 dark:text-zinc-400">...</span>,
-        <Button 
-          key={totalPages} 
-          variant="outline" 
-          size="sm" 
-          onClick={() => onPageChange(totalPages)}
-          className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-        >
-          {totalPages}
-        </Button>
+        <Link key={totalPages} href={getPageUrl(totalPages)} onClick={() => onPageClick(totalPages)}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            disabled={isLoading}
+          >
+            {totalPages}
+          </Button>
+        </Link>
       );
     }
     
@@ -91,26 +99,37 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
 
   return (
     <nav className={`flex justify-center items-center gap-1pb-6 pb-6 pt-2  ${className}`}>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={currentPage === 1}
-        onClick={() => onPageChange(currentPage - 1)}
-        className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+      <Link 
+        href={getPageUrl(currentPage - 1)} 
+        onClick={() => onPageClick(currentPage - 1)}
+        aria-disabled={currentPage === 1}
+        tabIndex={currentPage === 1 ? -1 : undefined}
       >
-        Prev
-      </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentPage === 1 || isLoading}
+          className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+        >
+          Prev
+        </Button>
+      </Link>
       {renderPageNumbers()}
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={currentPage === totalPages}
-        onClick={() => onPageChange(currentPage + 1)}
-        className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+      <Link 
+        href={getPageUrl(currentPage + 1)}
+        onClick={() => onPageClick(currentPage + 1)}
+        aria-disabled={currentPage === totalPages}
+        tabIndex={currentPage === totalPages ? -1 : undefined}
       >
-        Next
-      </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentPage === totalPages || isLoading}
+          className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+        >
+          Next
+        </Button>
+      </Link>
     </nav>
   );
 }
-
