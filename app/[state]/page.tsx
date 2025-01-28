@@ -46,16 +46,13 @@ async function getBills(
         END as impact_type
       FROM bill_analysis_results bar
       JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      WHERE ${filters.categories ? db`(${db.join(
-        filters.categories.map(cat => 
-          db`(bacs.category = ${cat.id} AND CASE 
-            WHEN bacs.positive_impact_score >= bacs.bias_score THEN 'POSITIVE'
-            WHEN bacs.bias_score >= 0.6 THEN 'BIAS'
-            ELSE 'NEUTRAL'
-          END = ANY(${cat.impactTypes}))`
-        ),
-        ' OR '
-      )})` : db`TRUE`}
+      WHERE ${filters.categories ? db`(${filters.categories.map(cat => 
+        db`(bacs.category = ${cat.id} AND CASE 
+          WHEN bacs.positive_impact_score >= bacs.bias_score THEN 'POSITIVE'
+          WHEN bacs.bias_score >= 0.6 THEN 'BIAS'
+          ELSE 'NEUTRAL'
+        END = ANY(${cat.impactTypes}))`
+      ).join(' OR ')})` : db`TRUE`}
     )
     SELECT 
       b.bill_id::integer,
@@ -201,16 +198,13 @@ async function getBills(
         END as impact_type
       FROM bill_analysis_results bar
       JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      WHERE ${filters.categories ? db`(${db.join(
-        filters.categories.map(cat => 
-          db`(bacs.category = ${cat.id} AND CASE 
-            WHEN bacs.positive_impact_score >= bacs.bias_score THEN 'POSITIVE'
-            WHEN bacs.bias_score >= 0.6 THEN 'BIAS'
-            ELSE 'NEUTRAL'
-          END = ANY(${cat.impactTypes}))`
-        ),
-        ' OR '
-      )})` : db`TRUE`}
+      WHERE ${filters.categories ? db`(${filters.categories.map(cat => 
+        db`(bacs.category = ${cat.id} AND CASE 
+          WHEN bacs.positive_impact_score >= bacs.bias_score THEN 'POSITIVE'
+          WHEN bacs.bias_score >= 0.6 THEN 'BIAS'
+          ELSE 'NEUTRAL'
+        END = ANY(${cat.impactTypes}))`
+      ).join(' OR ')})` : db`TRUE`}
     )
     SELECT COUNT(DISTINCT b.bill_id) 
     FROM lsv_bill b
@@ -260,16 +254,16 @@ export default async function StatePage({
       const existingCategory = acc.find(c => c.id === categoryId);
       
       if (existingCategory) {
-        existingCategory.impactTypes.push(...impactTypes as any[]);
+        existingCategory.impactTypes.push(...(impactTypes as Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'>));
       } else {
         acc.push({
           id: categoryId,
-          impactTypes: impactTypes as any[]
+          impactTypes: impactTypes as Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'>
         });
       }
       
       return acc;
-    }, [] as Array<{ id: string; impactTypes: string[] }>);
+    }, [] as Array<{ id: string; impactTypes: Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'> }>);
 
   const filters = {
     committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
