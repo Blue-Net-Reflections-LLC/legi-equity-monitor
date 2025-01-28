@@ -51,7 +51,7 @@ async function getBills(
         END as impact_type
       FROM bill_analysis_results bar
       JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      WHERE bacs.category = ${filters.categories?.[0]?.id || 'race'}
+      WHERE ${filters.categories?.length ? db`bacs.category IN ${db(filters.categories.map(c => c.id))}` : db`TRUE`}
     )
     SELECT 
       b.bill_id::integer,
@@ -199,7 +199,7 @@ async function getBills(
         END as impact_type
       FROM bill_analysis_results bar
       JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      WHERE bacs.category = ${filters.categories?.[0]?.id || 'race'}
+      WHERE ${filters.categories?.length ? db`bacs.category IN ${db(filters.categories.map(c => c.id))}` : db`TRUE`}
     )
     SELECT COUNT(DISTINCT b.bill_id) 
     FROM lsv_bill b
@@ -241,7 +241,10 @@ export default async function StatePage({
   const offset = (page - 1) * pageSize;
 
   // Parse category filters from URL
-  const categoryFilters = (searchParams.category as string || '').split(',').filter(Boolean).map(categoryId => ({
+  const categoryFilters = (Array.isArray(searchParams.category) 
+    ? searchParams.category 
+    : (searchParams.category as string || '').split(',')
+  ).filter(Boolean).map(categoryId => ({
     id: categoryId,
     impactTypes: []
   }));
