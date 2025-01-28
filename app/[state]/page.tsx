@@ -18,6 +18,9 @@ async function getBills(
     support?: 'HAS_SUPPORT' | 'NO_SUPPORT';
   } = {}
 ): Promise<{ bills: Bill[], totalCount: number }> {
+  console.log('Filters received:', filters);
+  console.log('Categories:', filters.categories);
+  
   const offset = (page - 1) * pageSize;
   
   // Get bills with pagination using LegiScan view
@@ -36,9 +39,11 @@ async function getBills(
       )
     ),
     bill_impacts AS (
-      SELECT 
+      SELECT DISTINCT
         bar.bill_id,
         bacs.category,
+        bacs.bias_score,
+        bacs.positive_impact_score,
         CASE 
           WHEN bacs.positive_impact_score >= bacs.bias_score THEN 'POSITIVE'
           WHEN bacs.bias_score >= 0.6 THEN 'BIAS'
@@ -46,13 +51,7 @@ async function getBills(
         END as impact_type
       FROM bill_analysis_results bar
       JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      WHERE ${filters.categories ? db`(${filters.categories.map(cat => 
-        db`(bacs.category = ${cat.id} AND CASE 
-          WHEN bacs.positive_impact_score >= bacs.bias_score THEN 'POSITIVE'
-          WHEN bacs.bias_score >= 0.6 THEN 'BIAS'
-          ELSE 'NEUTRAL'
-        END = ANY(${cat.impactTypes}))`
-      ).join(' OR ')})` : db`TRUE`}
+      WHERE bacs.category = ${filters.categories?.[0]?.id || 'race'}
     )
     SELECT 
       b.bill_id::integer,
@@ -135,7 +134,7 @@ async function getBills(
       ) as analysis_results
     FROM lsv_bill b
     LEFT JOIN latest_history h ON b.bill_id = h.bill_id
-    ${filters.categories ? db`JOIN bill_impacts bi ON b.bill_id = bi.bill_id` : db``}
+    ${filters.categories ? db`INNER JOIN bill_impacts bi ON b.bill_id = bi.bill_id` : db``}
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
     AND b.bill_type_id = 1  -- Only show bills
     ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
@@ -188,9 +187,11 @@ async function getBills(
   // Get total count with same conditions
   const [{ count }] = await db`
     WITH bill_impacts AS (
-      SELECT 
+      SELECT DISTINCT
         bar.bill_id,
         bacs.category,
+        bacs.bias_score,
+        bacs.positive_impact_score,
         CASE 
           WHEN bacs.positive_impact_score >= bacs.bias_score THEN 'POSITIVE'
           WHEN bacs.bias_score >= 0.6 THEN 'BIAS'
@@ -198,17 +199,11 @@ async function getBills(
         END as impact_type
       FROM bill_analysis_results bar
       JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      WHERE ${filters.categories ? db`(${filters.categories.map(cat => 
-        db`(bacs.category = ${cat.id} AND CASE 
-          WHEN bacs.positive_impact_score >= bacs.bias_score THEN 'POSITIVE'
-          WHEN bacs.bias_score >= 0.6 THEN 'BIAS'
-          ELSE 'NEUTRAL'
-        END = ANY(${cat.impactTypes}))`
-      ).join(' OR ')})` : db`TRUE`}
+      WHERE bacs.category = ${filters.categories?.[0]?.id || 'race'}
     )
     SELECT COUNT(DISTINCT b.bill_id) 
     FROM lsv_bill b
-    ${filters.categories ? db`JOIN bill_impacts bi ON b.bill_id = bi.bill_id` : db``}
+    ${filters.categories ? db`INNER JOIN bill_impacts bi ON b.bill_id = bi.bill_id` : db``}
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
     AND b.bill_type_id = 1  -- Only show bills
     ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
@@ -246,24 +241,10 @@ export default async function StatePage({
   const offset = (page - 1) * pageSize;
 
   // Parse category filters from URL
-  const categoryFilters = Object.entries(searchParams)
-    .filter(([key]) => key.startsWith('impact_'))
-    .reduce((acc, [key, value]) => {
-      const categoryId = key.replace('impact_', '');
-      const impactTypes = Array.isArray(value) ? value : [value];
-      const existingCategory = acc.find(c => c.id === categoryId);
-      
-      if (existingCategory) {
-        existingCategory.impactTypes.push(...(impactTypes as Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'>));
-      } else {
-        acc.push({
-          id: categoryId,
-          impactTypes: impactTypes as Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'>
-        });
-      }
-      
-      return acc;
-    }, [] as Array<{ id: string; impactTypes: Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'> }>);
+  const categoryFilters = (searchParams.category as string || '').split(',').filter(Boolean).map(categoryId => ({
+    id: categoryId,
+    impactTypes: []
+  }));
 
   const filters = {
     committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
@@ -279,42 +260,42 @@ export default async function StatePage({
   const billFilters: BillFiltersType = {
     impacts: [],
     categories: [
-      { id: 'race', name: 'Race', impactTypes: [
+      { id: 'race', name: 'Race', selected: false, impactTypes: [
         { type: 'POSITIVE', selected: false },
         { type: 'BIAS', selected: false },
         { type: 'NEUTRAL', selected: false }
       ]},
-      { id: 'religion', name: 'Religion', impactTypes: [
+      { id: 'religion', name: 'Religion', selected: false, impactTypes: [
         { type: 'POSITIVE', selected: false },
         { type: 'BIAS', selected: false },
         { type: 'NEUTRAL', selected: false }
       ]},
-      { id: 'gender', name: 'Gender', impactTypes: [
+      { id: 'gender', name: 'Gender', selected: false, impactTypes: [
         { type: 'POSITIVE', selected: false },
         { type: 'BIAS', selected: false },
         { type: 'NEUTRAL', selected: false }
       ]},
-      { id: 'age', name: 'Age', impactTypes: [
+      { id: 'age', name: 'Age', selected: false, impactTypes: [
         { type: 'POSITIVE', selected: false },
         { type: 'BIAS', selected: false },
         { type: 'NEUTRAL', selected: false }
       ]},
-      { id: 'nationality', name: 'Nationality', impactTypes: [
+      { id: 'nationality', name: 'Nationality', selected: false, impactTypes: [
         { type: 'POSITIVE', selected: false },
         { type: 'BIAS', selected: false },
         { type: 'NEUTRAL', selected: false }
       ]},
-      { id: 'sexual_orientation', name: 'Sexual Orientation', impactTypes: [
+      { id: 'sexual_orientation', name: 'Sexual Orientation', selected: false, impactTypes: [
         { type: 'POSITIVE', selected: false },
         { type: 'BIAS', selected: false },
         { type: 'NEUTRAL', selected: false }
       ]},
-      { id: 'disability', name: 'Disability', impactTypes: [
+      { id: 'disability', name: 'Disability', selected: false, impactTypes: [
         { type: 'POSITIVE', selected: false },
         { type: 'BIAS', selected: false },
         { type: 'NEUTRAL', selected: false }
       ]},
-      { id: 'veterans', name: 'Veterans', impactTypes: [
+      { id: 'veterans', name: 'Veterans', selected: false, impactTypes: [
         { type: 'POSITIVE', selected: false },
         { type: 'BIAS', selected: false },
         { type: 'NEUTRAL', selected: false }
@@ -337,12 +318,10 @@ export default async function StatePage({
 
   // Update selected states based on URL params
   if (categoryFilters.length > 0) {
-    categoryFilters.forEach(({ id, impactTypes }) => {
+    categoryFilters.forEach(({ id }) => {
       const category = billFilters.categories.find(c => c.id === id);
       if (category) {
-        category.impactTypes.forEach(impact => {
-          impact.selected = impactTypes.includes(impact.type);
-        });
+        category.selected = true;
       }
     });
   }
