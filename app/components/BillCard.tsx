@@ -45,7 +45,7 @@ export function BillCard({ bill }: BillCardProps) {
 
   const getImpactDisplay = (analysis: { overall_score: number, overall_sentiment: string, bias_detected: boolean } | undefined) => {
     if (!analysis) return { 
-      color: "text-zinc-500 dark:text-zinc-400", 
+      color: "text-neutral-500", 
       label: "Pending Analysis",
       Icon: MinusCircle,
       score: 0
@@ -77,8 +77,8 @@ export function BillCard({ bill }: BillCardProps) {
     
     // Neutral - show the higher of the two scores
     return { 
-      color: "text-zinc-500 dark:text-zinc-400", 
-      label: "Neutral",
+      color: "text-neutral-500", 
+      label: "Neutral Impact",
       Icon: MinusCircle,
       score: Math.max(positiveScore, biasScore)
     };
@@ -203,7 +203,7 @@ export function BillCard({ bill }: BillCardProps) {
                       <DemographicImpact 
                         category={category}
                         score={data.score}
-                        sentiment={data.score >= 60 ? data.sentiment : 'NEUTRAL'}
+                        sentiment={data.sentiment}
                       />
                     </div>
                   ))}

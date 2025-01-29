@@ -32,8 +32,13 @@ async function getBills(
     WITH filtered_bills AS (
       SELECT DISTINCT b.bill_id
       FROM lsv_bill b
-      JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
-      JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+      ${filters.categories?.length ? db`
+        JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+        JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+      ` : db`
+        LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+        LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+      `}
       WHERE b.state_abbr = ${stateCode.toUpperCase()}
       AND b.bill_type_id = 1
       ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
@@ -49,10 +54,10 @@ async function getBills(
           ` : cat.impactTypes.includes('POSITIVE') ? db`
             AND subbacs.positive_impact_score > subbacs.bias_score
             AND subbacs.positive_impact_score >= 0.60
-          ` : cat.impactTypes.includes('NEUTRAL') ? db`
+          ` : cat.impactTypes.length ? db`
             AND (
-              (subbacs.bias_score = subbacs.positive_impact_score)
-              OR (subbacs.bias_score < 0.60 AND subbacs.positive_impact_score < 0.60)
+              subbacs.bias_score < 0.60 
+              AND subbacs.positive_impact_score < 0.60
             )
           ` : db``}
         )
@@ -145,49 +150,40 @@ async function getBills(
 
   // Get total count with same conditions
   const [{ count }] = await db`
-    WITH bill_impacts AS (
-      SELECT DISTINCT
-        bar.bill_id,
-        bacs.category,
-        bacs.bias_score,
-        bacs.positive_impact_score,
-        CASE
-          WHEN bacs.bias_score = bacs.positive_impact_score THEN 'NEUTRAL'
-          WHEN bacs.bias_score < 0.60 AND bacs.positive_impact_score < 0.60 THEN 'NEUTRAL'
-          WHEN bacs.bias_score > bacs.positive_impact_score THEN 'BIAS'
-          WHEN bacs.positive_impact_score > bacs.bias_score THEN 'POSITIVE'
-        END as impact_type
-      FROM bill_analysis_results bar
-      JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      WHERE ${filters.categories?.length ? db`${filters.categories.map(cat => db`
-        EXISTS (
-          SELECT 1
-          FROM bill_analysis_results subbar
-          JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id
-          WHERE subbar.bill_id = bar.bill_id
-          AND subbacs.category = ${cat.id}
-          ${cat.impactTypes.includes('BIAS') ? db`
-            AND subbacs.bias_score >= subbacs.positive_impact_score 
-            AND subbacs.bias_score >= 0.60
-          ` : cat.impactTypes.includes('POSITIVE') ? db`
-            AND subbacs.positive_impact_score > subbacs.bias_score
-            AND subbacs.positive_impact_score >= 0.60
-          ` : cat.impactTypes.includes('NEUTRAL') ? db`
-            AND (
-              (subbacs.bias_score = subbacs.positive_impact_score)
-              OR (subbacs.bias_score < 0.60 AND subbacs.positive_impact_score < 0.60)
-            )
-          ` : db``}
-        )
-      `).reduce((acc, clause, idx) => 
-        idx === 0 ? clause : db`${acc} AND ${clause}`
-      , db``)}` : db`TRUE`}
-    )
     SELECT COUNT(DISTINCT b.bill_id)
     FROM lsv_bill b
-    ${filters.categories?.length ? db`INNER JOIN bill_impacts bi ON b.bill_id = bi.bill_id` : db``}
+    ${filters.categories?.length ? db`
+      JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+      JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+    ` : db`
+      LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+      LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+    `}
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
     AND b.bill_type_id = 1
+    ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
+      EXISTS (
+        SELECT 1
+        FROM bill_analysis_results subbar
+        JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id
+        WHERE subbar.bill_id = b.bill_id
+        AND subbacs.category = ${cat.id}
+        ${cat.impactTypes.includes('BIAS') ? db`
+          AND subbacs.bias_score >= subbacs.positive_impact_score 
+          AND subbacs.bias_score >= 0.60
+        ` : cat.impactTypes.includes('POSITIVE') ? db`
+          AND subbacs.positive_impact_score > subbacs.bias_score
+          AND subbacs.positive_impact_score >= 0.60
+        ` : cat.impactTypes.length ? db`
+          AND (
+            subbacs.bias_score < 0.60 
+            AND subbacs.positive_impact_score < 0.60
+          )
+        ` : db``}
+      )
+    `).reduce((acc, clause, idx) => 
+      idx === 0 ? clause : db`${acc} AND ${clause}`
+    , db``)}` : db``}
     ${filters.committee ? db`AND b.pending_committee_name = ${filters.committee}` : db``}
     ${filters.party ? db`AND EXISTS (
       SELECT 1 FROM ls_bill_sponsor sp
