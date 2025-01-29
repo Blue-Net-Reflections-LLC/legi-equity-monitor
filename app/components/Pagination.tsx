@@ -24,8 +24,13 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
     const params = new URLSearchParams();
     // Preserve all existing search params except page
     Object.entries(searchParams).forEach(([key, value]) => {
-      if (key !== 'page' && typeof value === 'string') {
-        params.set(key, value);
+      if (key !== 'page') {
+        if (Array.isArray(value)) {
+          // Handle array parameters (like multiple categories)
+          value.forEach(v => params.append(key, v));
+        } else if (typeof value === 'string') {
+          params.set(key, value);
+        }
       }
     });
     params.set('page', page.toString());
