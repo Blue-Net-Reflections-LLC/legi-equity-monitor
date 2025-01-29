@@ -1,18 +1,56 @@
 import os
+import ssl
+import logging
+from pathlib import Path
 from dotenv import load_dotenv
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
-# Load environment variables from .env.local
-load_dotenv('.env.local')
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env.local if it exists
+env_path = Path('.env.local')
+if env_path.exists():
+    logger.info(f"Loading environment from {env_path}")
+    load_dotenv(env_path, override=True)
+else:
+    logger.warning(f"{env_path} not found")
 
 # Parse LEGISCAN_DB_URL and convert to SQLAlchemy format
 db_url = os.getenv('LEGISCAN_DB_URL')
 if not db_url:
     raise ValueError("LEGISCAN_DB_URL environment variable is required")
 
-# Convert the URL to async SQLAlchemy format
+# Parse the URL and handle SSL configuration
 parsed = urlparse(db_url)
-SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{parsed.netloc}{parsed.path}?{parsed.query}"
+query_params = parse_qs(parsed.query)
+
+# Remove sslmode from query string and handle it separately in connect_args
+ssl_mode = query_params.pop('sslmode', ['prefer'])[0]
+
+# Configure SSL based on environment variables
+disable_ssl = os.getenv('DISABLE_SSL', '').lower()
+reject_unauthorized = os.getenv('NODE_TLS_REJECT_UNAUTHORIZED', '1')
+
+logger.info(f"SSL Configuration:")
+logger.info(f"DISABLE_SSL raw value: {disable_ssl!r}")
+logger.info(f"NODE_TLS_REJECT_UNAUTHORIZED raw value: {reject_unauthorized!r}")
+logger.info(f"SSL mode from URL: {ssl_mode}")
+
+# Always use SSL with verification disabled
+logger.info("Using SSL with verification disabled")
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
+connect_args = {'ssl': ssl_context}
+
+logger.info(f"Final connect_args: {connect_args}")
+
+# Reconstruct query string without sslmode
+query_string = '&'.join(f"{k}={v[0]}" for k, v in query_params.items())
+base_url = f"postgresql+asyncpg://{parsed.netloc}{parsed.path}"
+SQLALCHEMY_DATABASE_URL = f"{base_url}{'?' + query_string if query_string else ''}"
+SQLALCHEMY_CONNECT_ARGS = connect_args
 
 # Model configuration from environment
 MODEL_NAME = os.getenv('SERVER_MODEL_NAME', 'sentence-transformers/all-MiniLM-L6-v2')  # Server-side PyTorch model

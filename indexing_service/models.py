@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, func, SmallInteger, Date
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, func, SmallInteger, Date, Index
 from sqlalchemy.dialects.postgresql import ARRAY, FLOAT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -18,9 +18,11 @@ class VectorIndex(Base):
     state_name = Column(String(50), nullable=False)
     indexed_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    # Create indexes
     __table_args__ = (
-        {'postgresql_using': 'ivfflat',
-         'postgresql_with': {'lists': 100}}
+        Index('ix_vector_index_embedding', 'embedding', postgresql_using='ivfflat', postgresql_with={'lists': 100}),
+        Index('ix_vector_index_entity', 'entity_type', 'entity_id', unique=True),
+        Index('ix_vector_index_search_text', 'search_text', postgresql_using='gin'),
     )
 
 class State(Base):

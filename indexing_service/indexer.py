@@ -1,5 +1,6 @@
 import logging
 from typing import List, Dict, Any
+import asyncio
 
 import torch
 from transformers import AutoTokenizer, AutoModel
@@ -10,7 +11,7 @@ from tqdm import tqdm
 import numpy as np
 
 from config import (
-    SQLALCHEMY_DATABASE_URL, MODEL_NAME, BATCH_SIZE, 
+    SQLALCHEMY_DATABASE_URL, SQLALCHEMY_CONNECT_ARGS, MODEL_NAME, BATCH_SIZE, 
     MAX_TEXT_LENGTH, STATE_MAPPING, EMBEDDING_MAX_LENGTH
 )
 from models import VectorIndex, Bill, Sponsor, Party, State, Body, Committee
@@ -29,7 +30,10 @@ class VectorIndexer:
         self.model.eval()  # Set to evaluation mode
         
         # Database setup
-        self.engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
+        self.engine = create_async_engine(
+            SQLALCHEMY_DATABASE_URL,
+            connect_args=SQLALCHEMY_CONNECT_ARGS
+        )
         self.Session = sessionmaker(
             self.engine, class_=AsyncSession, expire_on_commit=False
         )
@@ -219,7 +223,12 @@ class VectorIndexer:
 
             logger.info("Update completed")
 
-if __name__ == "__main__":
-    import asyncio
+async def main():
     indexer = VectorIndexer()
-    asyncio.run(indexer.update_index()) 
+    try:
+        await indexer.update_index()
+    finally:
+        await indexer.engine.dispose()
+
+if __name__ == "__main__":
+    asyncio.run(main()) 
