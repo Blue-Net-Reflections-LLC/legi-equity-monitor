@@ -233,9 +233,29 @@ class VectorIndexer:
 async def main():
     indexer = VectorIndexer()
     try:
-        await indexer.update_index()
+        while True:  # Run until no more items
+            async with indexer.Session() as session:
+                # Check if there are any items to process
+                bills = await indexer._get_bills_to_update(session)
+                sponsors = await indexer._get_sponsors_to_update(session)
+                
+                if not bills and not sponsors:
+                    logger.info("No more items to process. Exiting...")
+                    break
+                
+                # Process items
+                await indexer.update_index()
+                
+                # Small delay to prevent hammering the database
+                await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Received interrupt signal. Shutting down gracefully...")
+    except Exception as e:
+        logger.error(f"Error occurred: {str(e)}")
+        raise
     finally:
         await indexer.engine.dispose()
+        logger.info("Indexer shutdown complete")
 
 if __name__ == "__main__":
     asyncio.run(main()) 
