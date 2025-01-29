@@ -8,9 +8,12 @@ import { FilterTag } from "@/app/components/filters/FilterTag";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
+import { Label } from "@/app/components/ui/label";
 
 interface BillFiltersProps {
   filters: BillFiltersType;
+  stateCode: string;
+  onPartyChange?: (party: string) => void;
   onFilterChange: (filters: BillFiltersType) => void;
 }
 
@@ -42,7 +45,12 @@ const PARTY_LABELS = {
   'I': 'Independent'
 } as const;
 
-export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
+export function BillFilters({ 
+  filters,
+  stateCode,
+  onPartyChange,
+  onFilterChange
+}: BillFiltersProps) {
   const handleCategoryImpactChange = (categoryId: string, impactType: ImpactType) => {
     onFilterChange({
       ...filters,
@@ -196,27 +204,32 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
         {/* Third Column: Party and Support */}
         <div className="space-y-4 flex flex-col">
           {/* Party Filter */}
+          <div className="space-y-4">
             <h3 className="font-medium text-lg">Party</h3>
-            <div className="rounded-lg p-2 bg-zinc-900">
-              <Select 
-                value={filters.party} 
-                onValueChange={(value: BillFiltersType['party']) => onFilterChange({ 
-                  ...filters, 
-                  party: value
-                })}
-              >
-                <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 h-9">
-                  <SelectValue placeholder="Select party" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700">
-                  {Object.entries(PARTY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={filters.party}
+              onValueChange={(value) => {
+                if (onPartyChange) {
+                  onPartyChange(value);
+                } else {
+                  onFilterChange({
+                    ...filters,
+                    party: value
+                  });
+                }
+              }}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border border-zinc-800">
+                <SelectItem value="ALL" className="text-zinc-100 focus:bg-zinc-800 focus:text-zinc-100">All Parties</SelectItem>
+                <SelectItem value="D" className="text-zinc-100 focus:bg-zinc-800 focus:text-zinc-100">Democrat</SelectItem>
+                <SelectItem value="R" className="text-zinc-100 focus:bg-zinc-800 focus:text-zinc-100">Republican</SelectItem>
+                <SelectItem value="I" className="text-zinc-100 focus:bg-zinc-800 focus:text-zinc-100">Independent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Support Filter */}
           <div className="flex-1">

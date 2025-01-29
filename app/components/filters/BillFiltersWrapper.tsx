@@ -6,6 +6,8 @@ import { BillFilters } from "./BillFilters";
 import type { BillFilters as BillFiltersType } from "@/app/types/filters";
 import { FilterIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
 
 interface BillFiltersWrapperProps {
   filters: BillFiltersType;
@@ -13,6 +15,23 @@ interface BillFiltersWrapperProps {
 }
 
 export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperProps) {
+  const router = useRouter();
+  const [optimisticParty, setOptimisticParty] = useState<string | undefined>(filters.party);
+
+  const handlePartyChange = useCallback((party: string) => {
+    // Optimistically update the UI
+    setOptimisticParty(party === 'ALL' ? undefined : party);
+
+    // Update URL and trigger navigation
+    const searchParams = new URLSearchParams(window.location.search);
+    if (party === 'ALL') {
+      searchParams.delete('party');
+    } else {
+      searchParams.set('party', party);
+    }
+    router.push(`/${stateCode.toLowerCase()}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`);
+  }, [stateCode, router]);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -27,7 +46,12 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
         "before:fixed before:inset-0 before:bg-black/50 before:-z-10"
       )}>
         <BillFilters 
-          filters={filters} 
+          filters={{
+            ...filters,
+            party: optimisticParty || 'ALL'
+          }}
+          stateCode={stateCode}
+          onPartyChange={handlePartyChange}
           onFilterChange={(newFilters) => {
             // Convert filters to URL params and navigate
             const params = new URLSearchParams();

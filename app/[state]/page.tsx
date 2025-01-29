@@ -72,7 +72,7 @@ async function getBills(
         JOIN ls_party party ON p.party_id = party.party_id
         WHERE sp.bill_id = b.bill_id
         AND sp.sponsor_order = 1
-        AND party.party_name = ${filters.party}
+        AND party.party_abbr = ${filters.party}
       )` : db``}
       ${filters.support === 'HAS_SUPPORT' ? db`AND (
         SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
@@ -192,7 +192,7 @@ async function getBills(
       JOIN ls_party party ON p.party_id = party.party_id
       WHERE sp.bill_id = b.bill_id
       AND sp.sponsor_order = 1
-      AND party.party_name = ${filters.party}
+      AND party.party_abbr = ${filters.party}
     )` : db``}
     ${filters.support === 'HAS_SUPPORT' ? db`AND (
       SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
@@ -230,6 +230,13 @@ const impactTypeIcons = {
   POSITIVE: CheckCircle,
   BIAS: AlertCircle,
   NEUTRAL: MinusCircle
+} as const;
+
+// Add party name mapping
+const partyNames = {
+  'D': 'Democrat',
+  'R': 'Republican',
+  'I': 'Independent'
 } as const;
 
 // Update the categories list
@@ -453,7 +460,7 @@ export default async function StatePage({
                         href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
                         className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
                       >
-                        Party: {filters.party}
+                        {partyNames[filters.party as keyof typeof partyNames] || filters.party}
                         <span className="text-zinc-400 hover:text-zinc-500">×</span>
                       </a>
                     );
