@@ -390,125 +390,125 @@ export default async function StatePage({
       {/* Bills Section */}
       <section className="py-4 md:px-0 px-4">
         <div className="max-w-7xl mx-auto space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
+          <div className="flex justify-between items-center flex-wrap">
+            <div className="text-sm text-gray-500 whitespace-nowrap">
               Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}
             </div>
             <div className="flex items-center gap-3">
               {(categoryFilters.length > 0 || filters.party || filters.support || filters.committee) && (
-                <div className="flex flex-wrap gap-2">
-                  {/* Category filters with impact types */}
-                  {categoryFilters.map(({ id }) => {
-                    const category = billFilters.categories.find(c => c.id === id);
-                    if (!category || !categoryColors[id as keyof typeof categoryColors]) return null;
-                    const selectedImpacts = category.impactTypes.filter(i => i.selected);
-                    const newParams = new URLSearchParams(searchParams as Record<string, string>);
-                    
-                    // Get all categories except the one being removed
-                    const otherCategories = categoryFilters
-                      .filter(cat => cat.id !== id)
-                      .map(cat => cat.id);
-                    
-                    // Clear the current parameters
-                    newParams.delete('category');
-                    newParams.delete(`impact_${id}`);
-                    
-                    // Add back other categories and their impacts
-                    otherCategories.forEach(catId => {
-                      newParams.append('category', catId);
-                      const impactParam = searchParams[`impact_${catId}`];
-                      if (impactParam) {
-                        if (Array.isArray(impactParam)) {
-                          impactParam.forEach(imp => newParams.append(`impact_${catId}`, imp));
-                        } else {
-                          newParams.append(`impact_${catId}`, impactParam);
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    {/* Category filters with impact types */}
+                    {categoryFilters.map(({ id }) => {
+                      const category = billFilters.categories.find(c => c.id === id);
+                      if (!category || !categoryColors[id as keyof typeof categoryColors]) return null;
+                      const selectedImpacts = category.impactTypes.filter(i => i.selected);
+                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                      
+                      // Get all categories except the one being removed
+                      const otherCategories = categoryFilters
+                        .filter(cat => cat.id !== id)
+                        .map(cat => cat.id);
+                      
+                      // Clear the current parameters
+                      newParams.delete('category');
+                      newParams.delete(`impact_${id}`);
+                      
+                      // Add back other categories and their impacts
+                      otherCategories.forEach(catId => {
+                        newParams.append('category', catId);
+                        const impactParam = searchParams[`impact_${catId}`];
+                        if (impactParam) {
+                          if (Array.isArray(impactParam)) {
+                            impactParam.forEach(imp => newParams.append(`impact_${catId}`, imp));
+                          } else {
+                            newParams.append(`impact_${catId}`, impactParam);
+                          }
                         }
-                      }
-                    });
+                      });
+                      
+                      return (
+                        <a
+                          key={`filter-${id}`}
+                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:opacity-90 transition-colors ${categoryColors[id as keyof typeof categoryColors]}`}
+                        >
+                          {category.name}
+                          {selectedImpacts.map(impact => {
+                            const Icon = impactTypeIcons[impact.type];
+                            return (
+                              <Icon
+                                key={impact.type}
+                                className={`h-4 w-4 ${
+                                  impact.type === 'POSITIVE' ? 'text-emerald-600 dark:text-emerald-400' :
+                                  impact.type === 'BIAS' ? 'text-red-600 dark:text-red-400' :
+                                  'text-zinc-600 dark:text-zinc-400'
+                                }`}
+                              />
+                            );
+                          })}
+                          <span className="ml-1 text-zinc-400 hover:text-zinc-500">×</span>
+                        </a>
+                      );
+                    })}
                     
-                    return (
-                      <a
-                        key={`filter-${id}`}
-                        href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:opacity-90 transition-colors ${categoryColors[id as keyof typeof categoryColors]}`}
-                      >
-                        {category.name}
-                        {selectedImpacts.map(impact => {
-                          const Icon = impactTypeIcons[impact.type];
-                          return (
-                            <Icon
-                              key={impact.type}
-                              className={`h-4 w-4 ${
-                                impact.type === 'POSITIVE' ? 'text-emerald-600 dark:text-emerald-400' :
-                                impact.type === 'BIAS' ? 'text-red-600 dark:text-red-400' :
-                                'text-zinc-600 dark:text-zinc-400'
-                              }`}
-                            />
-                          );
-                        })}
-                        <span className="ml-1 text-zinc-400 hover:text-zinc-500">×</span>
-                      </a>
-                    );
-                  })}
-                  
-                  {/* Party filter */}
-                  {filters.party && (() => {
-                    const newParams = new URLSearchParams(searchParams as Record<string, string>);
-                    newParams.delete('party');
-                    return (
-                      <a
-                        href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
-                      >
-                        {partyNames[filters.party as keyof typeof partyNames] || filters.party}
-                        <span className="text-zinc-400 hover:text-zinc-500">×</span>
-                      </a>
-                    );
-                  })()}
+                    {/* Party filter */}
+                    {filters.party && (() => {
+                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                      newParams.delete('party');
+                      return (
+                        <a
+                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
+                        >
+                          {partyNames[filters.party as keyof typeof partyNames] || filters.party}
+                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
+                        </a>
+                      );
+                    })()}
 
-                  {/* Support filter */}
-                  {filters.support && (() => {
-                    const newParams = new URLSearchParams(searchParams as Record<string, string>);
-                    newParams.delete('support');
-                    return (
-                      <a
-                        href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
-                      >
-                        {filters.support === 'HAS_SUPPORT' ? 'Has Support' : 'No Support'}
-                        <span className="text-zinc-400 hover:text-zinc-500">×</span>
-                      </a>
-                    );
-                  })()}
+                    {/* Support filter */}
+                    {filters.support && (() => {
+                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                      newParams.delete('support');
+                      return (
+                        <a
+                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
+                        >
+                          {filters.support === 'HAS_SUPPORT' ? 'Has Support' : 'No Support'}
+                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
+                        </a>
+                      );
+                    })()}
 
-                  {/* Committee filter */}
-                  {filters.committee && filters.committee.map(committee => {
-                    const newParams = new URLSearchParams(searchParams as Record<string, string>);
-                    // Remove only this specific committee
-                    newParams.delete('committee');
-                    filters.committee?.filter(c => c !== committee).forEach(c => {
-                      newParams.append('committee', c);
-                    });
-                    return (
-                      <a
-                        key={`committee-${committee}`}
-                        href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-lime-100 text-lime-700 dark:bg-lime-900/50 dark:text-lime-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
-                      >
-                        {committee}
-                        <span className="text-zinc-400 hover:text-zinc-500">×</span>
-                      </a>
-                    );
-                  })}
+                    {/* Committee filter */}
+                    {filters.committee && filters.committee.map(committee => {
+                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                      // Remove only this specific committee
+                      newParams.delete('committee');
+                      filters.committee?.filter(c => c !== committee).forEach(c => {
+                        newParams.append('committee', c);
+                      });
+                      return (
+                        <a
+                          key={`committee-${committee}`}
+                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-lime-100 text-lime-700 dark:bg-lime-900/50 dark:text-lime-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
+                        >
+                          {committee}
+                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                  <a
+                    href={`/${stateCode.toLowerCase()}`}
+                    className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 whitespace-nowrap"
+                  >
+                    Clear all
+                  </a>
                 </div>
-              )}
-              {(categoryFilters.length > 0 || filters.party || filters.support || filters.committee) && (
-                <a
-                  href={`/${stateCode.toLowerCase()}`}
-                  className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                >
-                  Clear all
-                </a>
               )}
               <BillFiltersWrapper filters={billFilters} stateCode={stateCode} />
             </div>
