@@ -98,7 +98,9 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
               ...c,
               impactTypes: c.impactTypes.map(i => ({
                 ...i,
-                selected: i.type === impactType ? !i.selected : i.selected
+                selected: i.type === impactType 
+                  ? !i.selected 
+                  : false
               }))
             }
           : c

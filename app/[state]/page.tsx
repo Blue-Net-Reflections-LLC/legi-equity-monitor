@@ -239,19 +239,25 @@ export default async function StatePage({
     ? searchParams.category 
     : (searchParams.category as string || '').split(',')
   ).filter(Boolean).map(categoryId => {
-    // Get impact types for this category if they exist
+    // Get impact type for this category if it exists (only take the last one if multiple)
     console.log('Processing category:', categoryId);
     console.log('Search params:', searchParams);
-    const impactTypes = Object.entries(searchParams)
-      .filter(([key, value]) => key === `impact_${categoryId}`)
-      .map(([_, value]) => Array.isArray(value) ? value : [value])
-      .flat() as Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'>;
-    console.log('Impact types found:', impactTypes);
+    const impactParam = searchParams[`impact_${categoryId}`];
+    const impactType = Array.isArray(impactParam) 
+      ? impactParam[impactParam.length - 1] 
+      : impactParam;
+
+    // Validate that the impact type is one of the allowed values
+    const validImpactType = (impactType === 'POSITIVE' || impactType === 'BIAS' || impactType === 'NEUTRAL') 
+      ? impactType as 'POSITIVE' | 'BIAS' | 'NEUTRAL'
+      : undefined;
+      
+    console.log('Impact type found:', validImpactType);
 
     return {
       id: categoryId,
-      impactTypes: impactTypes
-    };
+      impactTypes: validImpactType ? [validImpactType] : []
+    } as const; // Use const assertion to preserve literal types
   });
 
   console.log('Final category filters:', categoryFilters);
@@ -261,7 +267,7 @@ export default async function StatePage({
     categories: categoryFilters,
     party: typeof searchParams.party === 'string' ? searchParams.party : undefined,
     support: typeof searchParams.support === 'string' ? searchParams.support as 'HAS_SUPPORT' | 'NO_SUPPORT' : undefined,
-  };
+  } as const; // Use const assertion to preserve literal types
 
   const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
   const stateName = bills[0]?.state_name || stateCode;

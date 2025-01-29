@@ -38,9 +38,9 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
                 params.append('category', category.id);
                 const selectedImpacts = category.impactTypes.filter(i => i.selected);
                 if (selectedImpacts.length > 0) {
-                  selectedImpacts.forEach(impact => {
-                    params.append(`impact_${category.id}`, impact.type);
-                  });
+                  // Only use the last selected impact type
+                  const lastSelectedImpact = selectedImpacts[selectedImpacts.length - 1];
+                  params.set(`impact_${category.id}`, lastSelectedImpact.type);
                 }
               }
             });
