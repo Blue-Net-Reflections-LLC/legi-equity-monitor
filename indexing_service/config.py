@@ -29,6 +29,7 @@ MAX_TEXT_LENGTH = EMBEDDING_MAX_LENGTH  # Match tokenizer's max length
 
 # State mapping for improved search
 STATE_MAPPING = {
+    'US': 'United States Congress',  # Federal level
     'AL': 'Alabama',
     'AK': 'Alaska',
     'AZ': 'Arizona',
