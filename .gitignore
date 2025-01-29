@@ -27,6 +27,7 @@ yarn-error.log*
 # local env files
 .env
 .env*.local
+indexing_service/.env
 
 # typescript
 *.tsbuildinfo
@@ -34,3 +35,5 @@ next-env.d.ts
 
 .vscode/
 .idea/
+
+.venv/
