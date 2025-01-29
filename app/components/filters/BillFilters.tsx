@@ -151,6 +151,7 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
           <h3 className="font-medium text-lg">Committees</h3>
           <div className="rounded-lg p-2 bg-zinc-900 max-h-[240px] overflow-y-auto">
             <div className="space-y-1">
+              {/* Show all committees */}
               {filters.committees.map(committee => (
                 <div
                   key={committee.id}
@@ -161,16 +162,27 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                     size="sm"
                     className={cn(
                       "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1 justify-start text-xs",
-                      committee.selected && "bg-zinc-700"
+                      committee.selected && "bg-zinc-700 ring-1 ring-inset ring-zinc-600"
                     )}
-                    onClick={() => onFilterChange({
-                      ...filters,
-                      committees: filters.committees.map(c => 
-                        c.id === committee.id ? { ...c, selected: !c.selected } : c
-                      ),
-                    })}
+                    onClick={() => {
+                      // Toggle this committee's selection without affecting others
+                      onFilterChange({
+                        ...filters,
+                        committees: filters.committees.map(c => 
+                          c.id === committee.id 
+                            ? { ...c, selected: !c.selected }
+                            : c
+                        ),
+                      });
+                    }}
                   >
-                    <span className="truncate">{committee.name}</span>
+                    <div className="flex items-center gap-2 w-full">
+                      <div className={cn(
+                        "w-2 h-2 rounded-full shrink-0",
+                        committee.selected ? "bg-zinc-100" : "bg-zinc-600"
+                      )} />
+                      <span className="truncate">{committee.name}</span>
+                    </div>
                   </Button>
                 </div>
               ))}
