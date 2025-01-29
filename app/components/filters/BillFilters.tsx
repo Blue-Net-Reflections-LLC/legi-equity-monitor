@@ -73,8 +73,8 @@ export function BillFilters({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* First Column: Categories */}
         <div className="space-y-4">
-          <h3 className="font-medium text-lg">Impact Categories</h3>
-          <div className="rounded-lg p-2 bg-zinc-900 h-[240px] overflow-y-auto">
+          <h3 className="font-medium text-lg text-gray-900 dark:text-zinc-100">Impact Categories</h3>
+          <div className="rounded-lg p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 h-[240px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 dark:[&::-webkit-scrollbar-track]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded">
             <div className="space-y-1">
               {CATEGORIES.map(category => {
                 const categoryFilter = filters.categories.find(c => c.id === category.id);
@@ -90,8 +90,8 @@ export function BillFilters({
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "h-7 font-normal px-3 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1",
-                        (categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected)) && "bg-zinc-700"
+                        "h-7 font-normal px-3 py-1 rounded-md bg-gray-50 hover:bg-gray-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 flex-1 text-gray-900 dark:text-zinc-100",
+                        (categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected)) && "bg-gray-100 dark:bg-zinc-700"
                       )}
                       onClick={() => {
                         const isCurrentlySelected = categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected);
@@ -125,8 +125,8 @@ export function BillFilters({
                                   variant="ghost"
                                   size="sm"
                                   className={cn(
-                                    "h-7 w-7 p-0 rounded-md bg-zinc-800 hover:bg-zinc-700",
-                                    isSelected && "bg-zinc-700 ring-1 ring-inset",
+                                    "h-7 w-7 p-0 rounded-md bg-gray-50 hover:bg-gray-100 dark:bg-zinc-800 dark:hover:bg-zinc-700",
+                                    isSelected && "bg-gray-100 dark:bg-zinc-700 ring-1 ring-inset",
                                     type === 'POSITIVE' && isSelected && "ring-green-500",
                                     type === 'BIAS' && isSelected && "ring-red-500",
                                     type === 'NEUTRAL' && isSelected && "ring-gray-500"
@@ -141,7 +141,7 @@ export function BillFilters({
                                   )} />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent className="bg-zinc-900 border border-zinc-700 text-zinc-100">
+                              <TooltipContent className="bg-gray-900 border border-gray-700 text-gray-100">
                                 <p>{ImpactLabels[type]}</p>
                               </TooltipContent>
                             </Tooltip>
@@ -159,8 +159,8 @@ export function BillFilters({
         {/* Second Column: Committees */}
         {filters.committees.length > 0 && (
           <div className="space-y-4">
-            <h3 className="font-medium text-lg">Committees</h3>
-            <div className="rounded-lg p-2 bg-zinc-900 h-[240px] overflow-y-auto">
+            <h3 className="font-medium text-lg text-gray-900 dark:text-zinc-100">Committees</h3>
+            <div className="rounded-lg p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 h-[240px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 dark:[&::-webkit-scrollbar-track]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded">
               <div className="space-y-1">
                 {/* Show all committees */}
                 {filters.committees.map(committee => (
@@ -172,8 +172,8 @@ export function BillFilters({
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "h-9 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 w-full justify-start text-xs",
-                        committee.selected && "bg-zinc-700 ring-1 ring-inset ring-zinc-600"
+                        "h-9 font-normal px-3 rounded-md bg-gray-50 hover:bg-gray-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 w-full justify-start text-xs text-gray-900 dark:text-zinc-100",
+                        committee.selected && "bg-gray-100 dark:bg-zinc-700 ring-1 ring-inset ring-gray-200 dark:ring-zinc-600"
                       )}
                       onClick={() => {
                         onFilterChange({
@@ -189,7 +189,7 @@ export function BillFilters({
                       <div className="flex items-center gap-2 w-full min-w-0">
                         <div className={cn(
                           "w-2 h-2 rounded-full shrink-0",
-                          committee.selected ? "bg-zinc-100" : "bg-zinc-600"
+                          committee.selected ? "bg-gray-100" : "bg-gray-600"
                         )} />
                         <span className="truncate">{committee.name}</span>
                       </div>
@@ -205,7 +205,7 @@ export function BillFilters({
         <div className="space-y-4 flex flex-col">
           {/* Party Filter */}
           <div className="space-y-4">
-            <h3 className="font-medium text-lg">Party</h3>
+            <h3 className="font-medium text-lg text-gray-900 dark:text-zinc-100">Party</h3>
             <Select
               value={filters.party}
               onValueChange={(value) => {
@@ -219,22 +219,22 @@ export function BillFilters({
                 }
               }}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 text-gray-900 dark:text-zinc-100">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border border-zinc-800">
-                <SelectItem value="ALL" className="text-zinc-100 focus:bg-zinc-800 focus:text-zinc-100">All Parties</SelectItem>
-                <SelectItem value="D" className="text-zinc-100 focus:bg-zinc-800 focus:text-zinc-100">Democrat</SelectItem>
-                <SelectItem value="R" className="text-zinc-100 focus:bg-zinc-800 focus:text-zinc-100">Republican</SelectItem>
-                <SelectItem value="I" className="text-zinc-100 focus:bg-zinc-800 focus:text-zinc-100">Independent</SelectItem>
+              <SelectContent className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+                <SelectItem value="ALL" className="text-gray-900 dark:text-zinc-100 focus:bg-gray-100 dark:focus:bg-zinc-800 focus:text-gray-900 dark:focus:text-zinc-100">All Parties</SelectItem>
+                <SelectItem value="D" className="text-gray-900 dark:text-zinc-100 focus:bg-gray-100 dark:focus:bg-zinc-800 focus:text-gray-900 dark:focus:text-zinc-100">Democrat</SelectItem>
+                <SelectItem value="R" className="text-gray-900 dark:text-zinc-100 focus:bg-gray-100 dark:focus:bg-zinc-800 focus:text-gray-900 dark:focus:text-zinc-100">Republican</SelectItem>
+                <SelectItem value="I" className="text-gray-900 dark:text-zinc-100 focus:bg-gray-100 dark:focus:bg-zinc-800 focus:text-gray-900 dark:focus:text-zinc-100">Independent</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Support Filter */}
           <div className="flex-1">
-            <h3 className="font-medium text-lg">Support</h3>
-            <div className="rounded-lg p-2 bg-zinc-900 mt-4">
+            <h3 className="font-medium text-lg text-gray-900 dark:text-zinc-100">Support</h3>
+            <div className="rounded-lg p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 mt-4">
               <div className="space-y-1">
                 {['ALL', 'HAS_SUPPORT', 'NO_SUPPORT'].map((support) => (
                   <div key={support} className="flex items-center gap-2 p-0.5 rounded-lg w-full">
@@ -243,8 +243,8 @@ export function BillFilters({
                       size="sm"
                       onClick={() => onFilterChange({ ...filters, support: support as BillFiltersType['support'] })}
                       className={cn(
-                        "h-9 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1 justify-start",
-                        filters.support === support && "bg-zinc-700"
+                        "h-9 font-normal px-3 rounded-md bg-gray-50 hover:bg-gray-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 flex-1 justify-start text-gray-900 dark:text-zinc-100",
+                        filters.support === support && "bg-gray-100 dark:bg-zinc-700"
                       )}
                     >
                       {support === 'ALL' ? 'All Support' : 
@@ -266,5 +266,41 @@ export function BillFilters({
     background-color: rgb(24 24 27) !important; /* zinc-900 */
     border: 1px solid rgb(63 63 70) !important; /* zinc-700 */
     color: rgb(244 244 245) !important; /* zinc-100 */
+  }
+
+  /* Light mode scrollbar */
+  .light *::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .light *::-webkit-scrollbar-track {
+    background: rgb(243 244 246); /* gray-100 */
+  }
+
+  .light *::-webkit-scrollbar-thumb {
+    background: rgb(209 213 219); /* gray-300 */
+    border-radius: 4px;
+  }
+
+  .light *::-webkit-scrollbar-thumb:hover {
+    background: rgb(156 163 175); /* gray-400 */
+  }
+
+  /* Dark mode scrollbar */
+  .dark *::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .dark *::-webkit-scrollbar-track {
+    background: rgb(39 39 42); /* zinc-800 */
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background: rgb(63 63 70); /* zinc-700 */
+    border-radius: 4px;
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: rgb(82 82 91); /* zinc-600 */
   }
 `}</style> 

@@ -35,7 +35,7 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2 text-gray-900 dark:text-zinc-100">
           <FilterIcon className="h-4 w-4" />
           Filter Bills
         </Button>
@@ -43,7 +43,7 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
       <DialogContent className={cn(
         "sm:max-w-[800px] lg:max-w-[1000px] max-h-[80vh] overflow-y-auto",
         "bg-white dark:bg-zinc-900",
-        "before:fixed before:inset-0 before:bg-black/50 before:-z-10"
+        "[&>button>svg]:text-gray-900 dark:[&>button>svg]:text-zinc-100"
       )}>
         <BillFilters 
           filters={{
