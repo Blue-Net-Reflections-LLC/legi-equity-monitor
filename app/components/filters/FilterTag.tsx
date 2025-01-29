@@ -4,13 +4,12 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FilterTagProps {
-  id: string;
   label: string;
   onRemove: () => void;
   className?: string;
 }
 
-export function FilterTag({ id, label, onRemove, className }: FilterTagProps) {
+export function FilterTag({ label, onRemove, className }: FilterTagProps) {
   return (
     <div
       className={cn(

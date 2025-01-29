@@ -1,19 +1,17 @@
 'use client';
 
 import { Button } from "@/app/components/ui/button";
-import { Separator } from "@/app/components/ui/separator";
 import { CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
 import type { BillFilters as BillFiltersType, ImpactType, PartyType } from "@/app/types/filters";
-import { FilterTag } from "@/app/components/filters/FilterTag";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
 
 interface BillFiltersProps {
   filters: BillFiltersType;
-  stateCode: string;
   onPartyChange?: (party: string) => void;
   onFilterChange: (filters: BillFiltersType) => void;
+  stateCode: string;
 }
 
 const CATEGORIES = [
@@ -37,16 +35,8 @@ const ImpactLabels = {
   NEUTRAL: 'Neutral Impact'
 };
 
-const PARTY_LABELS = {
-  'ALL': 'All Parties',
-  'D': 'Democratic',
-  'R': 'Republican',
-  'I': 'Independent'
-} as const;
-
 export function BillFilters({ 
   filters,
-  stateCode,
   onPartyChange,
   onFilterChange
 }: BillFiltersProps) {

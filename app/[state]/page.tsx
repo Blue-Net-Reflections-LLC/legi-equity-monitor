@@ -5,7 +5,7 @@ import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import { Bill } from "@/app/types";
 import { Footer } from "@/app/components/layout/Footer";
 import { BillFiltersWrapper } from "@/app/components/filters/BillFiltersWrapper";
-import type { BillFilters as BillFiltersType } from "@/app/types/filters";
+import type { BillFilters as BillFiltersType, PartyType } from "@/app/types/filters";
 import { CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
 
 async function getBills(
@@ -194,7 +194,7 @@ async function getBills(
   ` as unknown as [{ count: string }];
 
   // Test query to verify data exists
-  const [{ testCount }] = await db`
+  await db`
     SELECT COUNT(*) as "testCount"
     FROM bill_analysis_results bar
     JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
@@ -208,13 +208,6 @@ async function getBills(
     totalCount: Number(count)
   };
 }
-
-// Add impact type colors
-const impactTypeColors = {
-  POSITIVE: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400",
-  BIAS: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
-  NEUTRAL: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
-} as const;
 
 const impactTypeIcons = {
   POSITIVE: CheckCircle,
@@ -331,7 +324,7 @@ export default async function StatePage({
       ]}
     ],
     demographics: [],
-    party: filters.party as any || 'ALL',
+    party: (filters.party as PartyType) || 'ALL',
     committees: allCommittees.map(committee => ({
       id: committee.id || 0,
       name: committee.name,
