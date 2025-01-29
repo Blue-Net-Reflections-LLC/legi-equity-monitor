@@ -8,22 +8,6 @@ export default function InteractiveMap() {
   const router = useRouter();
 
   useEffect(() => {
-    // Prefetch all state, DC, and US Congress pages
-    const states = [
-      'al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'dc', 'fl', 
-      'ga', 'hi', 'id', 'il', 'in', 'ia', 'ks', 'ky', 'la', 'me', 
-      'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt', 'ne', 'nv', 'nh', 
-      'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri', 
-      'sc', 'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 
-      'wy', 'us'
-    ];
-
-    states.forEach(state => {
-      router.prefetch(`/${state}`);
-    });
-  }, [router]);
-
-  useEffect(() => {
     // Only run on client side
     if (typeof window !== "undefined") {
       const infoBox = document.getElementById("info-box");
