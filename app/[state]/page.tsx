@@ -49,10 +49,10 @@ async function getBills(
           ` : cat.impactTypes.includes('POSITIVE') ? db`
             AND subbacs.positive_impact_score > subbacs.bias_score
             AND subbacs.positive_impact_score >= 0.60
-          ` : cat.impactTypes.length ? db`
+          ` : cat.impactTypes.includes('NEUTRAL') ? db`
             AND (
-              subbacs.bias_score < 0.60 
-              AND subbacs.positive_impact_score < 0.60
+              (subbacs.bias_score = subbacs.positive_impact_score)
+              OR (subbacs.bias_score < 0.60 AND subbacs.positive_impact_score < 0.60)
             )
           ` : db``}
         )
@@ -172,10 +172,10 @@ async function getBills(
           ` : cat.impactTypes.includes('POSITIVE') ? db`
             AND subbacs.positive_impact_score > subbacs.bias_score
             AND subbacs.positive_impact_score >= 0.60
-          ` : cat.impactTypes.length ? db`
+          ` : cat.impactTypes.includes('NEUTRAL') ? db`
             AND (
-              subbacs.bias_score < 0.60 
-              AND subbacs.positive_impact_score < 0.60
+              (subbacs.bias_score = subbacs.positive_impact_score)
+              OR (subbacs.bias_score < 0.60 AND subbacs.positive_impact_score < 0.60)
             )
           ` : db``}
         )
