@@ -4,7 +4,7 @@ import asyncio
 
 import torch
 from transformers import AutoTokenizer, AutoModel
-from sqlalchemy import select, join
+from sqlalchemy import select, join, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
@@ -203,27 +203,30 @@ class VectorIndexer:
         await session.commit()
 
     async def update_index(self):
-        """Update the vector index with new embeddings."""
-        async with AsyncSession(self.engine) as session:
+        """Main method to update the vector index."""
+        async with self.Session() as session:
+            # Update bills
             bills = await self._get_bills_to_update(session)
-            logger.info(f"Updating {len(bills)} bills")
-            await self._process_bills(bills, session)
+            if bills:
+                logger.info(f"Updating {len(bills)} bills")
+                await self._update_vector_index(
+                    session, bills, 'bill', self._prepare_bill_text
+                )
 
+            # Update sponsors
             sponsors = await self._get_sponsors_to_update(session)
-            logger.info(f"Updating {len(sponsors)} sponsors")
-            await self._process_sponsors(sponsors, session)
+            if sponsors:
+                logger.info(f"Updating {len(sponsors)} sponsors")
+                await self._update_vector_index(
+                    session, sponsors, 'sponsor', self._prepare_sponsor_text
+                )
 
-            # Add verification step
-            logger.info("Verifying embeddings...")
-            count_query = """
-                SELECT type, COUNT(*) as count 
-                FROM vector_index 
-                GROUP BY type
-            """
-            result = await session.execute(count_query)
-            counts = result.fetchall()
-            for type_, count in counts:
-                logger.info(f"Found {count} embeddings for type: {type_}")
+            # Verify counts
+            result = await session.execute(
+                text("SELECT entity_type, COUNT(*) FROM vector_index GROUP BY entity_type")
+            )
+            for type_, count in result.fetchall():
+                logger.info(f"Total embeddings for {type_}: {count}")
 
             logger.info("Update completed")
 
