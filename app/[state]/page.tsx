@@ -36,13 +36,29 @@ async function getBills(
       JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
       WHERE b.state_abbr = ${stateCode.toUpperCase()}
       AND b.bill_type_id = 1
-      ${filters.categories?.length ? db`
-        AND bacs.category = ${filters.categories[0].id}
-        ${filters.categories[0].impactTypes.length ? db`
-        AND bacs.bias_score > bacs.positive_impact_score 
-        AND bacs.bias_score >= 0.60
-        ` : db``}
-      ` : db``}
+      ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
+        EXISTS (
+          SELECT 1
+          FROM bill_analysis_results subbar
+          JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id
+          WHERE subbar.bill_id = b.bill_id
+          AND subbacs.category = ${cat.id}
+          ${cat.impactTypes.includes('BIAS') ? db`
+            AND subbacs.bias_score >= subbacs.positive_impact_score 
+            AND subbacs.bias_score >= 0.60
+          ` : cat.impactTypes.includes('POSITIVE') ? db`
+            AND subbacs.positive_impact_score > subbacs.bias_score
+            AND subbacs.positive_impact_score >= 0.60
+          ` : cat.impactTypes.length ? db`
+            AND (
+              subbacs.bias_score < 0.60 
+              AND subbacs.positive_impact_score < 0.60
+            )
+          ` : db``}
+        )
+      `).reduce((acc, clause, idx) => 
+        idx === 0 ? clause : db`${acc} AND ${clause}`
+      , db``)}` : db``}
       ${filters.committee ? db`AND b.pending_committee_name = ${filters.committee}` : db``}
       ${filters.party ? db`AND EXISTS (
         SELECT 1 FROM ls_bill_sponsor sp
@@ -143,13 +159,29 @@ async function getBills(
         END as impact_type
       FROM bill_analysis_results bar
       JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      WHERE ${filters.categories?.length ? db`
-        bacs.category = ${filters.categories[0].id}
-        ${filters.categories[0].impactTypes.length ? db`
-        AND bacs.bias_score > bacs.positive_impact_score 
-        AND bacs.bias_score >= 0.60
-        ` : db``}
-      ` : db`TRUE`}
+      WHERE ${filters.categories?.length ? db`${filters.categories.map(cat => db`
+        EXISTS (
+          SELECT 1
+          FROM bill_analysis_results subbar
+          JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id
+          WHERE subbar.bill_id = bar.bill_id
+          AND subbacs.category = ${cat.id}
+          ${cat.impactTypes.includes('BIAS') ? db`
+            AND subbacs.bias_score >= subbacs.positive_impact_score 
+            AND subbacs.bias_score >= 0.60
+          ` : cat.impactTypes.includes('POSITIVE') ? db`
+            AND subbacs.positive_impact_score > subbacs.bias_score
+            AND subbacs.positive_impact_score >= 0.60
+          ` : cat.impactTypes.length ? db`
+            AND (
+              subbacs.bias_score < 0.60 
+              AND subbacs.positive_impact_score < 0.60
+            )
+          ` : db``}
+        )
+      `).reduce((acc, clause, idx) => 
+        idx === 0 ? clause : db`${acc} AND ${clause}`
+      , db``)}` : db`TRUE`}
     )
     SELECT COUNT(DISTINCT b.bill_id)
     FROM lsv_bill b
@@ -296,10 +328,17 @@ export default async function StatePage({
 
   // Update selected states based on URL params
   if (categoryFilters.length > 0) {
-    categoryFilters.forEach(({ id }) => {
+    categoryFilters.forEach(({ id, impactTypes }) => {
       const category = billFilters.categories.find(c => c.id === id);
       if (category) {
         category.selected = true;
+        // Update impact type selections
+        impactTypes.forEach(impactType => {
+          const impact = category.impactTypes.find(i => i.type === impactType);
+          if (impact) {
+            impact.selected = true;
+          }
+        });
       }
     });
   }

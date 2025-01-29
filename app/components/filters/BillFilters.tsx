@@ -168,10 +168,9 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                             ? {
                                 ...c,
                                 selected: !isCurrentlySelected,
-                                impactTypes: c.impactTypes.map(i => ({ 
-                                  ...i, 
-                                  selected: false 
-                                }))
+                                impactTypes: isCurrentlySelected 
+                                  ? c.impactTypes.map(i => ({ ...i, selected: false }))
+                                  : c.impactTypes
                             }
                             : c
                         ),
