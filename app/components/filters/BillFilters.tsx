@@ -15,13 +15,11 @@ interface BillFiltersProps {
 }
 
 const CATEGORIES = [
+  { id: 'gender', name: 'Gender' },
+  { id: 'disability', name: 'Disability' },
+  { id: 'age', name: 'Age' },
   { id: 'race', name: 'Race' },
   { id: 'religion', name: 'Religion' },
-  { id: 'gender', name: 'Gender' },
-  { id: 'age', name: 'Age' },
-  { id: 'nationality', name: 'Nationality' },
-  { id: 'sexual_orientation', name: 'Sexual Orientation' },
-  { id: 'disability', name: 'Disability' },
   { id: 'veterans', name: 'Veterans' }
 ];
 
@@ -45,50 +43,6 @@ const PARTY_LABELS = {
 } as const;
 
 export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
-  // Generate active filter tags
-  const activeTags = [
-    // Category filters with impact types
-    ...filters.categories
-      .filter(c => c.selected || c.impactTypes.some(i => i.selected))
-      .map(category => ({
-        id: `category-${category.id}`,
-        label: `${category.name}${category.impactTypes.filter(i => i.selected).map(i => ` (${i.type})`).join(', ')}`,
-        onRemove: () => onFilterChange({
-          ...filters,
-          categories: filters.categories.map(c => 
-            c.id === category.id 
-              ? { ...c, selected: false, impactTypes: c.impactTypes.map(i => ({ ...i, selected: false })) }
-              : c
-          ),
-        }),
-      })),
-    // Party filter
-    ...(filters.party !== 'ALL' ? [{
-      id: `party-${filters.party}`,
-      label: `Party: ${filters.party}`,
-      onRemove: () => onFilterChange({ ...filters, party: 'ALL' }),
-    }] : []),
-    // Support filter
-    ...(filters.support !== 'ALL' ? [{
-      id: `support-${filters.support}`,
-      label: filters.support === 'HAS_SUPPORT' ? 'Has Support' : 'No Support',
-      onRemove: () => onFilterChange({ ...filters, support: 'ALL' }),
-    }] : []),
-    // Committee filters
-    ...filters.committees
-      .filter(c => c.selected)
-      .map(committee => ({
-        id: `committee-${committee.id}`,
-        label: `Committee: ${committee.name}`,
-        onRemove: () => onFilterChange({
-          ...filters,
-          committees: filters.committees.map(c => 
-            c.id === committee.id ? { ...c, selected: false } : c
-          ),
-        }),
-      })),
-  ];
-
   const handleCategoryImpactChange = (categoryId: string, impactType: ImpactType) => {
     onFilterChange({
       ...filters,
@@ -108,56 +62,27 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
 
   return (
     <div className="space-y-4">
-      {/* Active filters */}
-      {activeTags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {activeTags.map(tag => (
-            <FilterTag key={tag.id} {...tag} />
-          ))}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              onFilterChange({
-                ...filters,
-                party: 'ALL',
-                support: 'ALL',
-                categories: filters.categories.map(c => ({
-                  ...c,
-                  impactTypes: c.impactTypes.map(i => ({ ...i, selected: false }))
-                })),
-                committees: filters.committees.map(c => ({ ...c, selected: false })),
-              });
-            }}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* First Column: Categories */}
         <div className="space-y-4">
           <h3 className="font-medium text-lg">Impact Categories</h3>
-          <div className="space-y-2 border rounded-lg p-3 bg-white dark:bg-zinc-900">
+          <div className="space-y-1 rounded-lg p-2 bg-zinc-900">
             {CATEGORIES.map(category => {
               const categoryFilter = filters.categories.find(c => c.id === category.id);
               return (
                 <div
                   key={category.id}
                   className={cn(
-                    "flex items-center justify-between p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700",
-                    "hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors",
-                    (categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected)) && "bg-zinc-50 dark:bg-zinc-800"
+                    "flex items-center gap-2 p-0.5 rounded-lg",
+                    "transition-colors w-full"
                   )}
                 >
                   <Button
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "h-7 flex-1 justify-start font-normal px-2",
-                      (categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected)) && "font-medium"
+                      "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1",
+                      (categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected)) && "bg-zinc-700"
                     )}
                     onClick={() => {
                       const isCurrentlySelected = categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected);
@@ -179,7 +104,7 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                   >
                     {category.name}
                   </Button>
-                  <div className="flex gap-1 px-1">
+                  <div className="flex gap-1.5 shrink-0">
                     <TooltipProvider>
                       {(['POSITIVE', 'BIAS', 'NEUTRAL'] as const).map((type) => {
                         const Icon = ImpactIcons[type];
@@ -191,8 +116,11 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                                 variant="ghost"
                                 size="sm"
                                 className={cn(
-                                  "p-1 h-7 w-7",
-                                  isSelected && "bg-zinc-200 dark:bg-zinc-700"
+                                  "h-7 w-7 p-0 rounded-md bg-zinc-800 hover:bg-zinc-700",
+                                  isSelected && "bg-zinc-700 ring-1 ring-inset",
+                                  type === 'POSITIVE' && isSelected && "ring-green-500",
+                                  type === 'BIAS' && isSelected && "ring-red-500",
+                                  type === 'NEUTRAL' && isSelected && "ring-gray-500"
                                 )}
                                 onClick={() => handleCategoryImpactChange(category.id, type)}
                               >
@@ -204,7 +132,7 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                                 )} />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>
+                            <TooltipContent className="bg-zinc-900 border border-zinc-700 text-zinc-100">
                               <p>{ImpactLabels[type]}</p>
                             </TooltipContent>
                           </Tooltip>
@@ -221,38 +149,41 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
         {/* Second Column: Committees */}
         <div className="space-y-4">
           <h3 className="font-medium text-lg">Committees</h3>
-          <div className="border rounded-lg bg-white dark:bg-zinc-900">
-            <div className="divide-y divide-zinc-200 dark:divide-zinc-700 max-h-[400px] overflow-y-auto">
+          <div className="rounded-lg p-2 bg-zinc-900 max-h-[240px] overflow-y-auto">
+            <div className="space-y-1">
               {filters.committees.map(committee => (
-                <Button
+                <div
                   key={committee.id}
-                  variant={committee.selected ? "default" : "ghost"}
-                  size="sm"
-                  className={cn(
-                    "w-full justify-start h-9 rounded-none text-sm",
-                    "transition-colors",
-                    committee.selected && "font-medium"
-                  )}
-                  onClick={() => onFilterChange({
-                    ...filters,
-                    committees: filters.committees.map(c => 
-                      c.id === committee.id ? { ...c, selected: !c.selected } : c
-                    ),
-                  })}
+                  className="flex items-center gap-2 p-0.5 rounded-lg w-full"
                 >
-                  {committee.name}
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1 justify-start text-xs",
+                      committee.selected && "bg-zinc-700"
+                    )}
+                    onClick={() => onFilterChange({
+                      ...filters,
+                      committees: filters.committees.map(c => 
+                        c.id === committee.id ? { ...c, selected: !c.selected } : c
+                      ),
+                    })}
+                  >
+                    <span className="truncate">{committee.name}</span>
+                  </Button>
+                </div>
               ))}
             </div>
           </div>
         </div>
 
         {/* Third Column: Party and Support */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Party Filter */}
           <div className="space-y-4">
             <h3 className="font-medium text-lg">Party</h3>
-            <div className="border rounded-lg p-3 bg-white dark:bg-zinc-900">
+            <div className="rounded-lg p-2 bg-zinc-900">
               <Select 
                 value={filters.party} 
                 onValueChange={(value: BillFiltersType['party']) => onFilterChange({ 
@@ -260,10 +191,10 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                   party: value
                 })}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 h-7">
                   <SelectValue placeholder="Select party" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
                   {Object.entries(PARTY_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
@@ -277,25 +208,35 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
           {/* Support Filter */}
           <div className="space-y-4">
             <h3 className="font-medium text-lg">Support</h3>
-            <div className="border rounded-lg p-3 bg-white dark:bg-zinc-900">
-              <div className="flex flex-wrap gap-2">
-                {['ALL', 'HAS_SUPPORT', 'NO_SUPPORT'].map((support) => (
+            <div className="space-y-1 rounded-lg p-2 bg-zinc-900">
+              {['ALL', 'HAS_SUPPORT', 'NO_SUPPORT'].map((support) => (
+                <div key={support} className="flex items-center gap-2 p-0.5 rounded-lg w-full">
                   <Button
-                    key={support}
-                    variant={filters.support === support ? "default" : "outline"}
+                    variant="ghost"
                     size="sm"
                     onClick={() => onFilterChange({ ...filters, support: support as BillFiltersType['support'] })}
-                    className="flex-1"
+                    className={cn(
+                      "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1 justify-start",
+                      filters.support === support && "bg-zinc-700"
+                    )}
                   >
                     {support === 'ALL' ? 'All Support' : 
                      support === 'HAS_SUPPORT' ? 'Has Support' : 'No Support'}
                   </Button>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
+
+<style jsx global>{`
+  .tooltip-content {
+    background-color: rgb(24 24 27) !important; /* zinc-900 */
+    border: 1px solid rgb(63 63 70) !important; /* zinc-700 */
+    color: rgb(244 244 245) !important; /* zinc-100 */
+  }
+`}</style> 
