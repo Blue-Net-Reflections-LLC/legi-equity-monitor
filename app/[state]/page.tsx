@@ -4,135 +4,233 @@ import Pagination from "@/app/components/Pagination";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import { Bill } from "@/app/types";
 import { Footer } from "@/app/components/layout/Footer";
+import { BillFiltersWrapper } from "@/app/components/filters/BillFiltersWrapper";
+import type { BillFilters as BillFiltersType, PartyType } from "@/app/types/filters";
+import { CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
 
 async function getBills(
   stateCode: string,
   page = 1,
   pageSize = 12,
   filters: {
-    committee?: string;
+    committee?: string[] | string;
+    categories?: Array<{ id: string; impactTypes: Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'> }>;
+    party?: string;
+    support?: 'HAS_SUPPORT' | 'NO_SUPPORT';
   } = {}
 ): Promise<{ bills: Bill[], totalCount: number }> {
   const offset = (page - 1) * pageSize;
   
-  // Get bills with pagination using LegiScan view
   const bills = await db`
-    WITH latest_history AS (
+    WITH filtered_bills AS (
+      SELECT DISTINCT b.bill_id
+      FROM lsv_bill b
+      ${filters.categories?.length ? db`
+        JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+        JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+      ` : db`
+        LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+        LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+      `}
+      WHERE b.state_abbr = ${stateCode.toUpperCase()}
+      AND b.bill_type_id = 1
+      ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
+        EXISTS (
+          SELECT 1
+          FROM bill_analysis_results subbar
+          JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id
+          WHERE subbar.bill_id = b.bill_id
+          AND subbacs.category = ${cat.id}
+          ${cat.impactTypes.includes('BIAS') ? db`
+            AND subbacs.bias_score >= subbacs.positive_impact_score 
+            AND subbacs.bias_score >= 0.60
+          ` : cat.impactTypes.includes('POSITIVE') ? db`
+            AND subbacs.positive_impact_score > subbacs.bias_score
+            AND subbacs.positive_impact_score >= 0.60
+          ` : cat.impactTypes.length ? db`
+            AND (
+              subbacs.bias_score < 0.60 
+              AND subbacs.positive_impact_score < 0.60
+            )
+          ` : db``}
+        )
+      `).reduce((acc, clause, idx) => 
+        idx === 0 ? clause : db`${acc} AND ${clause}`
+      , db``)}` : db``}
+      ${filters.committee ? db`AND b.pending_committee_name = ANY(${filters.committee})` : db``}
+      ${filters.party ? db`AND EXISTS (
+        SELECT 1 FROM ls_bill_sponsor sp
+        JOIN ls_people p ON sp.people_id = p.people_id
+        JOIN ls_party party ON p.party_id = party.party_id
+        WHERE sp.bill_id = b.bill_id
+        AND sp.sponsor_order = 1
+        AND party.party_abbr = ${filters.party}
+      )` : db``}
+      ${filters.support === 'HAS_SUPPORT' ? db`AND (
+        SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
+      ) >= 2` : filters.support === 'NO_SUPPORT' ? db`AND (
+        SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
+      ) < 2` : db``}
+    ),
+    bill_details AS (
       SELECT 
-        bill_id,
-        history_date as latest_action_date
-      FROM ls_bill_history
-      WHERE (bill_id, history_step) IN (
-        SELECT 
-          bill_id,
-          MAX(history_step)
+        b.*,
+        h.history_date as latest_action_date,
+        sponsors.sponsor_data as sponsors,
+        bar.analysis_data as analysis_results
+      FROM lsv_bill b
+      JOIN filtered_bills fb ON b.bill_id = fb.bill_id
+      LEFT JOIN LATERAL (
+        SELECT history_date
         FROM ls_bill_history
-        GROUP BY bill_id
-      )
-    )
-    SELECT 
-      b.bill_id::integer,
-      b.bill_number,
-      b.title,
-      b.description,
-      b.state_abbr,
-      b.state_name,
-      b.status_id,
-      b.status_desc,
-      b.status_date,
-      b.bill_type_id,
-      b.bill_type_name,
-      b.body_id,
-      b.body_name,
-      b.current_body_id,
-      b.current_body_name,
-      b.pending_committee_id,
-      b.pending_committee_name,
-      b.legiscan_url,
-      b.state_url,
-      b.session_id,
-      b.session_name,
-      b.session_title,
-      b.session_year_start,
-      b.session_year_end,
-      b.updated,
-      b.created,
-      h.latest_action_date,
-      (
+        WHERE bill_id = b.bill_id
+        ORDER BY history_step DESC
+        LIMIT 1
+      ) h ON true
+      LEFT JOIN LATERAL (
         SELECT json_agg(json_build_object(
           'people_id', sp.people_id,
           'party', party.party_name,
           'type', CASE WHEN sp.sponsor_order = 1 THEN 'Primary' ELSE 'Co' END
-        ))
+        )) as sponsor_data
         FROM ls_bill_sponsor sp
         JOIN ls_people p ON sp.people_id = p.people_id
         JOIN ls_party party ON p.party_id = party.party_id
         WHERE sp.bill_id = b.bill_id
-      ) as sponsors,
-      (
-        SELECT CASE 
-          WHEN EXISTS (
-            SELECT 1 FROM bill_analysis_results bar WHERE bar.bill_id = b.bill_id
-          )
-          THEN json_build_object(
-            'overall_score', CASE 
-              WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
-              THEN bar.overall_positive_impact_score * 100
-              ELSE bar.overall_bias_score * 100
-            END,
-            'overall_sentiment', CASE 
-              WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
-              THEN 'POSITIVE' 
-              ELSE 'NEGATIVE'
-            END,
-            'bias_detected', bar.overall_bias_score >= 0.6,
-            'categories', (
-              SELECT json_object_agg(
-                category,
-                json_build_object(
-                  'score', CASE 
-                    WHEN positive_impact_score >= bias_score THEN positive_impact_score * 100
-                    ELSE bias_score * 100
-                  END,
-                  'sentiment', CASE 
-                    WHEN positive_impact_score >= bias_score THEN 'POSITIVE'
-                    ELSE 'NEGATIVE'
-                  END
-                )
+      ) sponsors ON true
+      LEFT JOIN LATERAL (
+        SELECT json_build_object(
+          'overall_score', CASE 
+            WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
+            THEN bar.overall_positive_impact_score * 100
+            ELSE bar.overall_bias_score * 100
+          END,
+          'overall_sentiment', CASE 
+            WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
+            THEN 'POSITIVE' 
+            ELSE 'NEGATIVE'
+          END,
+          'bias_detected', bar.overall_bias_score >= 0.6,
+          'categories', (
+            SELECT json_object_agg(
+              category,
+              json_build_object(
+                'score', CASE 
+                  WHEN positive_impact_score >= bias_score THEN positive_impact_score * 100
+                  ELSE bias_score * 100
+                END,
+                'sentiment', CASE 
+                  WHEN positive_impact_score >= bias_score THEN 'POSITIVE'
+                  ELSE 'NEGATIVE'
+                END
               )
-              FROM bill_analysis_category_scores
-              WHERE analysis_id = bar.analysis_id
             )
+            FROM bill_analysis_category_scores
+            WHERE analysis_id = bar.analysis_id
           )
-          ELSE NULL
-        END
+        ) as analysis_data
         FROM bill_analysis_results bar
         WHERE bar.bill_id = b.bill_id
-      ) as analysis_results
-    FROM lsv_bill b
-    LEFT JOIN latest_history h ON b.bill_id = h.bill_id
-    WHERE b.state_abbr = ${stateCode.toUpperCase()}
-    AND b.bill_type_id = 1  -- Only show bills
-    ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
-    ORDER BY h.latest_action_date DESC NULLS LAST, b.bill_id DESC
-    LIMIT ${pageSize} 
+        LIMIT 1
+      ) bar ON true
+    )
+    SELECT *
+    FROM bill_details
+    ORDER BY latest_action_date DESC NULLS LAST, bill_id DESC
+    LIMIT ${pageSize}
     OFFSET ${offset}
-  ` as Bill[];
+  `.then(rows => rows as unknown as Bill[]);
 
   // Get total count with same conditions
   const [{ count }] = await db`
-    SELECT COUNT(DISTINCT b.bill_id) 
+    SELECT COUNT(DISTINCT b.bill_id)
     FROM lsv_bill b
+    ${filters.categories?.length ? db`
+      JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+      JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+    ` : db`
+      LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+      LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+    `}
     WHERE b.state_abbr = ${stateCode.toUpperCase()}
-    AND b.bill_type_id = 1  -- Only show bills
-    ${filters.committee ? db` AND b.pending_committee_name = ${filters.committee}` : db``}
+    AND b.bill_type_id = 1
+    ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
+      EXISTS (
+        SELECT 1
+        FROM bill_analysis_results subbar
+        JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id
+        WHERE subbar.bill_id = b.bill_id
+        AND subbacs.category = ${cat.id}
+        ${cat.impactTypes.includes('BIAS') ? db`
+          AND subbacs.bias_score >= subbacs.positive_impact_score 
+          AND subbacs.bias_score >= 0.60
+        ` : cat.impactTypes.includes('POSITIVE') ? db`
+          AND subbacs.positive_impact_score > subbacs.bias_score
+          AND subbacs.positive_impact_score >= 0.60
+        ` : cat.impactTypes.length ? db`
+          AND (
+            subbacs.bias_score < 0.60 
+            AND subbacs.positive_impact_score < 0.60
+          )
+        ` : db``}
+      )
+    `).reduce((acc, clause, idx) => 
+      idx === 0 ? clause : db`${acc} AND ${clause}`
+    , db``)}` : db``}
+    ${filters.committee ? db`AND b.pending_committee_name = ANY(${filters.committee})` : db``}
+    ${filters.party ? db`AND EXISTS (
+      SELECT 1 FROM ls_bill_sponsor sp
+      JOIN ls_people p ON sp.people_id = p.people_id
+      JOIN ls_party party ON p.party_id = party.party_id
+      WHERE sp.bill_id = b.bill_id
+      AND sp.sponsor_order = 1
+      AND party.party_abbr = ${filters.party}
+    )` : db``}
+    ${filters.support === 'HAS_SUPPORT' ? db`AND (
+      SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
+    ) >= 2` : filters.support === 'NO_SUPPORT' ? db`AND (
+      SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
+    ) < 2` : db``}
   ` as unknown as [{ count: string }];
 
+  // Test query to verify data exists
+  await db`
+    SELECT COUNT(*) as "testCount"
+    FROM bill_analysis_results bar
+    JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+    WHERE bacs.category = 'race'
+    AND bacs.bias_score > bacs.positive_impact_score
+    AND bacs.bias_score >= 0.60
+  `;
+  
   return {
-    bills: bills as unknown as Bill[],
+    bills: bills,
     totalCount: Number(count)
   };
 }
+
+const impactTypeIcons = {
+  POSITIVE: CheckCircle,
+  BIAS: AlertCircle,
+  NEUTRAL: MinusCircle
+} as const;
+
+// Add party name mapping
+const partyNames = {
+  'D': 'Democrat',
+  'R': 'Republican',
+  'I': 'Independent'
+} as const;
+
+// Update the categories list
+const categoryColors = {
+  gender: "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400",
+  disability: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400",
+  age: "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400",
+  race: "bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-400",
+  religion: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400",
+  veterans: "bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400"
+} as const;
 
 export default async function StatePage({ 
   params,
@@ -146,27 +244,111 @@ export default async function StatePage({
   const pageSize = 12;
   const offset = (page - 1) * pageSize;
 
+  // Parse category filters from URL
+  const categoryFilters = (Array.isArray(searchParams.category) 
+    ? searchParams.category 
+    : (searchParams.category as string || '').split(',')
+  ).filter(Boolean).map(categoryId => {
+    // Get impact type for this category if it exists (only take the last one if multiple)
+    const impactParam = searchParams[`impact_${categoryId}`];
+    const impactType = Array.isArray(impactParam) 
+      ? impactParam[impactParam.length - 1] 
+      : impactParam;
+
+    // Validate that the impact type is one of the allowed values
+    const validImpactType = (impactType === 'POSITIVE' || impactType === 'BIAS' || impactType === 'NEUTRAL') 
+      ? impactType as 'POSITIVE' | 'BIAS' | 'NEUTRAL'
+      : undefined;
+
+    return {
+      id: categoryId,
+      impactTypes: validImpactType ? [validImpactType] : []
+    } as const; // Use const assertion to preserve literal types
+  });
+
   const filters = {
-    committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
-  };
+    committee: Array.isArray(searchParams.committee) ? searchParams.committee : searchParams.committee ? [searchParams.committee] : undefined,
+    categories: categoryFilters,
+    party: typeof searchParams.party === 'string' ? searchParams.party : undefined,
+    support: typeof searchParams.support === 'string' ? searchParams.support as 'HAS_SUPPORT' | 'NO_SUPPORT' : undefined,
+  } as const;
 
   const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
   const stateName = bills[0]?.state_name || stateCode;
 
-  // Helper function to generate filter URLs
-  const getFilterUrl = (newFilters: typeof filters) => {
-    const params = new URLSearchParams();
-    Object.entries(newFilters).forEach(([key, value]) => {
-      if (value) {
-        if (Array.isArray(value)) {
-          value.forEach(v => params.append(key, v));
-        } else {
-          params.set(key, value);
-        }
+  // Get all available committees for the state
+  const allCommittees = await db`
+    SELECT DISTINCT 
+      pending_committee_id as id,
+      pending_committee_name as name
+    FROM lsv_bill
+    WHERE state_abbr = ${stateCode.toUpperCase()}
+      AND pending_committee_name IS NOT NULL
+      AND pending_committee_name != ''
+    ORDER BY pending_committee_name
+  `;
+
+  // Initialize filter state for the UI
+  const billFilters: BillFiltersType = {
+    impacts: [],
+    categories: [
+      { id: 'gender', name: 'Gender', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'disability', name: 'Disability', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'age', name: 'Age', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'race', name: 'Race', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'religion', name: 'Religion', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'veterans', name: 'Veterans', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]}
+    ],
+    demographics: [],
+    party: (filters.party as PartyType) || 'ALL',
+    committees: allCommittees.map(committee => ({
+      id: committee.id || 0,
+      name: committee.name,
+      selected: filters.committee?.includes(committee.name) || false
+    })),
+    support: filters.support || 'ALL'
+  };
+
+  // Update selected states based on URL params
+  if (categoryFilters.length > 0) {
+    categoryFilters.forEach(({ id, impactTypes }) => {
+      const category = billFilters.categories.find(c => c.id === id);
+      if (category) {
+        category.selected = true;
+        // Update impact type selections
+        impactTypes.forEach(impactType => {
+          const impact = category.impactTypes.find(i => i.type === impactType);
+          if (impact) {
+            impact.selected = true;
+          }
+        });
       }
     });
-    return `/${stateCode.toLowerCase()}${params.toString() ? `?${params.toString()}` : ''}`;
-  };
+  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-900">
@@ -185,36 +367,130 @@ export default async function StatePage({
       {/* Bills Section */}
       <section className="py-4 md:px-0 px-4">
         <div className="max-w-7xl mx-auto space-y-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-500">
-                Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}
-              </div>
-              {/* <FilterDrawer /> */}
+          <div className="flex justify-between items-center flex-wrap">
+            <div className="text-sm text-gray-500 whitespace-nowrap">
+              Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}
             </div>
-            
-            {/* Active Filters */}
-            {Object.values(filters).some(Boolean) && (
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-sm text-gray-500">Active filters:</span>
-                {filters.committee && (
+            <div className="flex items-center gap-3">
+              {(categoryFilters.length > 0 || filters.party || filters.support || filters.committee) && (
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    {/* Category filters with impact types */}
+                    {categoryFilters.map(({ id }) => {
+                      const category = billFilters.categories.find(c => c.id === id);
+                      if (!category || !categoryColors[id as keyof typeof categoryColors]) return null;
+                      const selectedImpacts = category.impactTypes.filter(i => i.selected);
+                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                      
+                      // Get all categories except the one being removed
+                      const otherCategories = categoryFilters
+                        .filter(cat => cat.id !== id)
+                        .map(cat => cat.id);
+                      
+                      // Clear the current parameters
+                      newParams.delete('category');
+                      newParams.delete(`impact_${id}`);
+                      
+                      // Add back other categories and their impacts
+                      otherCategories.forEach(catId => {
+                        newParams.append('category', catId);
+                        const impactParam = searchParams[`impact_${catId}`];
+                        if (impactParam) {
+                          if (Array.isArray(impactParam)) {
+                            impactParam.forEach(imp => newParams.append(`impact_${catId}`, imp));
+                          } else {
+                            newParams.append(`impact_${catId}`, impactParam);
+                          }
+                        }
+                      });
+                      
+                      return (
+                        <a
+                          key={`filter-${id}`}
+                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:opacity-90 transition-colors ${categoryColors[id as keyof typeof categoryColors]}`}
+                        >
+                          {category.name}
+                          {selectedImpacts.map(impact => {
+                            const Icon = impactTypeIcons[impact.type];
+                            return (
+                              <Icon
+                                key={impact.type}
+                                className={`h-4 w-4 ${
+                                  impact.type === 'POSITIVE' ? 'text-emerald-600 dark:text-emerald-400' :
+                                  impact.type === 'BIAS' ? 'text-red-600 dark:text-red-400' :
+                                  'text-zinc-600 dark:text-zinc-400'
+                                }`}
+                              />
+                            );
+                          })}
+                          <span className="ml-1 text-zinc-400 hover:text-zinc-500">×</span>
+                        </a>
+                      );
+                    })}
+                    
+                    {/* Party filter */}
+                    {filters.party && (() => {
+                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                      newParams.delete('party');
+                      return (
+                        <a
+                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
+                        >
+                          {partyNames[filters.party as keyof typeof partyNames] || filters.party}
+                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
+                        </a>
+                      );
+                    })()}
+
+                    {/* Support filter */}
+                    {filters.support && (() => {
+                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                      newParams.delete('support');
+                      return (
+                        <a
+                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
+                        >
+                          {filters.support === 'HAS_SUPPORT' ? 'Has Support' : 'No Support'}
+                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
+                        </a>
+                      );
+                    })()}
+
+                    {/* Committee filter */}
+                    {filters.committee && filters.committee.map(committee => {
+                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                      // Remove only this specific committee
+                      newParams.delete('committee');
+                      filters.committee?.filter(c => c !== committee).forEach(c => {
+                        newParams.append('committee', c);
+                      });
+                      return (
+                        <a
+                          key={`committee-${committee}`}
+                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-lime-100 text-lime-700 dark:bg-lime-900/50 dark:text-lime-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
+                        >
+                          {committee}
+                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
+                        </a>
+                      );
+                    })}
+                  </div>
                   <a
-                    href={getFilterUrl({ ...filters, committee: undefined })}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100 hover:bg-blue-200 dark:hover:bg-blue-800 cursor-pointer"
+                    href={`/${stateCode.toLowerCase()}`}
+                    className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 whitespace-nowrap"
                   >
-                    Committee: {filters.committee}
-                    <span className="ml-1">×</span>
+                    Clear all
                   </a>
-                )}
-                <a 
-                  href={`/${stateCode.toLowerCase()}`}
-                  className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline"
-                >
-                  Clear all filters
-                </a>
-              </div>
-            )}
+                </div>
+              )}
+              <BillFiltersWrapper filters={billFilters} stateCode={stateCode} />
+            </div>
           </div>
+
           {bills.length > 0 ? (
             <BillList bills={bills} />
           ) : (
