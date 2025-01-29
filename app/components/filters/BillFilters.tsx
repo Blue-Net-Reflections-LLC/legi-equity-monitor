@@ -147,48 +147,49 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
         </div>
 
         {/* Second Column: Committees */}
-        <div className="space-y-4">
-          <h3 className="font-medium text-lg">Committees</h3>
-          <div className="rounded-lg p-2 bg-zinc-900 max-h-[240px] overflow-y-auto">
-            <div className="space-y-1">
-              {/* Show all committees */}
-              {filters.committees.map(committee => (
-                <div
-                  key={committee.id}
-                  className="flex items-center gap-2 p-0.5 rounded-lg w-full"
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1 justify-start text-xs",
-                      committee.selected && "bg-zinc-700 ring-1 ring-inset ring-zinc-600"
-                    )}
-                    onClick={() => {
-                      // Toggle this committee's selection without affecting others
-                      onFilterChange({
-                        ...filters,
-                        committees: filters.committees.map(c => 
-                          c.id === committee.id 
-                            ? { ...c, selected: !c.selected }
-                            : c
-                        ),
-                      });
-                    }}
+        {filters.committees.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="font-medium text-lg">Committees</h3>
+            <div className="rounded-lg p-2 bg-zinc-900 max-h-[240px] overflow-y-auto">
+              <div className="space-y-1">
+                {/* Show all committees */}
+                {filters.committees.map(committee => (
+                  <div
+                    key={committee.id}
+                    className="flex items-center gap-2 p-0.5 rounded-lg w-full"
                   >
-                    <div className="flex items-center gap-2 w-full">
-                      <div className={cn(
-                        "w-2 h-2 rounded-full shrink-0",
-                        committee.selected ? "bg-zinc-100" : "bg-zinc-600"
-                      )} />
-                      <span className="truncate">{committee.name}</span>
-                    </div>
-                  </Button>
-                </div>
-              ))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 w-full justify-start text-xs",
+                        committee.selected && "bg-zinc-700 ring-1 ring-inset ring-zinc-600"
+                      )}
+                      onClick={() => {
+                        onFilterChange({
+                          ...filters,
+                          committees: filters.committees.map(c => 
+                            c.id === committee.id 
+                              ? { ...c, selected: !c.selected }
+                              : c
+                          ),
+                        });
+                      }}
+                    >
+                      <div className="flex items-center gap-2 w-full min-w-0">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full shrink-0",
+                          committee.selected ? "bg-zinc-100" : "bg-zinc-600"
+                        )} />
+                        <span className="truncate">{committee.name}</span>
+                      </div>
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Third Column: Party and Support */}
         <div className="space-y-4">

@@ -58,7 +58,9 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
             // Handle committee filters
             const selectedCommittees = newFilters.committees.filter(c => c.selected);
             if (selectedCommittees.length > 0) {
-              params.set('committee', selectedCommittees.map(c => c.name).join(','));
+              selectedCommittees.forEach(committee => {
+                params.append('committee', committee.name);
+              });
             }
 
             window.location.href = `/${stateCode.toLowerCase()}${params.toString() ? `?${params.toString()}` : ''}`;

@@ -13,7 +13,7 @@ async function getBills(
   page = 1,
   pageSize = 12,
   filters: {
-    committee?: string;
+    committee?: string[] | string;
     categories?: Array<{ id: string; impactTypes: Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'> }>;
     party?: string;
     support?: 'HAS_SUPPORT' | 'NO_SUPPORT';
@@ -65,7 +65,7 @@ async function getBills(
       `).reduce((acc, clause, idx) => 
         idx === 0 ? clause : db`${acc} AND ${clause}`
       , db``)}` : db``}
-      ${filters.committee ? db`AND b.pending_committee_name = ${filters.committee}` : db``}
+      ${filters.committee ? db`AND b.pending_committee_name = ANY(${filters.committee})` : db``}
       ${filters.party ? db`AND EXISTS (
         SELECT 1 FROM ls_bill_sponsor sp
         JOIN ls_people p ON sp.people_id = p.people_id
@@ -185,7 +185,7 @@ async function getBills(
     `).reduce((acc, clause, idx) => 
       idx === 0 ? clause : db`${acc} AND ${clause}`
     , db``)}` : db``}
-    ${filters.committee ? db`AND b.pending_committee_name = ${filters.committee}` : db``}
+    ${filters.committee ? db`AND b.pending_committee_name = ANY(${filters.committee})` : db``}
     ${filters.party ? db`AND EXISTS (
       SELECT 1 FROM ls_bill_sponsor sp
       JOIN ls_people p ON sp.people_id = p.people_id
@@ -283,14 +283,26 @@ export default async function StatePage({
   console.log('Final category filters:', categoryFilters);
 
   const filters = {
-    committee: typeof searchParams.committee === 'string' ? searchParams.committee : undefined,
+    committee: Array.isArray(searchParams.committee) ? searchParams.committee : searchParams.committee ? [searchParams.committee] : undefined,
     categories: categoryFilters,
     party: typeof searchParams.party === 'string' ? searchParams.party : undefined,
     support: typeof searchParams.support === 'string' ? searchParams.support as 'HAS_SUPPORT' | 'NO_SUPPORT' : undefined,
-  } as const; // Use const assertion to preserve literal types
+  } as const;
 
   const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
   const stateName = bills[0]?.state_name || stateCode;
+
+  // Get all available committees for the state
+  const allCommittees = await db`
+    SELECT DISTINCT 
+      pending_committee_id as id,
+      pending_committee_name as name
+    FROM lsv_bill
+    WHERE state_abbr = ${stateCode.toUpperCase()}
+      AND pending_committee_name IS NOT NULL
+      AND pending_committee_name != ''
+    ORDER BY pending_committee_name
+  `;
 
   // Initialize filter state for the UI
   const billFilters: BillFiltersType = {
@@ -329,16 +341,11 @@ export default async function StatePage({
     ],
     demographics: [],
     party: filters.party as any || 'ALL',
-    committees: bills.reduce((acc, bill) => {
-      if (bill.pending_committee_name && !acc.find(c => c.name === bill.pending_committee_name)) {
-        acc.push({
-          id: bill.pending_committee_id || acc.length + 1,
-          name: bill.pending_committee_name,
-          selected: bill.pending_committee_name === filters.committee
-        });
-      }
-      return acc;
-    }, [] as Array<{ id: number; name: string; selected: boolean }>),
+    committees: allCommittees.map(committee => ({
+      id: committee.id || 0,
+      name: committee.name,
+      selected: filters.committee?.includes(committee.name) || false
+    })),
     support: filters.support || 'ALL'
   };
 
@@ -476,7 +483,7 @@ export default async function StatePage({
                         href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
                         className="inline-flex items-center gap-1.5 rounded-full bg-lime-100 text-lime-700 dark:bg-lime-900/50 dark:text-lime-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
                       >
-                        Committee: {filters.committee}
+                        Committee: {filters.committee.join(', ')}
                         <span className="text-zinc-400 hover:text-zinc-500">×</span>
                       </a>
                     );
