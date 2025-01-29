@@ -475,19 +475,24 @@ export default async function StatePage({
                   })()}
 
                   {/* Committee filter */}
-                  {filters.committee && (() => {
+                  {filters.committee && filters.committee.map(committee => {
                     const newParams = new URLSearchParams(searchParams as Record<string, string>);
+                    // Remove only this specific committee
                     newParams.delete('committee');
+                    filters.committee?.filter(c => c !== committee).forEach(c => {
+                      newParams.append('committee', c);
+                    });
                     return (
                       <a
+                        key={`committee-${committee}`}
                         href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
                         className="inline-flex items-center gap-1.5 rounded-full bg-lime-100 text-lime-700 dark:bg-lime-900/50 dark:text-lime-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
                       >
-                        Committee: {filters.committee.join(', ')}
+                        {committee}
                         <span className="text-zinc-400 hover:text-zinc-500">×</span>
                       </a>
                     );
-                  })()}
+                  })}
                 </div>
               )}
               {(categoryFilters.length > 0 || filters.party || filters.support || filters.committee) && (

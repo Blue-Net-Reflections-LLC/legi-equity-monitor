@@ -66,83 +66,85 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
         {/* First Column: Categories */}
         <div className="space-y-4">
           <h3 className="font-medium text-lg">Impact Categories</h3>
-          <div className="space-y-1 rounded-lg p-2 bg-zinc-900">
-            {CATEGORIES.map(category => {
-              const categoryFilter = filters.categories.find(c => c.id === category.id);
-              return (
-                <div
-                  key={category.id}
-                  className={cn(
-                    "flex items-center gap-2 p-0.5 rounded-lg",
-                    "transition-colors w-full"
-                  )}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
+          <div className="rounded-lg p-2 bg-zinc-900 h-[240px] overflow-y-auto">
+            <div className="space-y-1">
+              {CATEGORIES.map(category => {
+                const categoryFilter = filters.categories.find(c => c.id === category.id);
+                return (
+                  <div
+                    key={category.id}
                     className={cn(
-                      "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1",
-                      (categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected)) && "bg-zinc-700"
+                      "flex items-center gap-2 p-0.5 rounded-lg",
+                      "transition-colors w-full"
                     )}
-                    onClick={() => {
-                      const isCurrentlySelected = categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected);
-                      onFilterChange({
-                        ...filters,
-                        categories: filters.categories.map(c => 
-                          c.id === category.id 
-                            ? {
-                                ...c,
-                                selected: !isCurrentlySelected,
-                                impactTypes: isCurrentlySelected 
-                                  ? c.impactTypes.map(i => ({ ...i, selected: false }))
-                                  : c.impactTypes
-                            }
-                            : c
-                        ),
-                      });
-                    }}
                   >
-                    {category.name}
-                  </Button>
-                  <div className="flex gap-1.5 shrink-0">
-                    <TooltipProvider>
-                      {(['POSITIVE', 'BIAS', 'NEUTRAL'] as const).map((type) => {
-                        const Icon = ImpactIcons[type];
-                        const isSelected = categoryFilter?.impactTypes.find(i => i.type === type)?.selected;
-                        return (
-                          <Tooltip key={type}>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={cn(
-                                  "h-7 w-7 p-0 rounded-md bg-zinc-800 hover:bg-zinc-700",
-                                  isSelected && "bg-zinc-700 ring-1 ring-inset",
-                                  type === 'POSITIVE' && isSelected && "ring-green-500",
-                                  type === 'BIAS' && isSelected && "ring-red-500",
-                                  type === 'NEUTRAL' && isSelected && "ring-gray-500"
-                                )}
-                                onClick={() => handleCategoryImpactChange(category.id, type)}
-                              >
-                                <Icon className={cn(
-                                  "h-4 w-4",
-                                  type === 'POSITIVE' && "text-green-500",
-                                  type === 'BIAS' && "text-red-500",
-                                  type === 'NEUTRAL' && "text-gray-500"
-                                )} />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-zinc-900 border border-zinc-700 text-zinc-100">
-                              <p>{ImpactLabels[type]}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
-                    </TooltipProvider>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "h-7 font-normal px-3 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1",
+                        (categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected)) && "bg-zinc-700"
+                      )}
+                      onClick={() => {
+                        const isCurrentlySelected = categoryFilter?.selected || categoryFilter?.impactTypes.some(i => i.selected);
+                        onFilterChange({
+                          ...filters,
+                          categories: filters.categories.map(c => 
+                            c.id === category.id 
+                              ? {
+                                  ...c,
+                                  selected: !isCurrentlySelected,
+                                  impactTypes: isCurrentlySelected 
+                                    ? c.impactTypes.map(i => ({ ...i, selected: false }))
+                                    : c.impactTypes
+                              }
+                              : c
+                          ),
+                        });
+                      }}
+                    >
+                      {category.name}
+                    </Button>
+                    <div className="flex gap-1.5 shrink-0">
+                      <TooltipProvider>
+                        {(['POSITIVE', 'BIAS', 'NEUTRAL'] as const).map((type) => {
+                          const Icon = ImpactIcons[type];
+                          const isSelected = categoryFilter?.impactTypes.find(i => i.type === type)?.selected;
+                          return (
+                            <Tooltip key={type}>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn(
+                                    "h-7 w-7 p-0 rounded-md bg-zinc-800 hover:bg-zinc-700",
+                                    isSelected && "bg-zinc-700 ring-1 ring-inset",
+                                    type === 'POSITIVE' && isSelected && "ring-green-500",
+                                    type === 'BIAS' && isSelected && "ring-red-500",
+                                    type === 'NEUTRAL' && isSelected && "ring-gray-500"
+                                  )}
+                                  onClick={() => handleCategoryImpactChange(category.id, type)}
+                                >
+                                  <Icon className={cn(
+                                    "h-4 w-4",
+                                    type === 'POSITIVE' && "text-green-500",
+                                    type === 'BIAS' && "text-red-500",
+                                    type === 'NEUTRAL' && "text-gray-500"
+                                  )} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-zinc-900 border border-zinc-700 text-zinc-100">
+                                <p>{ImpactLabels[type]}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                      </TooltipProvider>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -150,7 +152,7 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
         {filters.committees.length > 0 && (
           <div className="space-y-4">
             <h3 className="font-medium text-lg">Committees</h3>
-            <div className="rounded-lg p-2 bg-zinc-900 max-h-[240px] overflow-y-auto">
+            <div className="rounded-lg p-2 bg-zinc-900 h-[240px] overflow-y-auto">
               <div className="space-y-1">
                 {/* Show all committees */}
                 {filters.committees.map(committee => (
@@ -162,7 +164,7 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 w-full justify-start text-xs",
+                        "h-9 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 w-full justify-start text-xs",
                         committee.selected && "bg-zinc-700 ring-1 ring-inset ring-zinc-600"
                       )}
                       onClick={() => {
@@ -192,9 +194,8 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
         )}
 
         {/* Third Column: Party and Support */}
-        <div className="space-y-4">
+        <div className="space-y-4 flex flex-col">
           {/* Party Filter */}
-          <div className="space-y-4">
             <h3 className="font-medium text-lg">Party</h3>
             <div className="rounded-lg p-2 bg-zinc-900">
               <Select 
@@ -204,7 +205,7 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                   party: value
                 })}
               >
-                <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 h-7">
+                <SelectTrigger className="w-full bg-zinc-800 border-zinc-700 h-9">
                   <SelectValue placeholder="Select party" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -216,28 +217,29 @@ export function BillFilters({ filters, onFilterChange }: BillFiltersProps) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
           {/* Support Filter */}
-          <div className="space-y-4">
+          <div className="flex-1">
             <h3 className="font-medium text-lg">Support</h3>
-            <div className="space-y-1 rounded-lg p-2 bg-zinc-900">
-              {['ALL', 'HAS_SUPPORT', 'NO_SUPPORT'].map((support) => (
-                <div key={support} className="flex items-center gap-2 p-0.5 rounded-lg w-full">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onFilterChange({ ...filters, support: support as BillFiltersType['support'] })}
-                    className={cn(
-                      "h-7 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1 justify-start",
-                      filters.support === support && "bg-zinc-700"
-                    )}
-                  >
-                    {support === 'ALL' ? 'All Support' : 
-                     support === 'HAS_SUPPORT' ? 'Has Support' : 'No Support'}
-                  </Button>
-                </div>
-              ))}
+            <div className="rounded-lg p-2 bg-zinc-900 mt-4">
+              <div className="space-y-1">
+                {['ALL', 'HAS_SUPPORT', 'NO_SUPPORT'].map((support) => (
+                  <div key={support} className="flex items-center gap-2 p-0.5 rounded-lg w-full">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onFilterChange({ ...filters, support: support as BillFiltersType['support'] })}
+                      className={cn(
+                        "h-9 font-normal px-3 rounded-md bg-zinc-800 hover:bg-zinc-700 flex-1 justify-start",
+                        filters.support === support && "bg-zinc-700"
+                      )}
+                    >
+                      {support === 'ALL' ? 'All Support' : 
+                       support === 'HAS_SUPPORT' ? 'Has Support' : 'No Support'}
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
