@@ -19,16 +19,8 @@ async function getBills(
     support?: 'HAS_SUPPORT' | 'NO_SUPPORT';
   } = {}
 ): Promise<{ bills: Bill[], totalCount: number }> {
-  console.log('Filters received:', filters);
-  console.log('Categories:', filters.categories);
-  
   const offset = (page - 1) * pageSize;
   
-  console.log('Debug - Category:', filters.categories?.[0]?.id);
-  console.log('Debug - Impact Types:', filters.categories?.[0]?.impactTypes);
-  console.log('Debug - SQL condition:', filters.categories?.length ? 
-    `category = ${filters.categories[0].id} AND bias_score > positive_impact_score AND bias_score >= 0.60` : 'TRUE');
-
   const bills = await db`
     WITH filtered_bills AS (
       SELECT DISTINCT b.bill_id
@@ -211,8 +203,6 @@ async function getBills(
     AND bacs.bias_score >= 0.60
   `;
   
-  console.log('Debug - Test count of matching bills:', testCount);
-
   return {
     bills: bills,
     totalCount: Number(count)
@@ -267,8 +257,6 @@ export default async function StatePage({
     : (searchParams.category as string || '').split(',')
   ).filter(Boolean).map(categoryId => {
     // Get impact type for this category if it exists (only take the last one if multiple)
-    console.log('Processing category:', categoryId);
-    console.log('Search params:', searchParams);
     const impactParam = searchParams[`impact_${categoryId}`];
     const impactType = Array.isArray(impactParam) 
       ? impactParam[impactParam.length - 1] 
@@ -278,16 +266,12 @@ export default async function StatePage({
     const validImpactType = (impactType === 'POSITIVE' || impactType === 'BIAS' || impactType === 'NEUTRAL') 
       ? impactType as 'POSITIVE' | 'BIAS' | 'NEUTRAL'
       : undefined;
-      
-    console.log('Impact type found:', validImpactType);
 
     return {
       id: categoryId,
       impactTypes: validImpactType ? [validImpactType] : []
     } as const; // Use const assertion to preserve literal types
   });
-
-  console.log('Final category filters:', categoryFilters);
 
   const filters = {
     committee: Array.isArray(searchParams.committee) ? searchParams.committee : searchParams.committee ? [searchParams.committee] : undefined,

@@ -45,7 +45,7 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
               </Button>
             </TooltipTrigger>
           </DialogTrigger>
-          <TooltipContent>
+          <TooltipContent className="bg-zinc-900 text-zinc-100 border border-zinc-700">
             <p>Filter bills</p>
           </TooltipContent>
         </Tooltip>
