@@ -3,12 +3,11 @@
 import { Button } from "@/app/components/ui/button";
 import { Separator } from "@/app/components/ui/separator";
 import { CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
-import type { BillFilters as BillFiltersType, ImpactType } from "@/app/types/filters";
+import type { BillFilters as BillFiltersType, ImpactType, PartyType } from "@/app/types/filters";
 import { FilterTag } from "@/app/components/filters/FilterTag";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
-import { Label } from "@/app/components/ui/label";
 
 interface BillFiltersProps {
   filters: BillFiltersType;
@@ -214,7 +213,7 @@ export function BillFilters({
                 } else {
                   onFilterChange({
                     ...filters,
-                    party: value
+                    party: value as PartyType
                   });
                 }
               }}
