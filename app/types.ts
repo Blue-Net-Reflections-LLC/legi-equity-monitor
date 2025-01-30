@@ -51,4 +51,26 @@ export interface BillWithImpacts extends Bill {
     impact_type: Sentiment;
     analysis_text: string;
   }>;
+}
+
+export interface Sponsor {
+  people_id: number;
+  name: string;
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  suffix: string;
+  nickname: string;
+  party_id: number;
+  party_name: string;
+  state_id: number;
+  state_abbr: string;
+  state_name: string;
+  district: string;
+  photo_url?: string;
+  role_id: number;
+  committee_sponsor_id: number;
+  person_hash: string;
+  created: Date;
+  updated: Date;
 } 
