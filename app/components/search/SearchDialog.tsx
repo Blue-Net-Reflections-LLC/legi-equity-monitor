@@ -35,12 +35,22 @@ const MOCK_RESULTS: SearchResult[] = [
       name: "Sarah Johnson",
       first_name: "Sarah",
       last_name: "Johnson",
+      middle_name: null,
+      suffix: null,
+      nickname: null,
       state_abbr: "CA",
       state_name: "California",
       party_name: "Democratic",
+      party_id: 1,
       role_id: 2,
       photo_url: "https://static.votesmart.org/canphoto/180828.jpg",
-    } as Sponsor
+      url: null,
+      contact_form: null,
+      rss_url: null,
+      twitter_account: null,
+      facebook_account: null,
+      youtube_account: null
+    } as any
   },
   {
     type: 'bill',
@@ -62,12 +72,22 @@ const MOCK_RESULTS: SearchResult[] = [
       name: "Michael Chen",
       first_name: "Michael",
       last_name: "Chen",
+      middle_name: null,
+      suffix: null,
+      nickname: null,
       state_abbr: "NY",
       state_name: "New York",
       party_name: "Republican",
+      party_id: 2,
       role_id: 1,
       photo_url: "https://static.votesmart.org/canphoto/181072.jpg",
-    } as Sponsor
+      url: null,
+      contact_form: null,
+      rss_url: null,
+      twitter_account: null,
+      facebook_account: null,
+      youtube_account: null
+    } as any
   },
   {
     type: 'bill',
@@ -94,7 +114,7 @@ const MOCK_RESULTS: SearchResult[] = [
       party_name: "Democratic",
       role_id: 2,
       photo_url: null,
-    } as Sponsor
+    } as any
   },
   {
     type: 'bill',
@@ -116,12 +136,22 @@ const MOCK_RESULTS: SearchResult[] = [
       name: "James Wilson",
       first_name: "James",
       last_name: "Wilson",
+      middle_name: null,
+      suffix: null,
+      nickname: null,
       state_abbr: "OH",
       state_name: "Ohio",
       party_name: "Republican",
+      party_id: 2,
       role_id: 1,
       photo_url: null,
-    } as Sponsor
+      url: null,
+      contact_form: null,
+      rss_url: null,
+      twitter_account: null,
+      facebook_account: null,
+      youtube_account: null
+    } as any
   },
   {
     type: 'bill',
@@ -148,7 +178,7 @@ const MOCK_RESULTS: SearchResult[] = [
       party_name: "Democratic",
       role_id: 2,
       photo_url: null,
-    } as Sponsor
+    } as any
   },
   {
     type: 'bill',
@@ -175,7 +205,7 @@ const MOCK_RESULTS: SearchResult[] = [
       party_name: "Republican",
       role_id: 1,
       photo_url: null,
-    } as Sponsor
+    } as any
   },
   {
     type: 'bill',
@@ -202,7 +232,7 @@ const MOCK_RESULTS: SearchResult[] = [
       party_name: "Democratic",
       role_id: 2,
       photo_url: null,
-    } as Sponsor
+    } as any
   },
   {
     type: 'bill',
@@ -229,7 +259,7 @@ const MOCK_RESULTS: SearchResult[] = [
       party_name: "Republican",
       role_id: 1,
       photo_url: null,
-    } as Sponsor
+    } as any
   },
   {
     type: 'bill',
@@ -256,7 +286,7 @@ const MOCK_RESULTS: SearchResult[] = [
       party_name: "Democratic",
       role_id: 2,
       photo_url: null,
-    } as Sponsor
+    } as any
   },
   {
     type: 'bill',
@@ -283,7 +313,7 @@ const MOCK_RESULTS: SearchResult[] = [
       party_name: "Republican",
       role_id: 1,
       photo_url: null,
-    } as Sponsor
+    } as any
   }
 ]
 

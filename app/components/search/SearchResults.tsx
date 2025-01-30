@@ -7,7 +7,6 @@ import { SearchResult } from './SearchDialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Bill, Sponsor } from '@/app/types'
 import { StateIcon } from './StateIcon'
-import { cn } from '@/lib/utils'
 
 interface SearchResultsProps {
   results: SearchResult[]
@@ -150,11 +149,8 @@ function SponsorResult({ sponsor, onClick }: { sponsor: Sponsor, onClick: () => 
         <div className="text-sm text-zinc-400">
           {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.role_id === 1 ? 'Senator' : 'Representative'}
         </div>
-        <div className="flex flex-col gap-0.5">
-          <div className="text-sm text-zinc-100">{sponsor.name}</div>
-          <div className="text-sm font-light text-zinc-400 line-clamp-1" title={`${sponsor.state_name} · ${sponsor.party_name}`}>
-            {sponsor.state_name} · {sponsor.party_name}
-          </div>
+        <div className="text-sm text-zinc-100">
+          {sponsor.name}
         </div>
       </div>
     </div>
