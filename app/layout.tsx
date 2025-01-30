@@ -1,8 +1,12 @@
+'use client'
+
 import type { Metadata } from 'next'
 import '@/app/globals.css'
 import { Inter } from 'next/font/google'
 import Header from '@/app/components/Header'
 import { systemThemeScript } from './utils/theme-script'
+import { useEffect } from 'react'
+import { embeddingService } from './services/embedding.service'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,6 +20,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  useEffect(() => {
+    // Prefetch the model when the app loads
+    embeddingService.load().catch(console.error)
+
+    // Cleanup when the app unmounts
+    return () => {
+      embeddingService.dispose()
+    }
+  }, [])
+
   return (
     <html lang="en" className="[color-scheme:dark_light]" suppressHydrationWarning>
       <head>
