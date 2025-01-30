@@ -1,0 +1,32 @@
+[project]
+name = "bills-impact"
+version = "0.1.0"
+description = "Bill indexing and search service"
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "^2.1.0"
+transformers = "^4.36.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
+asyncpg = "^0.29.0"
+numpy = "^1.24.0"
+tqdm = "^4.66.0"
+python-dotenv = "^1.0.0"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+] 
