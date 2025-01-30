@@ -314,6 +314,30 @@ const MOCK_RESULTS: SearchResult[] = [
       role_id: 1,
       photo_url: null,
     } as any
+  },
+  {
+    type: 'bill',
+    similarity: 0.68,
+    item: {
+      bill_id: 11,
+      bill_number: "HR 789",
+      title: "Federal Infrastructure Investment Act",
+      description: "Comprehensive federal infrastructure investment plan.",
+      state_abbr: "US",
+      state_name: "United States",
+    } as Bill
+  },
+  {
+    type: 'bill',
+    similarity: 0.67,
+    item: {
+      bill_id: 12,
+      bill_number: "B24-0123",
+      title: "DC Housing Reform Act",
+      description: "Reform housing regulations in the District of Columbia.",
+      state_abbr: "DC",
+      state_name: "District of Columbia",
+    } as Bill
   }
 ]
 
@@ -372,18 +396,18 @@ export function SearchDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="p-2 hover:bg-gray-100 rounded-full dark:hover:bg-gray-800">
+        <button className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
           <Search className="h-5 w-5" />
         </button>
       </DialogTrigger>
       <DialogContent 
-        className="sm:max-w-[600px] h-[80vh] flex flex-col bg-zinc-950 p-0 gap-0 border-zinc-800" 
+        className="sm:max-w-[600px] h-[80vh] flex flex-col bg-white dark:bg-zinc-950 p-0 gap-0 border-zinc-200 dark:border-zinc-800" 
         showCloseButton={false}
       >
         <div className="flex-1 min-h-0 flex flex-col p-3">
           <div className="relative flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-400" />
               <Input
                 type="search"
                 placeholder="Search bills and sponsors..."
@@ -397,11 +421,11 @@ export function SearchDialog() {
                     handleSearch(query)
                   }
                 }}
-                className="w-full pl-9 bg-zinc-900 border-0 focus-visible:ring-0 text-zinc-100"
+                className="w-full pl-9 bg-zinc-100/80 dark:bg-zinc-900 border-0 focus-visible:ring-0 text-zinc-900 dark:text-zinc-100"
                 autoFocus
               />
             </div>
-            <kbd className="hidden sm:block text-sm font-mono text-zinc-500 bg-zinc-900 px-3 flex content-center h-10 rounded">
+            <kbd className="hidden sm:block text-sm font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-900 px-3 flex content-center h-10 rounded">
               ESC
             </kbd>
           </div>
