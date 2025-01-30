@@ -4,7 +4,7 @@ import { removeStopwords } from 'stopword'
 
 export async function POST(request: Request) {
   try {
-    const { keyword } = await request.json()
+    const { keyword, embedding } = await request.json()
     
     // Remove stopwords and get meaningful tokens
     const meaningfulWords = removeStopwords(keyword.toLowerCase().split(' '))
@@ -14,10 +14,10 @@ export async function POST(request: Request) {
       .map((word: string) => `search_text ILIKE '%${word}%'`)
       .join(' AND ')
 
-    // Optimized hybrid search query
-    const query = `
+    let searchType = 'trigram';
+    // Try trigram search first
+    const trigramQuery = `
       WITH pre_filtered AS (
-        -- Step 1: Tokenize the phrase and apply ILIKE for flexible matching
         SELECT 
           entity_type, 
           entity_id, 
@@ -29,7 +29,6 @@ export async function POST(request: Request) {
         ORDER BY LENGTH(search_text) ASC
       ),
       ranked AS (
-        -- Step 2: Compute strict word similarity only on pre-filtered matches
         SELECT 
           entity_type,
           entity_id,
@@ -40,16 +39,36 @@ export async function POST(request: Request) {
         FROM pre_filtered
         WHERE strict_word_similarity($1, search_text) > 0.1
       )
-      -- Step 3: Final ranking and limit
       SELECT * FROM ranked
       ORDER BY similarity DESC
       LIMIT 10;
     `
 
-    const results = await db.unsafe(query, [keyword])
+    let results = await db.unsafe(trigramQuery, [keyword])
+
+    // If no results, fall back to embeddings for AI powered search
+    if (results.length === 0 && embedding) {
+      const vectorString = `[${embedding.join(',')}]`
+      const embeddingQuery = `
+        SELECT 
+          entity_type,
+          entity_id,
+          search_text,
+          state_abbr,
+          state_name,
+          1 - (embedding <=> '${vectorString}'::vector) as similarity
+        FROM vector_index
+        WHERE embedding IS NOT NULL
+        ORDER BY embedding <=> '${vectorString}'::vector
+        LIMIT 10;
+      `
+      results = await db.unsafe(embeddingQuery)
+      searchType = results.length > 0 ? 'embedding' : 'no_results';
+    }
 
     return NextResponse.json({ 
-      results: results 
+      results: results,
+      search_type: searchType
     })
   } catch (error) {
     console.error('Search error:', error)
