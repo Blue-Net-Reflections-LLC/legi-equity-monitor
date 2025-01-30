@@ -1,14 +1,28 @@
 import { NextResponse } from 'next/server'
-import { MOCK_RESULTS } from './mockData'
+import db from '@/lib/db'
 
 export async function POST(request: Request) {
   try {
     const { keyword, embedding } = await request.json()
 
-    // For now, just return all mock results sorted by similarity
-    // Later, this will be replaced with actual search logic using the embedding
+    const query = `
+      SELECT 
+        *,
+        GREATEST(
+          title <-> $1,
+          description <-> $1
+        ) as similarity
+      FROM bills
+      WHERE title % $1 OR description % $1
+      ORDER BY similarity ASC
+      LIMIT 100;
+    `
+
+    console.log(query)
+    const results = await db.unsafe(query, [keyword])
+
     return NextResponse.json({ 
-      results: MOCK_RESULTS.sort((a, b) => b.similarity - a.similarity) 
+      results: results 
     })
   } catch (error) {
     console.error('Search error:', error)
