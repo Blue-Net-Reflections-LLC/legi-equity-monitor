@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, ChangeEvent, KeyboardEvent } from 'react'
+import { useState, useEffect, ChangeEvent, KeyboardEvent } from 'react'
 import { Dialog, DialogContent, DialogTrigger } from "@/app/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
@@ -324,12 +324,16 @@ export function SearchDialog() {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSearch = async (searchQuery: string) => {
-    if (!searchQuery.trim()) return
-    
     setIsLoading(true)
     try {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // If empty query, show all results
+      if (!searchQuery.trim()) {
+        setResults(MOCK_RESULTS)
+        return
+      }
       
       // Filter mock results based on search query
       const filteredResults = MOCK_RESULTS.filter(result => {
@@ -359,6 +363,11 @@ export function SearchDialog() {
       setIsLoading(false)
     }
   }
+
+  // Initialize with all results
+  useEffect(() => {
+    handleSearch('')
+  }, [])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
