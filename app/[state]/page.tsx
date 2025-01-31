@@ -1,3 +1,4 @@
+import { Metadata } from 'next'
 import db from "@/lib/db";
 import { BillList } from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
@@ -7,6 +8,60 @@ import { Footer } from "@/app/components/layout/Footer";
 import { BillFiltersWrapper } from "@/app/components/filters/BillFiltersWrapper";
 import type { BillFilters as BillFiltersType, PartyType } from "@/app/types/filters";
 import { CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
+
+// State name mapping for metadata
+const STATE_NAMES: { [key: string]: string } = {
+  'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas',
+  'CA': 'California', 'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware',
+  'FL': 'Florida', 'GA': 'Georgia', 'HI': 'Hawaii', 'ID': 'Idaho',
+  'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa', 'KS': 'Kansas',
+  'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+  'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi',
+  'MO': 'Missouri', 'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada',
+  'NH': 'New Hampshire', 'NJ': 'New Jersey', 'NM': 'New Mexico', 'NY': 'New York',
+  'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio', 'OK': 'Oklahoma',
+  'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+  'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah',
+  'VT': 'Vermont', 'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia',
+  'WI': 'Wisconsin', 'WY': 'Wyoming', 'DC': 'District of Columbia'
+};
+
+type Props = {
+  params: { state: string }
+  searchParams: { [key: string]: string | string[] | undefined }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const stateCode = params.state.toUpperCase()
+  const stateName = STATE_NAMES[stateCode] || stateCode
+
+  return {
+    title: `${stateName} Bills - LegiEquity`,
+    description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
+    openGraph: {
+      title: `${stateName} Legislative Analysis - LegiEquity`,
+      description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
+      url: `https://legiequity.us/${params.state.toLowerCase()}`,
+      siteName: 'LegiEquity',
+      images: [
+        {
+          url: `https://legiequity.us/api/og?state=${stateCode}`, // You'll need to create this API route
+          width: 1200,
+          height: 630,
+          alt: `${stateName} Legislative Analysis`,
+        },
+      ],
+      locale: 'en_US',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${stateName} Legislative Analysis - LegiEquity`,
+      description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
+      images: [`https://legiequity.us/api/og?state=${stateCode}`],
+    },
+  }
+}
 
 async function getBills(
   stateCode: string,

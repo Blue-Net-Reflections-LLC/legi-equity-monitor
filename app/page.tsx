@@ -1,3 +1,4 @@
+import { Metadata } from 'next'
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import StateTiles from "@/app/components/StateTiles";
 import AnimatedContent from "./components/AnimatedContent";
@@ -8,6 +9,33 @@ import { Footer } from "@/app/components/layout/Footer";
 const InteractiveMap = dynamic(() => import("./components/InteractiveMap"), {
   ssr: false,
 });
+
+export const metadata: Metadata = {
+  title: 'LegiEquity - AI-Powered Legislative Impact Analysis',
+  description: 'Understand how bills and laws affect communities across age, disability, gender, race, and religion through AI-powered analysis.',
+  openGraph: {
+    title: 'LegiEquity - AI-Powered Legislative Impact Analysis',
+    description: 'Understand how bills and laws affect communities across age, disability, gender, race, and religion through AI-powered analysis.',
+    url: 'https://legiequity.us',
+    siteName: 'LegiEquity',
+    images: [
+      {
+        url: 'https://legiequity.us/images/og-home.png', // You'll need to create this image
+        width: 1200,
+        height: 630,
+        alt: 'LegiEquity - Legislative Impact Analysis',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LegiEquity - AI-Powered Legislative Impact Analysis',
+    description: 'Understand how bills and laws affect communities across age, disability, gender, race, and religion through AI-powered analysis.',
+    images: ['https://legiequity.us/images/og-home.png'], // Same image as OG
+  },
+}
 
 export default function Home() {
   return (
