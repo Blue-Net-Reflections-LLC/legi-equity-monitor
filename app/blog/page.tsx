@@ -63,7 +63,7 @@ export default function BlogPage() {
           <div className="grid md:grid-cols-2 gap-8 mb-16">
             <div className="bg-zinc-50 dark:bg-zinc-800/50 p-8 rounded-xl">
               <Scale className="w-8 h-8 mb-4 text-purple-500" />
-              <h3 className="text-xl font-semibold mb-3">Impact Analysis</h3>
+              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-white">Impact Analysis</h3>
               <p className="text-zinc-600 dark:text-zinc-400">
                 Deep dives into legislation that significantly affects communities across the nation, 
                 backed by data-driven insights and expert analysis.
@@ -72,7 +72,7 @@ export default function BlogPage() {
 
             <div className="bg-zinc-50 dark:bg-zinc-800/50 p-8 rounded-xl">
               <Users className="w-8 h-8 mb-4 text-blue-500" />
-              <h3 className="text-xl font-semibold mb-3">Community Voices</h3>
+              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-white">Community Voices</h3>
               <p className="text-zinc-600 dark:text-zinc-400">
                 Real stories from communities impacted by legislation, bringing human perspective 
                 to policy discussions and fostering meaningful dialogue.
@@ -81,7 +81,7 @@ export default function BlogPage() {
 
             <div className="bg-zinc-50 dark:bg-zinc-800/50 p-8 rounded-xl">
               <Brain className="w-8 h-8 mb-4 text-indigo-500" />
-              <h3 className="text-xl font-semibold mb-3">AI-Powered Insights</h3>
+              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-white">AI-Powered Insights</h3>
               <p className="text-zinc-600 dark:text-zinc-400">
                 Leveraging advanced AI to uncover hidden patterns and potential implications 
                 in legislative text, making complex bills more accessible.
@@ -90,7 +90,7 @@ export default function BlogPage() {
 
             <div className="bg-zinc-50 dark:bg-zinc-800/50 p-8 rounded-xl">
               <Newspaper className="w-8 h-8 mb-4 text-violet-500" />
-              <h3 className="text-xl font-semibold mb-3">Legislative Trends</h3>
+              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-white">Legislative Trends</h3>
               <p className="text-zinc-600 dark:text-zinc-400">
                 Tracking and analyzing emerging patterns in legislation across states, 
                 providing early insights into potential nationwide impacts.
@@ -102,7 +102,7 @@ export default function BlogPage() {
           <section className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-8 rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-2xl font-bold mb-2">Stay Updated</h3>
+                <h3 className="text-2xl font-bold mb-2 text-zinc-900 dark:text-white">Stay Updated</h3>
                 <p className="text-zinc-600 dark:text-zinc-400">
                   Be the first to know when we launch and receive our latest insights.
                 </p>
