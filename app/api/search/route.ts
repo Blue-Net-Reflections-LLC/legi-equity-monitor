@@ -60,9 +60,23 @@ export async function POST(request: Request) {
       .join(' AND ')
 
     let searchType = 'trigram'
-    // Try trigram search first
+    // Try trigram search first with pre-filtering
     const trigramQuery = `
-      WITH ranked AS (
+      WITH pre_filtered AS (
+        -- Step 1: Tokenize the phrase and apply ILIKE for flexible matching
+        SELECT 
+          entity_type,
+          entity_id,
+          search_text,
+          state_abbr,
+          state_name
+        FROM vector_index
+        WHERE ${tokens}
+        ORDER BY LENGTH(search_text) ASC  -- Prefer shorter, more relevant matches
+        LIMIT 5990  -- Reduce processing load
+      ),
+      ranked AS (
+        -- Step 2: Compute word similarity only on pre-filtered matches
         SELECT 
           entity_type,
           entity_id,
@@ -70,10 +84,8 @@ export async function POST(request: Request) {
           state_abbr,
           state_name,
           word_similarity($1, search_text) AS similarity
-        FROM vector_index
-        WHERE ${tokens}
-        AND word_similarity($1, search_text) > 0.1
-        ORDER BY LENGTH(search_text) ASC
+        FROM pre_filtered
+        WHERE word_similarity($1, search_text) > 0.1  -- Apply similarity threshold
       ),
       ${entityDataCTE}
       SELECT * FROM entity_data
