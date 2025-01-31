@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Scale } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
+import { SearchDialog } from './search/SearchDialog'
 
 export default function Header() {
   return (
@@ -33,7 +34,10 @@ export default function Header() {
               </Link>
             </li>
           </ul>
-          <ThemeToggle showTooltip />
+          <div className="flex items-center space-x-2">
+            <SearchDialog />
+            <ThemeToggle showTooltip />
+          </div>
         </nav>
       </div>
     </header>
