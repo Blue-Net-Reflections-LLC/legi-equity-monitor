@@ -21,10 +21,15 @@ export function SearchDialog() {
   const [results, setResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const abortControllerRef = useRef<AbortController>()
+  const previousQueryRef = useRef<string | null>(null)
 
   const handleSearch = useCallback(
     debounce(async (searchQuery: string) => {
+      if (searchQuery === previousQueryRef.current) {
+        return
+      }
       setIsLoading(true)
+
 
       // Cancel any pending requests
       if (abortControllerRef.current) {
@@ -67,6 +72,7 @@ export function SearchDialog() {
           setResults([])
         }
       } finally {
+        previousQueryRef.current = searchQuery
         if (!abortControllerRef.current?.signal.aborted) {
           setIsLoading(false)
         }
@@ -75,7 +81,7 @@ export function SearchDialog() {
         }
       }
     }, 300),
-    []
+    [setResults, setIsLoading]
   )
 
   const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -101,10 +107,10 @@ export function SearchDialog() {
   }, [handleSearch])
 
   useEffect(() => {
-    if (open && query === '') {
+    if (open && query === '' && previousQueryRef.current !== query) {
       handleSearch('')
     }
-  }, [open, handleSearch])
+  }, [open, query, handleSearch])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
