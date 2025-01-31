@@ -4,12 +4,16 @@ import { useEffect, useCallback } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { safeGtag, initializeGtag } from '@/app/utils/analytics'
 
+interface GTagData {
+  [key: string]: string | number | string[] | null | undefined;
+}
+
 declare global {
   interface Window {
     gtag: (
       type: string,
       action: string,
-      data?: { [key: string]: any }
+      data?: GTagData
     ) => void
   }
 }
@@ -45,7 +49,7 @@ export const useAnalytics = () => {
   }, [pathname, searchParams])
 
   // Core tracking function
-  const trackEvent = useCallback((action: string, data?: { [key: string]: any }) => {
+  const trackEvent = useCallback((action: string, data?: GTagData) => {
     try {
       safeGtag('event', action, {
         ...data,
