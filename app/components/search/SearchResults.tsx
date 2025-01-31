@@ -2,12 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SearchResult } from './SearchDialog'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Bill, Sponsor } from '@/app/types'
 import { StateIcon } from './StateIcon'
 import { Star as StarIcon } from 'lucide-react'
+import { memo } from 'react'
 
 const AVATAR_COLORS = [
   'bg-blue-500',
@@ -32,7 +31,10 @@ interface SearchResultsProps {
   onItemClick?: () => void
 }
 
-export function SearchResults({ results, isLoading, onItemClick }: SearchResultsProps) {
+export const SearchResults = memo(function SearchResults({ 
+  results, 
+  onItemClick 
+}: SearchResultsProps) {
   const router = useRouter()
 
   const bills = results.filter(r => r.type === 'bill').slice(0, 50)
@@ -41,16 +43,6 @@ export function SearchResults({ results, isLoading, onItemClick }: SearchResults
   const handleItemClick = (path: string) => {
     if (onItemClick) onItemClick()
     router.push(path)
-  }
-
-  if (isLoading) {
-    return (
-      <div className="h-full overflow-auto space-y-2">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
-    )
   }
 
   if (!results.length) {
@@ -64,70 +56,58 @@ export function SearchResults({ results, isLoading, onItemClick }: SearchResults
   }
 
   return (
-    <Tabs defaultValue="bills" className="h-full flex flex-col">
-      <TabsList className="grid w-full grid-cols-2 p-0.5 bg-indigo-100/50 dark:bg-indigo-900/50 rounded">
-        <TabsTrigger 
-          value="bills"
-          className="text-zinc-600 dark:text-zinc-400 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100 data-[state=active]:bg-white dark:data-[state=active]:bg-black rounded transition-colors px-4 py-1.5"
-        >
-          Bills ({bills.length})
-        </TabsTrigger>
-        <TabsTrigger 
-          value="sponsors"
-          className="text-zinc-600 dark:text-zinc-400 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100 data-[state=active]:bg-white dark:data-[state=active]:bg-black rounded transition-colors px-4 py-1.5"
-        >
-          Sponsors ({sponsors.length})
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent 
-        value="bills" 
-        className="flex-1 min-h-0 mt-2 overflow-auto [&::-webkit-scrollbar]:w-2 
-          [&::-webkit-scrollbar-thumb]:rounded-full 
-          [&::-webkit-scrollbar-thumb]:bg-zinc-300
-          dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
-          [&::-webkit-scrollbar-track]:bg-transparent"
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-auto px-2 [&::-webkit-scrollbar]:w-2 
+        [&::-webkit-scrollbar-thumb]:rounded-full 
+        [&::-webkit-scrollbar-thumb]:bg-zinc-300
+        dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
+        [&::-webkit-scrollbar-track]:bg-transparent"
       >
-        <div className="space-y-2">
-          {bills.map(result => {
-            const bill = result.item as Bill
-            return (
-              <BillResult 
-                key={bill.bill_id}
-                bill={bill}
-                onClick={() => handleItemClick(`/bill/${bill.bill_id}`)}
-              />
-            )
-          })}
-        </div>
-      </TabsContent>
+        {sponsors.length > 0 && (
+          <div className="mt-2">
+            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+              Sponsors ({sponsors.length})
+            </h3>
+            <div className="space-y-2">
+              {sponsors.map(result => {
+                const sponsor = result.item as Sponsor
+                return (
+                  <SponsorResult 
+                    key={sponsor.people_id}
+                    sponsor={sponsor}
+                    onClick={() => handleItemClick(`/sponsor/${sponsor.people_id}`)}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
 
-      <TabsContent 
-        value="sponsors"
-        className="flex-1 min-h-0 mt-2 overflow-auto [&::-webkit-scrollbar]:w-2 
-          [&::-webkit-scrollbar-thumb]:rounded-full 
-          [&::-webkit-scrollbar-thumb]:bg-zinc-300
-          dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
-          [&::-webkit-scrollbar-track]:bg-transparent"
-      >
-        <div className="space-y-2">
-          {sponsors.map(result => {
-            const sponsor = result.item as Sponsor
-            return (
-              <SponsorResult 
-                key={sponsor.people_id}
-                sponsor={sponsor}
-                onClick={() => handleItemClick(`/sponsor/${sponsor.people_id}`)}
-              />
-            )
-          })}
-        </div>
-      </TabsContent>
-    </Tabs>
+        {bills.length > 0 && (
+          <div className="mt-4">
+            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+              Bills ({bills.length})
+            </h3>
+            <div className="space-y-2">
+              {bills.map(result => {
+                const bill = result.item as Bill
+                return (
+                  <BillResult 
+                    key={bill.bill_id}
+                    bill={bill}
+                    onClick={() => handleItemClick(`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`)}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   )
-}
+})
 
-function BillResult({ bill, onClick }: { bill: Bill, onClick: () => void }) {
+const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onClick: () => void }) {
   return (
     <div 
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
@@ -160,22 +140,28 @@ function BillResult({ bill, onClick }: { bill: Bill, onClick: () => void }) {
       </div>
     </div>
   )
-}
+})
 
-function SponsorResult({ sponsor, onClick }: { sponsor: Sponsor, onClick: () => void }) {
+const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponsor: Sponsor, onClick: () => void }) {
   return (
     <div 
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
       onClick={onClick}
     >
-      {sponsor.photo_url ? (
-        <Image
-          src={sponsor.photo_url}
-          alt={sponsor.name}
-          width={36}
-          height={36}
-          className="rounded object-cover"
-        />
+      {sponsor.votesmart_id ? (
+        <div className="relative w-9 h-9 rounded overflow-hidden">
+          <Image
+            src={`https://static.votesmart.org/static/canphoto/${sponsor.votesmart_id}.jpg`}
+            alt={sponsor.name}
+            fill
+            className="object-cover"
+            sizes="36px"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/images/placeholder-headshot.png';
+            }}
+          />
+        </div>
       ) : (
         <div className={`w-9 h-9 rounded ${getAvatarColor(sponsor.people_id)} flex items-center justify-center text-sm font-medium text-white`}>
           {sponsor.first_name[0]}{sponsor.last_name[0]}
@@ -183,12 +169,12 @@ function SponsorResult({ sponsor, onClick }: { sponsor: Sponsor, onClick: () => 
       )}
       <div className="min-w-0 flex-1">
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
-          {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.role_id === 1 ? 'Senator' : 'Representative'}
+          {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.body_name}
         </div>
-        <div className="text-sm text-zinc-900 dark:text-zinc-100">
+        <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
           {sponsor.name}
         </div>
       </div>
     </div>
   )
-} 
+}) 

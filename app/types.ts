@@ -73,4 +73,6 @@ export interface Sponsor {
   person_hash: string;
   created: Date;
   updated: Date;
+  body_name: string;
+  votesmart_id: string | null;
 } 

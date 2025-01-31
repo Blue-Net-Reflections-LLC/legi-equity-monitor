@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef } from 'react'
+import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogTrigger } from "@/app/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { Bill, Sponsor } from '@/app/types'
 import { SearchResults } from './SearchResults'
 import { embeddingService } from '@/app/services/embedding.service'
+import { debounce } from 'lodash'
 
 export interface SearchResult {
   type: 'bill' | 'sponsor'
@@ -19,63 +20,101 @@ export function SearchDialog() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+  const abortControllerRef = useRef<AbortController>()
+  const previousQueryRef = useRef<string | null>(null)
 
-  const handleSearch = async (searchQuery: string) => {
-    setIsLoading(true)
+  const handleSearch = useCallback(
+    debounce(async (searchQuery: string) => {
+      if (searchQuery === previousQueryRef.current) {
+        return
+      }
+      setIsLoading(true)
 
-    try {
-      // Generate embedding for the search query
-      const embedding = await embeddingService.generateEmbedding(searchQuery)
 
-      // Call search API with keyword and embedding
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          keyword: searchQuery,
-          embedding,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Search request failed')
+      // Cancel any pending requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = undefined
       }
 
-      const data = await response.json()
-      setResults(data.results)
-    } catch (error) {
-      console.error('Search failed:', error)
-      setResults([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      // Create new AbortController for this request
+      abortControllerRef.current = new AbortController()
+      const signal = abortControllerRef.current.signal
 
-  // Debounced search handler
-  const debouncedSearch = (searchQuery: string) => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
-    }
+      try {
+        // Generate embedding for the search query
+        const embedding = await embeddingService.generateEmbedding(searchQuery)
 
-    searchTimeoutRef.current = setTimeout(() => {
-      handleSearch(searchQuery)
-    }, 300) // 300ms debounce delay
-  }
+        // Call search API with keyword and embedding
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            keyword: searchQuery,
+            embedding,
+          }),
+          signal,
+        })
+
+        if (!response.ok) {
+          throw new Error('Search request failed')
+        }
+
+        const data = await response.json()
+        if (!signal.aborted) {
+          setResults(data.results)
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Search failed:', error)
+          setResults([])
+        }
+      } finally {
+        previousQueryRef.current = searchQuery
+        if (!abortControllerRef.current?.signal.aborted) {
+          setIsLoading(false)
+        }
+        if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+          abortControllerRef.current = undefined
+        }
+      }
+    }, 300),
+    [setResults, setIsLoading]
+  )
+
+  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value)
+    handleSearch(e.target.value)
+  }, [handleSearch])
+
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch.cancel()
+      handleSearch(query)
+    }
+  }, [query, handleSearch])
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current)
+      handleSearch.cancel()
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
       }
     }
-  }, [])
+  }, [handleSearch])
+
+  useEffect(() => {
+    if (open && query === '' && previousQueryRef.current !== query) {
+      handleSearch('')
+    }
+  }, [open, query, handleSearch])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+
       <DialogTrigger asChild>
         <button className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
           <Search className="h-5 w-5" />
@@ -93,18 +132,8 @@ export function SearchDialog() {
                 type="search"
                 placeholder="Search bills and sponsors..."
                 value={query}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  setQuery(e.target.value)
-                  debouncedSearch(e.target.value)
-                }}
-                onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                  if (e.key === 'Enter') {
-                    if (searchTimeoutRef.current) {
-                      clearTimeout(searchTimeoutRef.current)
-                    }
-                    handleSearch(query)
-                  }
-                }}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
                 className="w-full pl-9 bg-zinc-100/80 dark:bg-zinc-900 border-0 focus-visible:ring-0 text-zinc-900 dark:text-zinc-100"
                 autoFocus
               />
