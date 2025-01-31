@@ -45,6 +45,7 @@ export function SearchDialog() {
       }
 
       const data = await response.json()
+      console.log(data)
       setResults(data.results)
     } catch (error) {
       console.error('Search failed:', error)
