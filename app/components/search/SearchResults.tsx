@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SearchResult } from './SearchDialog'
 import { Bill, Sponsor } from '@/app/types'
 import { StateIcon } from './StateIcon'
@@ -34,7 +33,6 @@ interface SearchResultsProps {
 
 export const SearchResults = memo(function SearchResults({ 
   results, 
-  isLoading, 
   onItemClick 
 }: SearchResultsProps) {
   const router = useRouter()
