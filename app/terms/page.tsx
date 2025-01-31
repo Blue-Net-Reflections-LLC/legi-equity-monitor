@@ -1,5 +1,27 @@
 import { Footer } from "@/app/components/layout/Footer";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Terms & Agreements | LegiEquity',
+  description: 'Terms of service, privacy policy, and user agreements',
+  openGraph: {
+    title: 'Terms & Agreements | LegiEquity',
+    description: 'Terms of service, privacy policy, and user agreements',
+    images: [{
+      url: '/api/og/static?page=terms',
+      width: 1200,
+      height: 630,
+      alt: 'Terms & Agreements'
+    }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Terms & Agreements | LegiEquity',
+    description: 'Terms of service, privacy policy, and user agreements',
+    images: ['/api/og/static?page=terms'],
+  }
+}
 
 export default function TermsPage() {
   return (

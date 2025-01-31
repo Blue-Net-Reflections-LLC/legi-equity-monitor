@@ -1,6 +1,28 @@
 import { Mail, Newspaper, ArrowUpRight } from 'lucide-react'
 import { AuroraBackground } from "@/app/components/ui/aurora-background"
 import { Footer } from "@/app/components/layout/Footer"
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Contact Us | LegiEquity',
+  description: 'Get in touch with the LegiEquity team',
+  openGraph: {
+    title: 'Contact Us | LegiEquity',
+    description: 'Get in touch with the LegiEquity team',
+    images: [{
+      url: '/api/og/static?page=contact',
+      width: 1200,
+      height: 630,
+      alt: 'Contact LegiEquity'
+    }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact Us | LegiEquity',
+    description: 'Get in touch with the LegiEquity team',
+    images: ['/api/og/static?page=contact'],
+  }
+}
 
 export default function ContactPage() {
   return (

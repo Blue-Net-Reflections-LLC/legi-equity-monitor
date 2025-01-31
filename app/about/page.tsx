@@ -1,5 +1,27 @@
 import { Footer } from "@/app/components/layout/Footer";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'About LegiEquity',
+  description: 'Learn about our mission to analyze legislative impact on demographic equity using AI',
+  openGraph: {
+    title: 'About LegiEquity',
+    description: 'Learn about our mission to analyze legislative impact on demographic equity using AI',
+    images: [{
+      url: '/api/og/static?page=about',
+      width: 1200,
+      height: 630,
+      alt: 'About LegiEquity'
+    }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About LegiEquity',
+    description: 'Learn about our mission to analyze legislative impact on demographic equity using AI',
+    images: ['/api/og/static?page=about'],
+  }
+}
 
 export default function AboutPage() {
   return (

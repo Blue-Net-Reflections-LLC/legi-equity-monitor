@@ -9,6 +9,7 @@ import { SubgroupBarChart } from '@/app/components/analytics/SubgroupBarChart';
 import { VotingHistory } from '@/app/components/sponsor/VotingHistory';
 import { Footer } from "@/app/components/layout/Footer";
 import { SponsoredBillsList } from '@/app/components/sponsor/SponsoredBillsList';
+import { Metadata } from 'next';
 
 interface SubgroupScore {
   subgroup_code: string;
@@ -500,4 +501,37 @@ export default async function SponsorPage({
       <Footer />
     </div>
   );
+}
+
+interface Props {
+  params: { id: string }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const sponsor = await getSponsor(params.id);
+  if (!sponsor) return {};
+
+  const title = `${sponsor.name} - Legislative Analysis | LegiEquity`;
+  const description = `Analyzing the demographic impact of legislation sponsored by ${sponsor.name}, ${sponsor.role_name} from ${sponsor.state_name}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{
+        url: `/api/og/sponsor?id=${params.id}&state=${sponsor.state_abbr}`,
+        width: 1200,
+        height: 630,
+        alt: title
+      }]
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [`/api/og/sponsor?id=${params.id}&state=${sponsor.state_abbr}`],
+    }
+  };
 }
