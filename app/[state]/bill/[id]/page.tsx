@@ -7,6 +7,8 @@ import SponsorList from './SponsorList';
 import RollCallVotes from './RollCallVotes';
 import BillAnalysis from './BillAnalysis';
 import { Footer } from "@/app/components/layout/Footer";
+import { Metadata } from 'next'
+import { STATE_NAMES } from '@/app/constants/states';
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -112,6 +114,55 @@ interface BillAnalysis {
       evidence: string;
     }>;
   }>;
+}
+
+interface Props {
+  params: { state: string; id: string }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const stateCode = params.state.toUpperCase();
+  const bill = await getBill(stateCode, params.id);
+  
+  if (!bill) {
+    return {
+      title: 'Bill Not Found - LegiEquity',
+      description: 'The requested bill could not be found.',
+    }
+  }
+
+  const stateName = STATE_NAMES[stateCode] || stateCode;
+  const title = `${bill.bill_number}${bill.title !== bill.description ? `: ${bill.title}` : ''}`;
+  const description = bill.description.length > 200 
+    ? bill.description.substring(0, 197) + '...' 
+    : bill.description;
+
+  return {
+    title: `${title} - ${stateName} Legislature - LegiEquity`,
+    description,
+    openGraph: {
+      title: `${title} - ${stateName} Legislature`,
+      description,
+      url: `https://legiequity.us/${params.state.toLowerCase()}/bill/${params.id}`,
+      siteName: 'LegiEquity',
+      images: [
+        {
+          url: `https://legiequity.us/api/og/bill?state=${stateCode}&id=${params.id}`,
+          width: 1200,
+          height: 630,
+          alt: `${bill.bill_number} - ${stateName} Legislature`,
+        },
+      ],
+      locale: 'en_US',
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} - ${stateName} Legislature`,
+      description,
+      images: [`https://legiequity.us/api/og/bill?state=${stateCode}&id=${params.id}`],
+    },
+  }
 }
 
 async function getBillDocuments(billId: string): Promise<BillDocument[]> {
