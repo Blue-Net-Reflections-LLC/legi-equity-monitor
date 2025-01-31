@@ -116,7 +116,13 @@ export function SearchDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
 
       <DialogTrigger asChild>
-        <button className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+        <button 
+          className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+          data-track-click
+          data-track-event-category="Navigation"
+          data-track-event-action="search_open"
+          data-track-event-label="Global Search"
+        >
           <Search className="h-5 w-5" />
         </button>
       </DialogTrigger>

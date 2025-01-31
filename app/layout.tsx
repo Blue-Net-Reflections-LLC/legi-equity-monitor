@@ -3,13 +3,15 @@ import '@/app/globals.css'
 import { Inter } from 'next/font/google'
 import Header from '@/app/components/Header'
 import { systemThemeScript } from './utils/theme-script'
-import ClientLayout from './components/ClientLayout'
+import { GoogleAnalytics } from '@next/third-parties/google'
+import { AnalyticsProvider } from './providers/AnalyticsProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'LegiEquity Monitor',
   description: 'AI-powered legislative analysis for racial equity impact assessment',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
 }
 
 export default function RootLayout({
@@ -23,12 +25,13 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
       </head>
       <body className={`${inter.className} antialiased bg-white dark:bg-zinc-900`}>
-        <Header />
+          <Header />
         <main className="container mx-auto px-4 pt-8 pb-2">
-          <ClientLayout>
-            {children}
-          </ClientLayout>
+            <AnalyticsProvider>
+              {children}
+            </AnalyticsProvider>
         </main>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!} />
       </body>
     </html>
   )

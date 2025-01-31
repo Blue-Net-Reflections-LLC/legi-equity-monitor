@@ -1,3 +1,4 @@
+import { Metadata } from 'next'
 import db from "@/lib/db";
 import { BillList } from "@/app/components/BillList";
 import Pagination from "@/app/components/Pagination";
@@ -7,6 +8,44 @@ import { Footer } from "@/app/components/layout/Footer";
 import { BillFiltersWrapper } from "@/app/components/filters/BillFiltersWrapper";
 import type { BillFilters as BillFiltersType, PartyType } from "@/app/types/filters";
 import { CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
+import { STATE_NAMES } from '@/app/constants/states';
+
+type Props = {
+  params: { state: string }
+  searchParams: { [key: string]: string | string[] | undefined }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const stateCode = params.state.toUpperCase()
+  const stateName = STATE_NAMES[stateCode] || stateCode
+
+  return {
+    title: `${stateName} Bills - LegiEquity`,
+    description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
+    openGraph: {
+      title: `${stateName} Legislative Analysis - LegiEquity`,
+      description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
+      url: `https://legiequity.us/${params.state.toLowerCase()}`,
+      siteName: 'LegiEquity',
+      images: [
+        {
+          url: `https://legiequity.us/api/og?state=${stateCode}`, // You'll need to create this API route
+          width: 1200,
+          height: 630,
+          alt: `${stateName} Legislative Analysis`,
+        },
+      ],
+      locale: 'en_US',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${stateName} Legislative Analysis - LegiEquity`,
+      description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
+      images: [`https://legiequity.us/api/og?state=${stateCode}`],
+    },
+  }
+}
 
 async function getBills(
   stateCode: string,
