@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import Header from '@/app/components/Header'
 import { systemThemeScript } from './utils/theme-script'
 import ClientLayout from './components/ClientLayout'
+import { GoogleAnalytics } from '@next/third-parties/google'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -29,6 +30,7 @@ export default function RootLayout({
             {children}
           </ClientLayout>
         </main>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!} />
       </body>
     </html>
   )
