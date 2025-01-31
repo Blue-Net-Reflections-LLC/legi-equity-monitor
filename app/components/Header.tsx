@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useState } from 'react'
 
 const NavLinks = ({ onClick }: { onClick?: () => void }) => (
-  <ul className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+  <ul className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4">
     <li>
       <Link 
         href="/" 
@@ -60,7 +60,7 @@ export default function Header() {
         </Link>
         
         {/* Desktop Navigation */}
-        <nav className="hidden sm:flex items-center space-x-4">
+        <nav className="hidden lg:flex items-center space-x-4">
           <NavLinks />
           <div className="flex items-center space-x-2">
             <SearchDialog />
@@ -69,7 +69,7 @@ export default function Header() {
         </nav>
 
         {/* Mobile Navigation */}
-        <div className="flex sm:hidden items-center space-x-2">
+        <div className="flex lg:hidden items-center space-x-2">
           <SearchDialog />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -77,7 +77,7 @@ export default function Header() {
                 <Menu className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
               </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-white dark:bg-zinc-950">
+            <SheetContent side="right" className="w-[300px] lg:w-[400px] bg-white dark:bg-zinc-950">
               <div className="absolute left-4 top-3">
                 <ThemeToggle showTooltip />
               </div>
