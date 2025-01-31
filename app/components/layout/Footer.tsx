@@ -11,7 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">VoterAI</h3>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">LegiEquity</h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               A collaboration between VoterAI and Bluenetreflection
             </p>
@@ -89,7 +89,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
           <div className="text-sm text-center text-zinc-500 dark:text-zinc-400">
-            © 2025 VoterAI. All rights reserved.
+            © 2025 BLUE NET REFLECTIONS, LLC. All rights reserved.
           </div>
         </div>
       </div>

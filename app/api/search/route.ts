@@ -8,9 +8,18 @@ export async function POST(request: Request) {
     
     // Remove stopwords and get meaningful tokens
     const meaningfulWords = removeStopwords(keyword.toLowerCase().split(' '))
+
+    if (keyword.length > 0 && meaningfulWords.length === 0) {
+      //
+      return NextResponse.json({
+        results: [],
+        search_type: 'no_results'
+      })
+    }
     
     // Common entity data selection
     const entityDataCTE = `
+
       entity_data AS (
         SELECT 
           e.entity_type,

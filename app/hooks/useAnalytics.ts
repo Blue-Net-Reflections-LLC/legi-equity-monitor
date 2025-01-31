@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { safeGtag, initializeGtag } from '@/app/utils/analytics'
 
 interface GTagData {
@@ -30,7 +30,6 @@ type TrackingAttributes = {
 
 export const useAnalytics = () => {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
 
   // Initialize GA
   useEffect(() => {
@@ -42,11 +41,11 @@ export const useAnalytics = () => {
     if (pathname) {
       safeGtag('event', 'page_view', {
         page_path: pathname,
-        page_search: searchParams?.toString(),
+        page_search: window.location.search,
         page_title: document.title
       })
     }
-  }, [pathname, searchParams])
+  }, [pathname])
 
   // Core tracking function
   const trackEvent = useCallback((action: string, data?: GTagData) => {
@@ -54,7 +53,8 @@ export const useAnalytics = () => {
       safeGtag('event', action, {
         ...data,
         page_path: pathname,
-        page_title: document.title
+        page_title: document.title,
+        page_search: window.location.search
       })
     } catch (error) {
       console.error('Analytics Error:', error)

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/app/components/ui/button";
 import { useAnalytics } from '@/app/hooks/useAnalytics';
+import { GTagData } from '@/app/utils/analytics';
 
 const RACE_CODES = {
   AI: 'American Indian/Alaska Native',
@@ -29,7 +30,7 @@ interface FilterOptions {
   categories: string[];
 }
 
-interface FilterEventData {
+interface FilterEventData extends GTagData {
   event_category: string;
   event_label: string;
   filter_categories?: string[];
@@ -39,7 +40,7 @@ interface FilterEventData {
   filter_committee?: string | null;
 }
 
-export default function FilterDrawer() {
+function FilterDrawerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -277,5 +278,11 @@ export default function FilterDrawer() {
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+export default function FilterDrawer() {
+  return (
+      <FilterDrawerContent />
   );
 } 
