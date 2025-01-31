@@ -40,13 +40,21 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
         <Tooltip>
           <DialogTrigger asChild>
             <TooltipTrigger asChild>
-              <Button variant="outline" className="text-gray-900 dark:text-zinc-100">
-                <FilterIcon className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                className="bg-purple-600 dark:bg-purple-700 text-white border-purple-400 dark:border-transparent
+                transition-all duration-200 hover:scale-105 
+                hover:bg-purple-700 dark:hover:bg-purple-800
+                hover:border-purple-500 dark:hover:border-transparent
+                text-base font-semibold px-4 py-2"
+              >
+                <FilterIcon className="h-5 w-5 mr-1" />
+                Explore
               </Button>
             </TooltipTrigger>
           </DialogTrigger>
           <TooltipContent className="bg-zinc-900 text-zinc-100 border border-zinc-700">
-            <p>Filter bills</p>
+            <p>Explore bill selection</p>
           </TooltipContent>
         </Tooltip>
         <DialogContent className={cn(
