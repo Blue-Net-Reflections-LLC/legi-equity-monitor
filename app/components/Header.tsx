@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Scale, Menu } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 import { SearchDialog } from './search/SearchDialog'
-import { Sheet, SheetContent, SheetTrigger, SheetHeader } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { useState } from 'react'
 
 const NavLinks = ({ onClick }: { onClick?: () => void }) => (
