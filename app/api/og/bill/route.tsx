@@ -65,41 +65,66 @@ export async function GET(req: NextRequest) {
             justifyContent: 'center',
             backgroundColor: '#030712',
             padding: '40px 80px',
+            gap: '40px',
           }}
         >
+          {/* Header with state icon and logo */}
           <div
             style={{
+              width: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 40,
-              gap: 24,
+              gap: '24px',
             }}
           >
-            {/* State SVG */}
             <img
               src={`https://legiequity.us/images/states/${stateCode.toLowerCase()}.svg`}
               alt={stateName}
               width={80}
               height={80}
             />
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+              }}
+            >
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                 <path d="M12 3L20 7V17L12 21L4 17V7L12 3Z" stroke="white" strokeWidth="2" />
               </svg>
-              <span style={{ marginLeft: 16, fontSize: 48, color: 'white', fontWeight: 700 }}>
+              <span
+                style={{
+                  fontSize: 48,
+                  color: 'white',
+                  fontWeight: 700,
+                }}
+              >
                 LegiEquity
               </span>
             </div>
           </div>
-          <div style={{ fontSize: 32, color: 'white', marginBottom: 20, fontWeight: 600, textAlign: 'center' }}>
-            {title}
-          </div>
-          <div style={{ fontSize: 20, color: '#94a3b8', textAlign: 'center', marginBottom: 24 }}>
-            {description}
-          </div>
-          <div style={{ fontSize: 16, color: '#64748b', textAlign: 'center' }}>
-            {stateName} Legislature • {bill.current_body_name} • {bill.status_desc}
+
+          {/* Content */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px',
+              width: '100%',
+            }}
+          >
+            <span style={{ fontSize: 32, color: 'white', fontWeight: 600, textAlign: 'center' }}>
+              {title}
+            </span>
+            <span style={{ fontSize: 20, color: '#94a3b8', textAlign: 'center' }}>
+              {description}
+            </span>
+            <span style={{ fontSize: 16, color: '#64748b', textAlign: 'center' }}>
+              {stateName} Legislature • {bill.current_body_name} • {bill.status_desc}
+            </span>
           </div>
         </div>
       ),

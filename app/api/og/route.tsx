@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
               justifyContent: 'center',
               backgroundColor: '#030712',
               padding: '40px 80px',
+              gap: '40px',
             }}
           >
             <div
@@ -30,19 +31,19 @@ export async function GET(req: NextRequest) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 40,
+                gap: '16px',
               }}
             >
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                 <path d="M12 3L20 7V17L12 21L4 17V7L12 3Z" stroke="white" strokeWidth="2" />
               </svg>
-              <span style={{ marginLeft: 16, fontSize: 48, color: 'white', fontWeight: 700 }}>
+              <span style={{ fontSize: 48, color: 'white', fontWeight: 700 }}>
                 LegiEquity
               </span>
             </div>
-            <div style={{ fontSize: 32, color: '#94a3b8', textAlign: 'center' }}>
+            <span style={{ fontSize: 32, color: '#94a3b8', textAlign: 'center' }}>
               AI-powered analysis of legislation&apos;s impact on demographic equity
-            </div>
+            </span>
           </div>
         ),
         {
@@ -69,6 +70,7 @@ export async function GET(req: NextRequest) {
               justifyContent: 'center',
               backgroundColor: '#030712',
               padding: '40px 80px',
+              gap: '40px',
             }}
           >
             <div
@@ -76,11 +78,9 @@ export async function GET(req: NextRequest) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 40,
-                gap: 24,
+                gap: '24px',
               }}
             >
-              {/* US Congress Seal */}
               <img
                 src="https://legiequity.us/images/Seal_of_the_United_States_Congress.svg"
                 alt="US Congress"
@@ -88,20 +88,35 @@ export async function GET(req: NextRequest) {
                 height={80}
                 style={{ borderRadius: '50%' }}
               />
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                }}
+              >
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                   <path d="M12 3L20 7V17L12 21L4 17V7L12 3Z" stroke="white" strokeWidth="2" />
                 </svg>
-                <span style={{ marginLeft: 16, fontSize: 48, color: 'white', fontWeight: 700 }}>
+                <span style={{ fontSize: 48, color: 'white', fontWeight: 700 }}>
                   LegiEquity
                 </span>
               </div>
             </div>
-            <div style={{ fontSize: 40, color: 'white', marginBottom: 20, fontWeight: 600 }}>
-              Congressional Legislative Analysis
-            </div>
-            <div style={{ fontSize: 24, color: '#94a3b8', textAlign: 'center' }}>
-              Analyzing demographic impact of federal legislation across age, disability, gender, race, and religion
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '20px',
+              }}
+            >
+              <span style={{ fontSize: 40, color: 'white', fontWeight: 600 }}>
+                Congressional Legislative Analysis
+              </span>
+              <span style={{ fontSize: 24, color: '#94a3b8', textAlign: 'center' }}>
+                Analyzing demographic impact of federal legislation across age, disability, gender, race, and religion
+              </span>
             </div>
           </div>
         ),
@@ -112,7 +127,7 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // State-specific image with SVG
+    // State-specific image
     return new ImageResponse(
       (
         <div
@@ -125,6 +140,7 @@ export async function GET(req: NextRequest) {
             justifyContent: 'center',
             backgroundColor: '#030712',
             padding: '40px 80px',
+            gap: '40px',
           }}
         >
           <div
@@ -132,31 +148,44 @@ export async function GET(req: NextRequest) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 40,
-              gap: 24,
+              gap: '24px',
             }}
           >
-            {/* State SVG */}
             <img
               src={`https://legiequity.us/images/states/${stateCode.toLowerCase()}.svg`}
               alt={stateName}
               width={80}
               height={80}
             />
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+              }}
+            >
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
                 <path d="M12 3L20 7V17L12 21L4 17V7L12 3Z" stroke="white" strokeWidth="2" />
               </svg>
-              <span style={{ marginLeft: 16, fontSize: 48, color: 'white', fontWeight: 700 }}>
+              <span style={{ fontSize: 48, color: 'white', fontWeight: 700 }}>
                 LegiEquity
               </span>
             </div>
           </div>
-          <div style={{ fontSize: 40, color: 'white', marginBottom: 20, fontWeight: 600 }}>
-            {stateName} Legislative Analysis
-          </div>
-          <div style={{ fontSize: 24, color: '#94a3b8', textAlign: 'center' }}>
-            Analyzing demographic impact of legislation across age, disability, gender, race, and religion
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px',
+            }}
+          >
+            <span style={{ fontSize: 40, color: 'white', fontWeight: 600 }}>
+              {stateName} Legislative Analysis
+            </span>
+            <span style={{ fontSize: 24, color: '#94a3b8', textAlign: 'center' }}>
+              Analyzing demographic impact of legislation across age, disability, gender, race, and religion
+            </span>
           </div>
         </div>
       ),
