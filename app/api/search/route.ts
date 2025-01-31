@@ -40,7 +40,8 @@ export async function POST(request: Request) {
                 'district', p.district,
                 'body_name', ro.role_name,
                 'state_abbr', e.state_abbr,
-                'state_name', e.state_name
+                'state_name', e.state_name,
+                'votesmart_id', p.votesmart_id
               )
           END as item_data
         FROM ranked e

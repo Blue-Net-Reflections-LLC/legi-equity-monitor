@@ -150,9 +150,25 @@ const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponso
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
       onClick={onClick}
     >
-      <div className={`w-9 h-9 rounded ${getAvatarColor(sponsor.people_id)} flex items-center justify-center text-sm font-medium text-white`}>
-        {sponsor.first_name[0]}{sponsor.last_name[0]}
-      </div>
+      {sponsor.votesmart_id ? (
+        <div className="relative w-9 h-9 rounded overflow-hidden">
+          <Image
+            src={`https://static.votesmart.org/static/canphoto/${sponsor.votesmart_id}.jpg`}
+            alt={sponsor.name}
+            fill
+            className="object-cover"
+            sizes="36px"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/images/placeholder-headshot.png';
+            }}
+          />
+        </div>
+      ) : (
+        <div className={`w-9 h-9 rounded ${getAvatarColor(sponsor.people_id)} flex items-center justify-center text-sm font-medium text-white`}>
+          {sponsor.first_name[0]}{sponsor.last_name[0]}
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
           {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.body_name}
