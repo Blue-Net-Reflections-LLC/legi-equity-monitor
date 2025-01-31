@@ -43,10 +43,11 @@ export default function AboutPage() {
             <div className="mb-12">
               <h2 className="text-3xl font-bold mb-6 text-zinc-900 dark:text-white">Our Vision</h2>
               <p className="text-lg leading-relaxed text-zinc-700 dark:text-zinc-300">
-                VoterAI represents a groundbreaking collaboration between VoterAI and Bluenetreflection, 
+                LegiEquity represents a groundbreaking collaboration between VoterAI and Bluenetreflection, 
                 dedicated to revolutionizing how we understand and interact with legislative processes. 
                 Through advanced AI analysis, we&apos;re making complex legislative information accessible and 
                 meaningful to everyone.
+
               </p>
             </div>
 
