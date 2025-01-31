@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { Filter } from "lucide-react";
 import {
   Sheet,
@@ -283,8 +283,6 @@ function FilterDrawerContent() {
 
 export default function FilterDrawer() {
   return (
-    <Suspense>
       <FilterDrawerContent />
-    </Suspense>
   );
 } 
