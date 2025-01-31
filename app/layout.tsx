@@ -3,6 +3,7 @@ import '@/app/globals.css'
 import { Inter } from 'next/font/google'
 import Header from '@/app/components/Header'
 import { systemThemeScript } from './utils/theme-script'
+import ClientLayout from './components/ClientLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,7 +25,9 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased bg-white dark:bg-zinc-900`}>
         <Header />
         <main className="container mx-auto px-4 pt-8 pb-2">
-          {children}
+          <ClientLayout>
+            {children}
+          </ClientLayout>
         </main>
       </body>
     </html>
