@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Scale, Menu } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 import { SearchDialog } from './search/SearchDialog'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetHeader } from '@/components/ui/sheet'
 import { useState } from 'react'
 
 const NavLinks = ({ onClick }: { onClick?: () => void }) => (
@@ -71,7 +71,6 @@ export default function Header() {
         {/* Mobile Navigation */}
         <div className="flex sm:hidden items-center space-x-2">
           <SearchDialog />
-          <ThemeToggle showTooltip />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800">
@@ -79,9 +78,14 @@ export default function Header() {
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-white dark:bg-zinc-950">
-              <nav className="flex flex-col mt-8 space-y-4">
-                <NavLinks onClick={() => setOpen(false)} />
-              </nav>
+              <div className="absolute left-4 top-3">
+                <ThemeToggle showTooltip />
+              </div>
+              <div className="flex flex-col h-full pt-16">
+                <nav className="flex flex-col space-y-4">
+                  <NavLinks onClick={() => setOpen(false)} />
+                </nav>
+              </div>
             </SheetContent>
           </Sheet>
         </div>
