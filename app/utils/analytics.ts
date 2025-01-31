@@ -1,8 +1,10 @@
 'use client'
 
-interface GTagData {
+export interface GTagData {
   [key: string]: string | number | string[] | null | undefined;
 }
+
+type GTagArgs = [string, string, GTagData?];
 
 declare global {
   interface Window {
@@ -11,7 +13,7 @@ declare global {
       action: string,
       data?: GTagData
     ) => void;
-    dataLayer: IArguments[];
+    dataLayer?: GTagArgs[];
   }
 }
 
@@ -21,8 +23,8 @@ export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 export const initializeGtag = () => {
   if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || []
-    function gtag(...args: [string, string, GTagData?]) {
-      window.dataLayer.push(args)
+    function gtag(...args: GTagArgs) {
+      window.dataLayer?.push(args)
     }
     window.gtag = gtag
     window.gtag('js', new Date().toISOString())
