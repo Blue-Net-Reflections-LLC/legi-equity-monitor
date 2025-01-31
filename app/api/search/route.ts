@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         FROM vector_index
         WHERE ${tokens}
         ORDER BY LENGTH(search_text) ASC  -- Prefer shorter, more relevant matches
-        LIMIT 5990  -- Reduce processing load
+        LIMIT 1000  -- Reduce processing load
       ),
       ranked AS (
         -- Step 2: Compute word similarity only on pre-filtered matches
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       ${entityDataCTE}
       SELECT * FROM entity_data
       ORDER BY similarity DESC
-      LIMIT 10;
+      LIMIT 25;
     `
 
     let results = await db.unsafe(trigramQuery, [keyword])
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
           FROM vector_index
           WHERE embedding IS NOT NULL
           ORDER BY embedding <=> '${vectorString}'::vector
-          LIMIT 10
+          LIMIT 25
         ),
         ${entityDataCTE}
         SELECT * FROM entity_data

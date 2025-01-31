@@ -58,78 +58,54 @@ export const SearchResults = memo(function SearchResults({
   }
 
   return (
-    <Tabs defaultValue="bills" className="h-full flex flex-col">
-      <TabsList className="grid w-full grid-cols-2 p-0.5 bg-indigo-100/50 dark:bg-indigo-900/50 rounded">
-        <TabsTrigger 
-          value="bills"
-          className="text-zinc-600 dark:text-zinc-400 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100 data-[state=active]:bg-white dark:data-[state=active]:bg-black rounded transition-colors px-4 py-1.5"
-        >
-          Bills ({!isLoading ? bills.length : 0})
-        </TabsTrigger>
-        <TabsTrigger 
-          value="sponsors"
-          className="text-zinc-600 dark:text-zinc-400 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100 data-[state=active]:bg-white dark:data-[state=active]:bg-black rounded transition-colors px-4 py-1.5"
-        >
-          Sponsors ({!isLoading ? sponsors.length : 0})
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent 
-        value="bills" 
-        className="flex-1 min-h-0 mt-2 overflow-auto [&::-webkit-scrollbar]:w-2 
-          [&::-webkit-scrollbar-thumb]:rounded-full 
-          [&::-webkit-scrollbar-thumb]:bg-zinc-300
-          dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
-          [&::-webkit-scrollbar-track]:bg-transparent"
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-auto px-2 [&::-webkit-scrollbar]:w-2 
+        [&::-webkit-scrollbar-thumb]:rounded-full 
+        [&::-webkit-scrollbar-thumb]:bg-zinc-300
+        dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
+        [&::-webkit-scrollbar-track]:bg-transparent"
       >
-        <div className="space-y-2">
-          {!results.length ? (
-            <div className="h-full flex items-center justify-center">
-              <p className="text-muted-foreground">
-                No results found
-              </p>
+        {sponsors.length > 0 && (
+          <div className="mt-2">
+            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+              Sponsors ({sponsors.length})
+            </h3>
+            <div className="space-y-2">
+              {sponsors.map(result => {
+                const sponsor = result.item as Sponsor
+                return (
+                  <SponsorResult 
+                    key={sponsor.people_id}
+                    sponsor={sponsor}
+                    onClick={() => handleItemClick(`/sponsor/${sponsor.people_id}`)}
+                  />
+                )
+              })}
             </div>
-          ) : bills.map(result => {
-            const bill = result.item as Bill
-            return (
-              <BillResult 
-                key={bill.bill_id}
-                bill={bill}
-                onClick={() => handleItemClick(`/bill/${bill.bill_id}`)}
-              />
-            )
-          })}
-        </div>
-      </TabsContent>
+          </div>
+        )}
 
-      <TabsContent 
-        value="sponsors"
-        className="flex-1 min-h-0 mt-2 overflow-auto [&::-webkit-scrollbar]:w-2 
-          [&::-webkit-scrollbar-thumb]:rounded-full 
-          [&::-webkit-scrollbar-thumb]:bg-zinc-300
-          dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
-          [&::-webkit-scrollbar-track]:bg-transparent"
-      >
-        <div className="space-y-2">
-          {!results.length ? (
-            <div className="h-full flex items-center justify-center">
-              <p className="text-muted-foreground">
-                No results found
-              </p>
+        {bills.length > 0 && (
+          <div className="mt-4">
+            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+              Bills ({bills.length})
+            </h3>
+            <div className="space-y-2">
+              {bills.map(result => {
+                const bill = result.item as Bill
+                return (
+                  <BillResult 
+                    key={bill.bill_id}
+                    bill={bill}
+                    onClick={() => handleItemClick(`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`)}
+                  />
+                )
+              })}
             </div>
-          ) : sponsors.map(result => {
-            const sponsor = result.item as Sponsor
-            return (
-              <SponsorResult 
-                key={sponsor.people_id}
-                sponsor={sponsor}
-                onClick={() => handleItemClick(`/sponsor/${sponsor.people_id}`)}
-              />
-            )
-          })}
-        </div>
-      </TabsContent>
-    </Tabs>
+          </div>
+        )}
+      </div>
+    </div>
   )
 })
 
@@ -179,13 +155,10 @@ const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponso
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
-          {sponsor.state_abbr} • {sponsor.party_name}
+          {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.body_name}
         </div>
         <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
           {sponsor.name}
-        </div>
-        <div className="text-xs text-zinc-500 dark:text-zinc-400">
-          {sponsor.body_name}
         </div>
       </div>
     </div>

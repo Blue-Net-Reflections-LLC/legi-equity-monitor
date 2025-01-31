@@ -100,8 +100,15 @@ export function SearchDialog() {
     }
   }, [handleSearch])
 
+  useEffect(() => {
+    if (open && query === '') {
+      handleSearch('')
+    }
+  }, [open, handleSearch])
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+
       <DialogTrigger asChild>
         <button className="p-2 hover:bg-zinc-100 rounded-full dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
           <Search className="h-5 w-5" />
