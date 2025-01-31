@@ -19,11 +19,11 @@ export async function POST(request: Request) {
           CASE 
             WHEN e.entity_type = 'bill' THEN 
               json_build_object(
-                'bill_id', b.bill_id,
-                'bill_number', b.bill_number,
-                'bill_type', b.bill_type_abbr,
-                'title', b.title,
-                'description', b.description,
+                'bill_id', bill.bill_id,
+                'bill_number', bill.bill_number,
+                'bill_type', bill.bill_type_abbr,
+                'title', bill.title,
+                'description', bill.description,
                 'committee_name', c.committee_name,
                 'last_action', h.history_action,
                 'last_action_date', h.history_date,
@@ -36,18 +36,18 @@ export async function POST(request: Request) {
                 'first_name', split_part(p.name, ' ', 1),
                 'last_name', array_to_string(array_remove(string_to_array(p.name, ' '), split_part(p.name, ' ', 1)), ' '),
                 'name', p.name,
-                'party', pa.party_abbr,
+                'party_name', pa.party_name,
                 'district', p.district,
-                'role', ro.role_name,
+                'body_name', ro.role_name,
                 'state_abbr', e.state_abbr,
                 'state_name', e.state_name
               )
           END as item_data
         FROM ranked e
-        LEFT JOIN lsv_bill b ON e.entity_type = 'bill' AND e.entity_id = b.bill_id
-        LEFT JOIN ls_committee c ON b.pending_committee_id = c.committee_id
-        LEFT JOIN ls_bill_history h ON b.bill_id = h.bill_id 
-          AND h.history_step = (SELECT MAX(history_step) FROM ls_bill_history WHERE bill_id = b.bill_id)
+        LEFT JOIN lsv_bill bill ON e.entity_type = 'bill' AND e.entity_id = bill.bill_id
+        LEFT JOIN ls_committee c ON bill.pending_committee_id = c.committee_id
+        LEFT JOIN ls_bill_history h ON bill.bill_id = h.bill_id 
+          AND h.history_step = (SELECT MAX(history_step) FROM ls_bill_history WHERE bill_id = bill.bill_id)
         LEFT JOIN ls_people p ON e.entity_type = 'sponsor' AND e.entity_id = p.people_id
         LEFT JOIN ls_party pa ON p.party_id = pa.party_id
         LEFT JOIN ls_role ro ON p.role_id = ro.role_id

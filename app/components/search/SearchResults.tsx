@@ -4,10 +4,10 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SearchResult } from './SearchDialog'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Bill, Sponsor } from '@/app/types'
 import { StateIcon } from './StateIcon'
 import { Star as StarIcon } from 'lucide-react'
+import { memo } from 'react'
 
 const AVATAR_COLORS = [
   'bg-blue-500',
@@ -32,7 +32,11 @@ interface SearchResultsProps {
   onItemClick?: () => void
 }
 
-export function SearchResults({ results, isLoading, onItemClick }: SearchResultsProps) {
+export const SearchResults = memo(function SearchResults({ 
+  results, 
+  isLoading, 
+  onItemClick 
+}: SearchResultsProps) {
   const router = useRouter()
 
   const bills = results.filter(r => r.type === 'bill').slice(0, 50)
@@ -41,16 +45,6 @@ export function SearchResults({ results, isLoading, onItemClick }: SearchResults
   const handleItemClick = (path: string) => {
     if (onItemClick) onItemClick()
     router.push(path)
-  }
-
-  if (isLoading) {
-    return (
-      <div className="h-full overflow-auto space-y-2">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
-    )
   }
 
   if (!results.length) {
@@ -70,13 +64,13 @@ export function SearchResults({ results, isLoading, onItemClick }: SearchResults
           value="bills"
           className="text-zinc-600 dark:text-zinc-400 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100 data-[state=active]:bg-white dark:data-[state=active]:bg-black rounded transition-colors px-4 py-1.5"
         >
-          Bills ({bills.length})
+          Bills ({!isLoading ? bills.length : 0})
         </TabsTrigger>
         <TabsTrigger 
           value="sponsors"
           className="text-zinc-600 dark:text-zinc-400 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100 data-[state=active]:bg-white dark:data-[state=active]:bg-black rounded transition-colors px-4 py-1.5"
         >
-          Sponsors ({sponsors.length})
+          Sponsors ({!isLoading ? sponsors.length : 0})
         </TabsTrigger>
       </TabsList>
       
@@ -89,7 +83,13 @@ export function SearchResults({ results, isLoading, onItemClick }: SearchResults
           [&::-webkit-scrollbar-track]:bg-transparent"
       >
         <div className="space-y-2">
-          {bills.map(result => {
+          {!results.length ? (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-muted-foreground">
+                No results found
+              </p>
+            </div>
+          ) : bills.map(result => {
             const bill = result.item as Bill
             return (
               <BillResult 
@@ -111,7 +111,13 @@ export function SearchResults({ results, isLoading, onItemClick }: SearchResults
           [&::-webkit-scrollbar-track]:bg-transparent"
       >
         <div className="space-y-2">
-          {sponsors.map(result => {
+          {!results.length ? (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-muted-foreground">
+                No results found
+              </p>
+            </div>
+          ) : sponsors.map(result => {
             const sponsor = result.item as Sponsor
             return (
               <SponsorResult 
@@ -125,9 +131,9 @@ export function SearchResults({ results, isLoading, onItemClick }: SearchResults
       </TabsContent>
     </Tabs>
   )
-}
+})
 
-function BillResult({ bill, onClick }: { bill: Bill, onClick: () => void }) {
+const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onClick: () => void }) {
   return (
     <div 
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
@@ -160,35 +166,28 @@ function BillResult({ bill, onClick }: { bill: Bill, onClick: () => void }) {
       </div>
     </div>
   )
-}
+})
 
-function SponsorResult({ sponsor, onClick }: { sponsor: Sponsor, onClick: () => void }) {
+const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponsor: Sponsor, onClick: () => void }) {
   return (
     <div 
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
       onClick={onClick}
     >
-      {sponsor.photo_url ? (
-        <Image
-          src={sponsor.photo_url}
-          alt={sponsor.name}
-          width={36}
-          height={36}
-          className="rounded object-cover"
-        />
-      ) : (
-        <div className={`w-9 h-9 rounded ${getAvatarColor(sponsor.people_id)} flex items-center justify-center text-sm font-medium text-white`}>
-          {sponsor.first_name[0]}{sponsor.last_name[0]}
-        </div>
-      )}
+      <div className={`w-9 h-9 rounded ${getAvatarColor(sponsor.people_id)} flex items-center justify-center text-sm font-medium text-white`}>
+        {sponsor.first_name[0]}{sponsor.last_name[0]}
+      </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
-          {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.role_id === 1 ? 'Senator' : 'Representative'}
+          {sponsor.state_abbr} • {sponsor.party_name}
         </div>
-        <div className="text-sm text-zinc-900 dark:text-zinc-100">
+        <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
           {sponsor.name}
+        </div>
+        <div className="text-xs text-zinc-500 dark:text-zinc-400">
+          {sponsor.body_name}
         </div>
       </div>
     </div>
   )
-} 
+}) 
