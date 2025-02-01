@@ -129,9 +129,6 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
                     <div className="font-medium text-zinc-900 dark:text-white text-lg">
                       {primarySponsor.name}
                     </div>
-                    <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                      {primarySponsor.role_name}
-                    </div>
                     <div className={`inline-flex items-center px-2 py-1 mt-2 rounded-full text-xs font-medium ${getPartyColors(primarySponsor.party_name)}`}>
                       {primarySponsor.party_name}
                     </div>
@@ -156,20 +153,15 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
                   >
                     <div className="px-4 py-3 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 flex items-center gap-2">
-                          <div className="min-w-[180px]">
-                            <div className="font-medium text-zinc-900 dark:text-white">
+                        <div className="flex-1 min-w-0">
+                            <div className="font-medium text-zinc-900 dark:text-white truncate">
                               {sponsor.name}
                             </div>
-                          </div>
-                          <div className="text-sm text-zinc-500 dark:text-zinc-400 mr-4">
-                            {sponsor.role_name}
-                          </div>
                         </div>
-                        <div className={`text-sm px-2 py-1 rounded-full ${getPartyColors(sponsor.party_name)}`}>
+                        <div className={`text-sm px-2 py-1 rounded-full flex-shrink-0 ${getPartyColors(sponsor.party_name)}`}>
                           {sponsor.party_name}
                         </div>
-                      </div>
+                    </div>
                     </div>
                   </Link>
                 ))}

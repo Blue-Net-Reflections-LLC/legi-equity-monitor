@@ -101,18 +101,22 @@ export function SearchDialog() {
 
   const onSelect = useCallback((item: SearchResult) => {
     setOpen(false);
-    router.push(item.href || '');
+    if (item.href) {
+      router.push(item.href);
+    }
   }, [router, setOpen]);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      handleSearch.cancel()
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+      if (handleSearch.cancel) {
+        handleSearch.cancel();
       }
-    }
-  }, [handleSearch])
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [handleSearch]);
 
   useEffect(() => {
     if (open && query === '' && previousQueryRef.current !== query) {
