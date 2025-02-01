@@ -14,7 +14,7 @@ export async function GET(
   const stateCode = params.state.toUpperCase()
 
   // Parse category filters
-  const categoryFilters = (searchParams.get('category')?.split(',') || [])
+  const categoryFilters = searchParams.getAll('category')
     .filter(Boolean)
     .map(categoryId => {
       const impactType = searchParams.get(`impact_${categoryId}`)
