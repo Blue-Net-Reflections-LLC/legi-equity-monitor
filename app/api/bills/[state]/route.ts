@@ -29,7 +29,9 @@ export async function GET(
     })
 
   const filters = {
-    committee: searchParams.get('committee')?.split(',').filter(Boolean),
+    committee: searchParams.getAll('committee').filter(Boolean).length > 0 
+      ? searchParams.getAll('committee').filter(Boolean)
+      : undefined,
     categories: categoryFilters,
     party: searchParams.get('party'),
     support: searchParams.get('support') as 'HAS_SUPPORT' | 'NO_SUPPORT' | undefined,
