@@ -78,7 +78,7 @@ export function BillCard({ bill }: BillCardProps) {
     // Neutral - show the higher of the two scores
     return { 
       color: "text-neutral-500", 
-      label: "Neutral Impact",
+      label: "Neutral",
       Icon: MinusCircle,
       score: Math.max(positiveScore, biasScore)
     };
@@ -107,13 +107,11 @@ export function BillCard({ bill }: BillCardProps) {
                 })()}
                 <span className="hidden xl:inline lg:hidden">
                   {getImpactDisplay(bill.analysis_results).score >= 60 
-                    ? `${bill.analysis_results.overall_score}% ${getImpactDisplay(bill.analysis_results).label}`
-                    : 'Neutral'}
+                    ? `${bill.analysis_results.overall_score}%`
+                    : ''} {getImpactDisplay(bill.analysis_results).label}
                 </span>
-                <span className="inline lg:inline xl:inline">
-                  {getImpactDisplay(bill.analysis_results).score >= 60 
-                    ? getImpactDisplay(bill.analysis_results).label
-                    : 'Neutral'}
+                <span className="inline lg:inline xl:hidden">
+                  {getImpactDisplay(bill.analysis_results).label}
                 </span>
               </span>
             ) : null}

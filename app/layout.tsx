@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import '@/app/globals.css'
 import { Inter } from 'next/font/google'
 import Header from '@/app/components/Header'
-// import { systemThemeScript } from './utils/theme-script'
+import { systemThemeScript } from './utils/theme-script'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import { AnalyticsProvider } from './providers/AnalyticsProvider'
 import ClientLayout from './components/ClientLayout'
@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="[color-scheme:dark_light] horace">
       <head>
-        {/* <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} /> */}
+        <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
       </head>
       <body className={`${inter.className} antialiased bg-white dark:bg-zinc-900`}>
         <ClientLayout>
