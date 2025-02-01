@@ -26,10 +26,12 @@ function AvatarPlaceholder() {
 interface SponsorImageProps {
   votesmartId: string | null;
   name: string;
-  peopleId: number;
 }
 
-export default function SponsorImage({ votesmartId, name, peopleId }: SponsorImageProps) {
+export default function SponsorImage({ 
+  votesmartId, 
+  name 
+}: SponsorImageProps) {
   const [error, setError] = useState(false);
 
   if (!votesmartId || error) {

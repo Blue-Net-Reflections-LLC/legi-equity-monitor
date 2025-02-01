@@ -6,9 +6,6 @@ interface StatePageProps {
   params: {
     stateCode: string
   }
-  searchParams?: {
-    [key: string]: string | string[] | undefined
-  }
 }
 
 export async function generateMetadata({ params }: StatePageProps): Promise<Metadata> {
@@ -20,7 +17,7 @@ export async function generateMetadata({ params }: StatePageProps): Promise<Meta
   }
 }
 
-export default function StatePage({ params, searchParams }: StatePageProps) {
+export default function StatePage({ params }: StatePageProps) {
   const stateCode = params.stateCode.toUpperCase()
 
   return (
@@ -31,7 +28,6 @@ export default function StatePage({ params, searchParams }: StatePageProps) {
       {/* Bill List - Client Side */}
       <BillList 
         stateCode={stateCode}
-        initialSearchParams={searchParams}
       />
     </div>
   )

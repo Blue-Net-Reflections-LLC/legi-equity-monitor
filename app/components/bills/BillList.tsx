@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { BillCard } from '@/app/components/BillCard'
 import { BillCardSkeleton } from './BillCardSkeleton'
 import { BillFiltersWrapper } from '../filters/BillFiltersWrapper'
@@ -12,17 +12,15 @@ import type { BillFilters as BillFiltersType } from '@/app/types/filters'
 
 interface BillListProps {
   stateCode: string
-  initialSearchParams?: { [key: string]: string | string[] | undefined }
 }
 
-export function BillList({ stateCode, initialSearchParams = {} }: BillListProps) {
-  const router = useRouter()
+export function BillList({ stateCode }: BillListProps) {
   const searchParams = useSearchParams()
   
   const [loading, setLoading] = useState(true)
-  const [bills, setBills] = useState<Bill[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [filters, setFilters] = useState<BillFiltersType>()
+  const [bills, setBills] = useState<Bill[]>([])
 
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = 12
@@ -51,7 +49,7 @@ export function BillList({ stateCode, initialSearchParams = {} }: BillListProps)
     <section className="py-4 md:px-0 px-4">
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex justify-between items-center flex-wrap">
-          <div className="text-sm text-gray-500 whitespace-nowrap">
+          <div className="text-sm text-zinc-500 whitespace-nowrap">
             Showing bills {offset + 1}-{Math.min(offset + (loading ? pageSize : bills.length), totalCount)} of {totalCount}
           </div>
           <div className="flex items-center gap-3">

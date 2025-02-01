@@ -159,7 +159,7 @@ export function BillCard({ bill }: BillCardProps) {
                 Date
               </div>
               <div className="text-sm">
-                {new Date(bill.latest_action_date).toLocaleDateString()}
+                {bill.latest_action_date ? new Date(bill.latest_action_date).toLocaleDateString() : 'No date available'}
               </div>
             </div>
             

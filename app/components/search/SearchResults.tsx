@@ -8,27 +8,10 @@ import { StateIcon } from './StateIcon'
 import { Star as StarIcon } from 'lucide-react'
 import { memo } from 'react'
 
-const AVATAR_COLORS = [
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-purple-500',
-  'bg-pink-500',
-  'bg-indigo-500',
-  'bg-orange-500',
-  'bg-teal-500',
-  'bg-red-500',
-  'bg-cyan-500',
-  'bg-rose-500',
-]
-
-function getAvatarColor(id: number): string {
-  return AVATAR_COLORS[id % AVATAR_COLORS.length]
-}
-
 interface SearchResultsProps {
   results: SearchResult[]
   isLoading: boolean
-  onItemClick?: () => void
+  onItemClick?: (item: SearchResult) => void
 }
 
 export const SearchResults = memo(function SearchResults({ 
@@ -40,9 +23,9 @@ export const SearchResults = memo(function SearchResults({
   const bills = results.filter(r => r.type === 'bill').slice(0, 50)
   const sponsors = results.filter(r => r.type === 'sponsor').slice(0, 50)
 
-  const handleItemClick = (path: string) => {
-    if (onItemClick) onItemClick()
-    router.push(path)
+  const handleItemClick = (item: SearchResult) => {
+    if (onItemClick) onItemClick(item)
+    router.push(item.href)
   }
 
   if (!results.length) {
@@ -75,7 +58,7 @@ export const SearchResults = memo(function SearchResults({
                   <SponsorResult 
                     key={sponsor.people_id}
                     sponsor={sponsor}
-                    onClick={() => handleItemClick(`/sponsor/${sponsor.people_id}`)}
+                    onClick={() => handleItemClick(result)}
                   />
                 )
               })}
@@ -95,7 +78,7 @@ export const SearchResults = memo(function SearchResults({
                   <BillResult 
                     key={bill.bill_id}
                     bill={bill}
-                    onClick={() => handleItemClick(`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`)}
+                    onClick={() => handleItemClick(result)}
                   />
                 )
               })}

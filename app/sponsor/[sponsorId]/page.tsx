@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { Card } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from '@/app/[stateCode]/bill/[billId]/BackButton';
-import Image from 'next/image';
 import { OverallChart, CategoryChart } from '@/app/components/analytics/SponsorCharts';
 import { SubgroupBarChart } from '@/app/components/analytics/SubgroupBarChart';
 import { VotingHistory } from '@/app/components/sponsor/VotingHistory';
@@ -377,7 +376,6 @@ export default async function SponsorPage({
               <SponsorImage
                 votesmartId={sponsor.votesmart_id}
                 name={sponsor.name}
-                peopleId={sponsor.people_id}
               />
             </div>
 

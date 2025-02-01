@@ -8,25 +8,33 @@ export async function GET(
   try {
     const votes = await db`
       SELECT 
-        rcv.roll_call_id,
-        rcv.vote_text,
-        rcv.vote_date,
+        bv.roll_call_id,
+        bvd.vote_id,
+        CASE 
+          WHEN bvd.vote_id = 1 THEN 'Yea'
+          WHEN bvd.vote_id = 2 THEN 'Nay'
+          WHEN bvd.vote_id = 3 THEN 'Not Voting'
+          ELSE 'Other'
+        END as vote_text,
+        bv.roll_call_date as vote_date,
         b.bill_id,
         b.bill_number,
         b.title,
         b.description,
-        b.state_abbr,
-        rc.roll_call_desc,
-        rc.yea,
-        rc.nay,
-        rc.nv,
-        rc.absent,
-        rc.passed
-      FROM ls_roll_call_vote rcv
-      INNER JOIN ls_roll_call rc ON rcv.roll_call_id = rc.roll_call_id
-      INNER JOIN ls_bill b ON rc.bill_id = b.bill_id
-      WHERE rcv.people_id = ${params.sponsorId}
-      ORDER BY rcv.vote_date DESC
+        st.state_abbr,
+        bv.roll_call_desc,
+        bv.yea,
+        bv.nay,
+        bv.nv,
+        bv.absent,
+        bv.passed
+      FROM ls_bill_vote bv
+      INNER JOIN ls_bill_vote_detail bvd ON bv.roll_call_id = bvd.roll_call_id
+      INNER JOIN ls_bill b ON bv.bill_id = b.bill_id
+      INNER JOIN ls_state st ON b.state_id = st.state_id
+      WHERE bvd.people_id = ${params.sponsorId}
+      AND b.bill_type_id = 1
+      ORDER BY bv.roll_call_date DESC
       LIMIT 50
     `;
 

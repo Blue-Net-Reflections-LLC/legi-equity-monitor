@@ -10,6 +10,9 @@ export interface Bill {
   state_name: string;
   status_desc: string;
   latest_action_date: string | null;
+  pending_committee_id?: number;
+  pending_committee_name?: string;
+  pending_committee_body_name?: string;
   sponsors: Array<{
     people_id: number;
     party: string;
