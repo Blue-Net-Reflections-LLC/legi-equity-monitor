@@ -191,9 +191,9 @@ const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponso
 
 function AvatarPlaceholder() {
   return (
-    <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+    <div className="w-9 h-9 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded">
       <svg 
-        className="w-8 h-8 text-zinc-400" 
+        className="w-6 h-6 text-zinc-400" 
         fill="none" 
         stroke="currentColor" 
         viewBox="0 0 24 24"
