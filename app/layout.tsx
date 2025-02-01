@@ -5,6 +5,7 @@ import Header from '@/app/components/Header'
 // import { systemThemeScript } from './utils/theme-script'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import { AnalyticsProvider } from './providers/AnalyticsProvider'
+import ClientLayout from './components/ClientLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,13 +26,15 @@ export default function RootLayout({
         {/* <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} /> */}
       </head>
       <body className={`${inter.className} antialiased bg-white dark:bg-zinc-900`}>
+        <ClientLayout>
           <Header />
-        <main className="container mx-auto px-4 pt-8 pb-2">
+          <main className="container mx-auto px-4 pt-8 pb-2">
             <AnalyticsProvider>
               {children}
             </AnalyticsProvider>
-        </main>
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!} />
+          </main>
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!} />
+        </ClientLayout>
       </body>
     </html>
   )
