@@ -60,7 +60,7 @@ export function BillList({ stateCode, initialSearchParams = {} }: BillListProps)
                 <FilterPills
                   stateCode={stateCode}
                   billFilters={filters}
-                  categoryFilters={filters.categories.filter(cat => cat.selected)}
+                  categoryFilters={filters.categories.filter(cat => cat.selected) as unknown as { id: string; impactTypes: ("POSITIVE" | "BIAS" | "NEUTRAL")[] }[]}
                   filters={{
                     party: searchParams.get('party') || undefined,
                     support: searchParams.get('support') || undefined,

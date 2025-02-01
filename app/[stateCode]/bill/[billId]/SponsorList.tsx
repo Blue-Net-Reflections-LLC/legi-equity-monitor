@@ -12,6 +12,26 @@ interface Sponsor {
   votesmart_id: string | null;
 }
 
+function AvatarPlaceholder() {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+      <svg 
+        className="w-12 h-12 text-zinc-400" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1}
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
+      </svg>
+    </div>
+  );
+}
+
 export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
   const primarySponsor = sponsors.find(s => s.sponsor_type_desc === 'Primary Sponsor');
   const coSponsors = sponsors.filter(s => s.sponsor_type_desc !== 'Primary Sponsor');
@@ -35,21 +55,42 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
                 className="block"
               >
                 <div className="flex items-start gap-4">
-                  <div className="relative w-20 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
-                      src={primarySponsor.votesmart_id 
-                        ? `https://static.votesmart.org/static/canphoto/${primarySponsor.votesmart_id}.jpg`
-                        : '/images/placeholder-headshot.png'
-                      }
-                      alt={primarySponsor.name}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/images/placeholder-headshot.png';
-                      }}
-                    />
+                  <div className="relative w-20 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden flex-shrink-0" data-sponsor-id={primarySponsor.people_id}>
+                    {primarySponsor.votesmart_id ? (
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={`https://static.votesmart.org/static/canphoto/${primarySponsor.votesmart_id}.jpg`}
+                          alt={primarySponsor.name}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                          onError={() => {
+                            const imgContainer = document.querySelector(`[data-sponsor-id="${primarySponsor.people_id}"]`);
+                            if (imgContainer) {
+                              imgContainer.innerHTML = `
+                                <div class="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+                                  <svg 
+                                    class="w-8 h-8 text-zinc-400"
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="1"
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
+                                  </svg>
+                                </div>
+                              `;
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <AvatarPlaceholder />
+                    )}
                   </div>
                   <div className="flex-grow">
                     <div className="font-medium text-zinc-900 dark:text-white text-lg">

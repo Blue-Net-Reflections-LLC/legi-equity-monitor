@@ -10,6 +10,7 @@ import { VotingHistory } from '@/app/components/sponsor/VotingHistory';
 import { Footer } from "@/app/components/layout/Footer";
 import { SponsoredBillsList } from '@/app/components/sponsor/SponsoredBillsList';
 import { Metadata } from 'next';
+import SponsorImage from '@/app/components/sponsor/SponsorImage';
 
 interface SubgroupScore {
   subgroup_code: string;
@@ -372,19 +373,13 @@ export default async function SponsorPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Sidebar */}
           <div className="space-y-6">
-            {sponsor.votesmart_id && (
-              <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden">
-                <Image
-                  src={`https://static.votesmart.org/static/canphoto/${sponsor.votesmart_id}.jpg`}
-                  alt={sponsor.name}
-                  fill
-                  className="object-contain"
-                  sizes="(min-width: 1024px) 480px, 100vw"
-                  quality={100}
-                  priority
-                />
-              </div>
-            )}
+            <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+              <SponsorImage
+                votesmartId={sponsor.votesmart_id}
+                name={sponsor.name}
+                peopleId={sponsor.people_id}
+              />
+            </div>
 
             {/* External Links */}
             <Card className="p-6">

@@ -3,6 +3,8 @@ import db from "@/lib/db"
 import type { Bill } from "@/app/types"
 import type { BillFilters } from "@/app/types/filters"
 
+export const revalidate = 3600 // Cache for 1 hour
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { state: string } }
@@ -24,7 +26,7 @@ export async function GET(
 
       return {
         id: categoryId,
-        impactTypes: validImpactType ? [validImpactType] : []
+        impactTypes: validImpactType ? [validImpactType] : [] as ('POSITIVE' | 'BIAS' | 'NEUTRAL')[]
       }
     })
 
@@ -287,5 +289,9 @@ export async function GET(
     bills,
     totalCount: Number(count),
     filters: billFilters
+  }, {
+    headers: {
+      'Cache-Control': 'max-age=0, s-maxage=3600, stale-while-revalidate=86400'
+    }
   })
 } 
