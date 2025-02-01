@@ -12,22 +12,33 @@ export function ThemeToggle({ variant = 'icon', showTooltip = false }: ThemeTogg
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    // Initialize theme state
-    setIsDark(document.documentElement.classList.contains('dark'))
+    // Initialize theme state from localStorage or system preference
+    const theme = localStorage.getItem('theme') || 
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setIsDark(theme === 'dark');
 
-    // Listen for system theme changes
+    // Listen for system theme changes only if no saved preference
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = (e: MediaQueryListEvent) => setIsDark(e.matches)
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('theme')) {
+        setIsDark(e.matches);
+      }
+    }
     mediaQuery.addEventListener('change', handleChange)
-
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [])
 
   const toggleTheme = () => {
-    const newTheme = !isDark
-    setIsDark(newTheme)
-    document.documentElement.classList.toggle('dark', newTheme)
-    localStorage.setItem('theme', newTheme ? 'dark' : 'light')
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+    
+    // Update DOM and localStorage
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
   }
 
   if (variant === 'labeled') {
