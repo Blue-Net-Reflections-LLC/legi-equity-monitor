@@ -24,8 +24,12 @@ export const SearchResults = memo(function SearchResults({
   const sponsors = results.filter(r => r.type === 'sponsor').slice(0, 50)
 
   const handleItemClick = (item: SearchResult) => {
-    if (onItemClick) onItemClick(item)
-    router.push(item.href)
+    const href = item.type === 'bill' 
+      ? `/${(item.item as Bill).state_abbr.toLowerCase()}/bill/${(item.item as Bill).bill_id}`
+      : `/sponsor/${(item.item as Sponsor).people_id}`
+      
+    if (onItemClick) onItemClick({ ...item, href })
+    router.push(href)
   }
 
   if (!results.length) {

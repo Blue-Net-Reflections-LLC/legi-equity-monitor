@@ -14,7 +14,7 @@ export interface SearchResult {
   type: 'bill' | 'sponsor'
   similarity: number
   item: Bill | Sponsor
-  href: string
+  href?: string
 }
 
 export function SearchDialog() {
@@ -101,7 +101,7 @@ export function SearchDialog() {
 
   const onSelect = useCallback((item: SearchResult) => {
     setOpen(false);
-    router.push(item.href);
+    router.push(item.href || '');
   }, [router, setOpen]);
 
   // Clean up on unmount
