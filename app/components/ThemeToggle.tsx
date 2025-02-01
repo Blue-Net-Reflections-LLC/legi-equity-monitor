@@ -9,45 +9,36 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ variant = 'icon', showTooltip = false }: ThemeToggleProps) {
-  console.debug('[ThemeToggle] Component rendering');
+  // Start with no theme state to match server rendering
+  const [mounted, setMounted] = useState(false)
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    console.debug('[ThemeToggle] useEffect running');
-    // Initialize theme state from localStorage or system preference
-    const theme = localStorage.getItem('theme') || 
-      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    console.debug('[ThemeToggle] Initial theme:', theme);
-    setIsDark(theme === 'dark');
-
-    // Listen for system theme changes only if no saved preference
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = (e: MediaQueryListEvent) => {
-      console.debug('[ThemeToggle] System theme change:', e.matches ? 'dark' : 'light');
-      if (!localStorage.getItem('theme')) {
-        setIsDark(e.matches);
-      }
-    }
-    mediaQuery.addEventListener('change', handleChange)
-    return () => {
-      console.debug('[ThemeToggle] Cleaning up event listener');
-      mediaQuery.removeEventListener('change', handleChange)
-    }
+    // Only run theme detection after mount to prevent hydration mismatch
+    setMounted(true)
+    const theme = document.documentElement.classList.contains('dark')
+    setIsDark(theme)
   }, [])
 
   const toggleTheme = () => {
-    console.debug('[ThemeToggle] Toggle theme clicked, current isDark:', isDark);
-    const newTheme = !isDark;
-    setIsDark(newTheme);
+    const newTheme = !isDark
+    setIsDark(newTheme)
     
-    // Update DOM and localStorage
     if (newTheme) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add('dark')
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove('dark')
     }
-    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-    console.debug('[ThemeToggle] Theme updated to:', newTheme ? 'dark' : 'light');
+    try {
+      localStorage.setItem('theme', newTheme ? 'dark' : 'light')
+    } catch (e) {
+      console.error('Failed to save theme to localStorage:', e)
+    }
+  }
+
+  // Don't render anything until after hydration to prevent mismatch
+  if (!mounted) {
+    return null
   }
 
   if (variant === 'labeled') {
