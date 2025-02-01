@@ -35,7 +35,8 @@ export function ThemeToggle({ variant = 'icon', showTooltip = false }: ThemeTogg
       console.error('Failed to save theme to localStorage:', e)
     }
   }
-
+  // TODO: Fix the issue with theme toggle not working
+  return null
   // Don't render anything until after hydration to prevent mismatch
   if (!mounted) {
     return null
