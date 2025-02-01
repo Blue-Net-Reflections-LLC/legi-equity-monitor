@@ -7,8 +7,9 @@ import { Bill } from "@/app/types";
 import { Footer } from "@/app/components/layout/Footer";
 import { BillFiltersWrapper } from "@/app/components/filters/BillFiltersWrapper";
 import type { BillFilters as BillFiltersType, PartyType } from "@/app/types/filters";
-import { CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
 import { STATE_NAMES } from '@/app/constants/states';
+import { FilterPills } from "@/app/components/filters/FilterPills";
+
 
 type Props = {
   params: { state: string }
@@ -248,28 +249,6 @@ async function getBills(
   };
 }
 
-const impactTypeIcons = {
-  POSITIVE: CheckCircle,
-  BIAS: AlertCircle,
-  NEUTRAL: MinusCircle
-} as const;
-
-// Add party name mapping
-const partyNames = {
-  'D': 'Democrat',
-  'R': 'Republican',
-  'I': 'Independent'
-} as const;
-
-// Update the categories list
-const categoryColors = {
-  gender: "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400",
-  disability: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400",
-  age: "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400",
-  race: "bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-400",
-  religion: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400",
-  veterans: "bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400"
-} as const;
 
 export default async function StatePage({ 
   params,
@@ -411,121 +390,13 @@ export default async function StatePage({
               Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}
             </div>
             <div className="flex items-center gap-3">
-              {(categoryFilters.length > 0 || filters.party || filters.support || filters.committee) && (
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-wrap gap-2 justify-end">
-                    {/* Category filters with impact types */}
-                    {categoryFilters.map(({ id }) => {
-                      const category = billFilters.categories.find(c => c.id === id);
-                      if (!category || !categoryColors[id as keyof typeof categoryColors]) return null;
-                      const selectedImpacts = category.impactTypes.filter(i => i.selected);
-                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
-                      
-                      // Get all categories except the one being removed
-                      const otherCategories = categoryFilters
-                        .filter(cat => cat.id !== id)
-                        .map(cat => cat.id);
-                      
-                      // Clear the current parameters
-                      newParams.delete('category');
-                      newParams.delete(`impact_${id}`);
-                      
-                      // Add back other categories and their impacts
-                      otherCategories.forEach(catId => {
-                        newParams.append('category', catId);
-                        const impactParam = searchParams[`impact_${catId}`];
-                        if (impactParam) {
-                          if (Array.isArray(impactParam)) {
-                            impactParam.forEach(imp => newParams.append(`impact_${catId}`, imp));
-                          } else {
-                            newParams.append(`impact_${catId}`, impactParam);
-                          }
-                        }
-                      });
-                      
-                      return (
-                        <a
-                          key={`filter-${id}`}
-                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm hover:opacity-90 transition-colors ${categoryColors[id as keyof typeof categoryColors]}`}
-                        >
-                          {category.name}
-                          {selectedImpacts.map(impact => {
-                            const Icon = impactTypeIcons[impact.type];
-                            return (
-                              <Icon
-                                key={impact.type}
-                                className={`h-4 w-4 ${
-                                  impact.type === 'POSITIVE' ? 'text-emerald-600 dark:text-emerald-400' :
-                                  impact.type === 'BIAS' ? 'text-red-600 dark:text-red-400' :
-                                  'text-zinc-600 dark:text-zinc-400'
-                                }`}
-                              />
-                            );
-                          })}
-                          <span className="ml-1 text-zinc-400 hover:text-zinc-500">×</span>
-                        </a>
-                      );
-                    })}
-                    
-                    {/* Party filter */}
-                    {filters.party && (() => {
-                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
-                      newParams.delete('party');
-                      return (
-                        <a
-                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
-                        >
-                          {partyNames[filters.party as keyof typeof partyNames] || filters.party}
-                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
-                        </a>
-                      );
-                    })()}
-
-                    {/* Support filter */}
-                    {filters.support && (() => {
-                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
-                      newParams.delete('support');
-                      return (
-                        <a
-                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
-                        >
-                          {filters.support === 'HAS_SUPPORT' ? 'Has Support' : 'No Support'}
-                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
-                        </a>
-                      );
-                    })()}
-
-                    {/* Committee filter */}
-                    {filters.committee && filters.committee.map(committee => {
-                      const newParams = new URLSearchParams(searchParams as Record<string, string>);
-                      // Remove only this specific committee
-                      newParams.delete('committee');
-                      filters.committee?.filter(c => c !== committee).forEach(c => {
-                        newParams.append('committee', c);
-                      });
-                      return (
-                        <a
-                          key={`committee-${committee}`}
-                          href={`/${stateCode.toLowerCase()}${newParams.toString() ? `?${newParams.toString()}` : ''}`}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-lime-100 text-lime-700 dark:bg-lime-900/50 dark:text-lime-400 px-3 py-1.5 text-sm hover:opacity-90 transition-colors"
-                        >
-                          {committee}
-                          <span className="text-zinc-400 hover:text-zinc-500">×</span>
-                        </a>
-                      );
-                    })}
-                  </div>
-                  <a
-                    href={`/${stateCode.toLowerCase()}`}
-                    className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 whitespace-nowrap"
-                  >
-                    Clear all
-                  </a>
-                </div>
-              )}
+              <FilterPills
+                categoryFilters={categoryFilters}
+                billFilters={billFilters}
+                filters={filters}
+                searchParams={searchParams}
+                stateCode={stateCode}
+              />
               <BillFiltersWrapper filters={billFilters} stateCode={stateCode} />
             </div>
           </div>
