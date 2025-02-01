@@ -19,6 +19,7 @@ interface BillFiltersWrapperProps {
 export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperProps) {
   const router = useRouter();
   const [optimisticParty, setOptimisticParty] = useState<string | undefined>(filters.party);
+  const [open, setOpen] = useState(false);
 
   const handlePartyChange = useCallback((party: string) => {
     // Optimistically update the UI
@@ -32,11 +33,12 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
       searchParams.set('party', party);
     }
     router.push(`/${stateCode.toLowerCase()}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`);
+    setOpen(false); // Close dialog after applying party filter
   }, [stateCode, router]);
 
   return (
     <TooltipProvider>
-      <Dialog>
+      <Dialog open={open} onOpenChange={setOpen}>
         <Tooltip>
           <DialogTrigger asChild>
             <TooltipTrigger asChild>
@@ -107,7 +109,9 @@ export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperPro
                 });
               }
 
-              window.location.href = `/${stateCode.toLowerCase()}${params.toString() ? `?${params.toString()}` : ''}`;
+              // Use Next.js router instead of window.location
+              router.push(`/${stateCode.toLowerCase()}${params.toString() ? `?${params.toString()}` : ''}`);
+              setOpen(false); // Close dialog after applying filters
             }} 
           />
         </DialogContent>

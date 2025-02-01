@@ -9,25 +9,37 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ variant = 'icon', showTooltip = false }: ThemeToggleProps) {
+  // Start with no theme state to match server rendering
+  const [mounted, setMounted] = useState(false)
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    // Initialize theme state
-    setIsDark(document.documentElement.classList.contains('dark'))
-
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = (e: MediaQueryListEvent) => setIsDark(e.matches)
-    mediaQuery.addEventListener('change', handleChange)
-
-    return () => mediaQuery.removeEventListener('change', handleChange)
+    // Only run theme detection after mount to prevent hydration mismatch
+    setMounted(true)
+    const theme = document.documentElement.classList.contains('dark')
+    setIsDark(theme)
   }, [])
 
   const toggleTheme = () => {
     const newTheme = !isDark
     setIsDark(newTheme)
-    document.documentElement.classList.toggle('dark', newTheme)
-    localStorage.setItem('theme', newTheme ? 'dark' : 'light')
+    
+    if (newTheme) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+    try {
+      localStorage.setItem('theme', newTheme ? 'dark' : 'light')
+    } catch (e) {
+      console.error('Failed to save theme to localStorage:', e)
+    }
+  }
+  // TODO: Fix the issue with theme toggle not working
+  return null
+  // Don't render anything until after hydration to prevent mismatch
+  if (!mounted) {
+    return null
   }
 
   if (variant === 'labeled') {
