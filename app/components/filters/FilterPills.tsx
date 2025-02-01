@@ -49,7 +49,7 @@ export function FilterPills({
   const hasActiveFilters = (categoryFilters?.length > 0) || 
     filters.party || 
     filters.support || 
-    (filters.committee?.length > 0);
+    ((filters.committee ?? []).length > 0);
 
   if (!hasActiveFilters) {
     return null;
