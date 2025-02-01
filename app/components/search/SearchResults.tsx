@@ -7,6 +7,7 @@ import { Bill, Sponsor } from '@/app/types'
 import { StateIcon } from './StateIcon'
 import { Star as StarIcon } from 'lucide-react'
 import { memo } from 'react'
+import { Search } from 'lucide-react'
 
 interface SearchResultsProps {
   results: SearchResult[]
@@ -35,9 +36,15 @@ export const SearchResults = memo(function SearchResults({
   if (!results.length) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-muted-foreground">
-          No results found
-        </p>
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800/50 relative">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-zinc-400 to-zinc-500 opacity-10 animate-[ping_3s_ease-in-out_infinite]" />
+            <Search className="w-8 h-8 text-zinc-400 dark:text-zinc-500 relative z-10" />
+          </div>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            No matching results found
+          </p>
+        </div>
       </div>
     )
   }
