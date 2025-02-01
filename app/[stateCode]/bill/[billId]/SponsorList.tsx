@@ -13,6 +13,19 @@ interface Sponsor {
   sponsor_order: number;
 }
 
+function getPartyColors(party: string) {
+  switch (party) {
+    case 'Democrat':
+      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+    case 'Republican':
+      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+    case 'Independent':
+      return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+    default:
+      return 'bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200';
+  }
+}
+
 function AvatarPlaceholder() {
   return (
     <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
@@ -38,6 +51,12 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
   const primarySponsor = sponsors[0];
   const coSponsors = sponsors.slice(1);
 
+  // Calculate party counts
+  const partyCounts = sponsors.reduce((acc, sponsor) => {
+    acc[sponsor.party_name] = (acc[sponsor.party_name] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <div className="space-y-6">
       {sponsors.length === 0 ? (
@@ -46,6 +65,18 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
         </p>
       ) : (
         <>
+          {/* Party Count Summary */}
+          <div className="flex gap-3 flex-wrap">
+            {Object.entries(partyCounts).map(([party, count]) => (
+              <div 
+                key={party}
+                className={`inline-flex items-center px-2.5 py-1.5 rounded-md text-sm ${getPartyColors(party)}`}
+              >
+                {party}: {count}
+              </div>
+            ))}
+          </div>
+
           {/* Primary Sponsor Section */}
           {primarySponsor && (
             <div className="border-b border-zinc-200 dark:border-zinc-700 pb-6">
@@ -101,7 +132,7 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
                     <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                       {primarySponsor.role_name}
                     </div>
-                    <div className="inline-flex items-center px-2 py-1 mt-2 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
+                    <div className={`inline-flex items-center px-2 py-1 mt-2 rounded-full text-xs font-medium ${getPartyColors(primarySponsor.party_name)}`}>
                       {primarySponsor.party_name}
                     </div>
                   </div>
@@ -116,23 +147,27 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
               <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-4">
                 Co-Sponsors ({coSponsors.length})
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
                 {coSponsors.map((sponsor) => (
                   <Link 
                     key={sponsor.people_id}
                     href={`/sponsor/${sponsor.people_id}`}
                     className="block"
                   >
-                    <div className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
-                      <div className="flex flex-col">
-                        <div className="inline-flex items-center px-2 py-1 mb-2 self-start rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">
+                    <div className="px-4 py-3 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 flex items-center gap-2">
+                          <div className="min-w-[180px]">
+                            <div className="font-medium text-zinc-900 dark:text-white">
+                              {sponsor.name}
+                            </div>
+                          </div>
+                          <div className="text-sm text-zinc-500 dark:text-zinc-400 mr-4">
+                            {sponsor.role_name}
+                          </div>
+                        </div>
+                        <div className={`text-sm px-2 py-1 rounded-full ${getPartyColors(sponsor.party_name)}`}>
                           {sponsor.party_name}
-                        </div>
-                        <div className="font-medium text-zinc-900 dark:text-white text-lg mb-1">
-                          {sponsor.name}
-                        </div>
-                        <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                          {sponsor.role_name}
                         </div>
                       </div>
                     </div>
