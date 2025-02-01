@@ -44,7 +44,7 @@ export const SearchResults = memo(function SearchResults({
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 min-h-0 overflow-auto px-2 [&::-webkit-scrollbar]:w-2 
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 [&::-webkit-scrollbar]:w-2 
         [&::-webkit-scrollbar-thumb]:rounded-full 
         [&::-webkit-scrollbar-thumb]:bg-zinc-300
         dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
@@ -52,7 +52,7 @@ export const SearchResults = memo(function SearchResults({
       >
         {sponsors.length > 0 && (
           <div className="mt-2">
-            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2 truncate">
               Sponsors ({sponsors.length})
             </h3>
             <div className="space-y-2">
@@ -72,7 +72,7 @@ export const SearchResults = memo(function SearchResults({
 
         {bills.length > 0 && (
           <div className="mt-4">
-            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2 truncate">
               Bills ({bills.length})
             </h3>
             <div className="space-y-2">
@@ -101,11 +101,11 @@ const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onC
       onClick={onClick}
     >
       {bill.state_abbr === 'DC' ? (
-        <div className="w-9 h-9 rounded bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+        <div className="flex-shrink-0 w-9 h-9 rounded bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
           <StarIcon className="w-6 h-6 fill-red-500 stroke-red-500" />
         </div>
       ) : bill.state_abbr === 'US' ? (
-        <div className="w-9 h-9 rounded bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center">
+        <div className="flex-shrink-0 w-9 h-9 rounded bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center">
           <Image
             src="/images/Seal_of_the_United_States_Congress.svg"
             alt="US Congress Seal"
@@ -115,10 +115,12 @@ const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onC
           />
         </div>
       ) : (
-        <StateIcon stateAbbr={bill.state_abbr} size={36} />
+        <div className="flex-shrink-0">
+          <StateIcon stateAbbr={bill.state_abbr} size={36} />
+        </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
           {bill.state_abbr} • {bill.bill_number}
         </div>
         <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1" title={bill.title}>
@@ -136,18 +138,18 @@ const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponso
       onClick={onClick}
     >
       {sponsor.votesmart_id ? (
-        <div className="relative w-9 h-9" data-sponsor-id={sponsor.people_id}>
+        <div className="relative flex-shrink-0 w-9 h-9" data-sponsor-id={sponsor.people_id}>
           <Image
             src={`https://static.votesmart.org/static/canphoto/${sponsor.votesmart_id}.jpg`}
             alt={sponsor.name}
             fill
-            className="object-cover"
-            sizes="48px"
+            className="object-cover rounded"
+            sizes="36px"
             onError={() => {
               const imgContainer = document.querySelector(`[data-sponsor-id="${sponsor.people_id}"]`);
               if (imgContainer) {
                 imgContainer.innerHTML = `
-                  <div class="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+                  <div class="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded">
                     <svg 
                       class="w-8 h-8 text-zinc-400"
                       fill="none" 
@@ -168,10 +170,12 @@ const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponso
           />
         </div>
       ) : (
-        <AvatarPlaceholder />
+        <div className="flex-shrink-0">
+          <AvatarPlaceholder />
+        </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="text-sm text-zinc-500 dark:text-zinc-400">
+        <div className="text-sm text-zinc-500 dark:text-zinc-400 truncate">
           {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.body_name}
         </div>
         <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
