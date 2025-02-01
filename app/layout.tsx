@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="[color-scheme:dark_light]" suppressHydrationWarning>
+    <html lang="en" className="[color-scheme:dark_light] dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
       </head>
