@@ -51,6 +51,7 @@ interface Sponsor {
   role_name: string;
   sponsor_type_desc: string;
   votesmart_id: string | null;
+  sponsor_order: number;
 }
 
 interface RollCall {
@@ -271,6 +272,7 @@ async function getSponsors(billId: string): Promise<Sponsor[]> {
       bs.party_name,
       bs.role_name,
       bs.sponsor_type_desc,
+      bs.sponsor_order,
       p.votesmart_id
     FROM lsv_bill_sponsor bs
     LEFT JOIN ls_people p ON bs.people_id = p.people_id
@@ -598,10 +600,7 @@ export default async function BillPage({
             {sponsors.length > 0 && (
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Sponsors</h2>
-                <SponsorList sponsors={sponsors.sort((a, b) => 
-                  a.sponsor_type_desc === 'Primary Sponsor' ? -1 : 
-                  b.sponsor_type_desc === 'Primary Sponsor' ? 1 : 0
-                )} />
+                <SponsorList sponsors={sponsors} />
               </Card>
             )}
 

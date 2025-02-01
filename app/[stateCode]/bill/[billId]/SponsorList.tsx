@@ -10,6 +10,7 @@ interface Sponsor {
   role_name: string;
   sponsor_type_desc: string;
   votesmart_id: string | null;
+  sponsor_order: number;
 }
 
 function AvatarPlaceholder() {
@@ -33,8 +34,9 @@ function AvatarPlaceholder() {
 }
 
 export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
-  const primarySponsor = sponsors.find(s => s.sponsor_type_desc === 'Primary Sponsor');
-  const coSponsors = sponsors.filter(s => s.sponsor_type_desc !== 'Primary Sponsor');
+  // Use the first sponsor (by order) as primary, rest are co-sponsors
+  const primarySponsor = sponsors[0];
+  const coSponsors = sponsors.slice(1);
 
   return (
     <div className="space-y-6">
