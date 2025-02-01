@@ -64,6 +64,12 @@ interface RollCall {
   absent: number;
   passed: number;
   roll_call_body_name: string;
+  votes: Array<{
+    people_id: number;
+    name: string;
+    party_name: string;
+    vote_desc: string;
+  }>;
 }
 
 interface BillHistory {
@@ -314,7 +320,24 @@ async function getRollCalls(billId: string): Promise<RollCall[]> {
         WHERE bvd.roll_call_id = ${rollCall.roll_call_id}
         ORDER BY p.name
       `;
-      return { ...rollCall, votes };
+      
+      return {
+        roll_call_id: Number(rollCall.roll_call_id),
+        roll_call_date: new Date(rollCall.roll_call_date),
+        roll_call_desc: String(rollCall.roll_call_desc),
+        yea: Number(rollCall.yea),
+        nay: Number(rollCall.nay),
+        nv: Number(rollCall.nv),
+        absent: Number(rollCall.absent),
+        passed: Number(rollCall.passed),
+        roll_call_body_name: String(rollCall.roll_call_body_name),
+        votes: votes.map(v => ({
+          people_id: Number(v.people_id),
+          name: String(v.name),
+          party_name: String(v.party_name),
+          vote_desc: String(v.vote_desc)
+        }))
+      } satisfies RollCall;
     })
   );
 
