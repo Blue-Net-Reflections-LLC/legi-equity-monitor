@@ -47,32 +47,12 @@ export function BillList({ stateCode, initialSearchParams = {} }: BillListProps)
     loadBills()
   }, [stateCode, searchParams])
 
-  if (loading) {
-    return (
-      <section className="py-4 md:px-0 px-4">
-        <div className="max-w-7xl mx-auto space-y-4">
-          <div className="flex justify-between items-center flex-wrap">
-            <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <BillCardSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </section>
-    )
-  }
-
   return (
     <section className="py-4 md:px-0 px-4">
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex justify-between items-center flex-wrap">
           <div className="text-sm text-gray-500 whitespace-nowrap">
-            Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}
+            Showing bills {offset + 1}-{Math.min(offset + (loading ? pageSize : bills.length), totalCount)} of {totalCount}
           </div>
           <div className="flex items-center gap-3">
             {filters && (
@@ -97,20 +77,18 @@ export function BillList({ stateCode, initialSearchParams = {} }: BillListProps)
           </div>
         </div>
 
-        {bills.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {bills.map(bill => (
-                <BillCard key={bill.bill_id} bill={bill} />
-              ))}
-            </div>
-            <Pagination
-              currentPage={page}
-              totalItems={totalCount}
-              pageSize={pageSize}
-              searchParams={Object.fromEntries(searchParams.entries())}
-            />
-          </>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: pageSize }).map((_, i) => (
+              <BillCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : bills.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {bills.map(bill => (
+              <BillCard key={bill.bill_id} bill={bill} />
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
             <div className="rounded-full bg-gray-100 p-3 mb-4">
@@ -145,6 +123,15 @@ export function BillList({ stateCode, initialSearchParams = {} }: BillListProps)
               </a>
             )}
           </div>
+        )}
+
+        {totalCount > pageSize && (
+          <Pagination
+            currentPage={page}
+            totalItems={totalCount}
+            pageSize={pageSize}
+            searchParams={Object.fromEntries(searchParams.entries())}
+          />
         )}
       </div>
     </section>
