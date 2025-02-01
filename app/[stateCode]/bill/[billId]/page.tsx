@@ -282,21 +282,43 @@ async function getSponsors(billId: string): Promise<Sponsor[]> {
 }
 
 async function getRollCalls(billId: string): Promise<RollCall[]> {
-  return db`
+  const rollCalls = await db`
     SELECT 
-      roll_call_id,
-      roll_call_date,
-      roll_call_desc,
-      yea,
-      nay,
-      nv,
-      absent,
-      passed,
-      roll_call_body_name
-    FROM lsv_bill_vote
-    WHERE bill_id = ${billId}
-    ORDER BY roll_call_date DESC
+      bv.roll_call_id,
+      bv.roll_call_date,
+      bv.roll_call_desc,
+      bv.yea,
+      bv.nay,
+      bv.nv,
+      bv.absent,
+      bv.passed,
+      bv.roll_call_body_name
+    FROM lsv_bill_vote bv
+    WHERE bv.bill_id = ${billId}
+    ORDER BY bv.roll_call_date DESC
   `;
+
+  // Fetch individual votes for each roll call
+  const rollCallsWithVotes = await Promise.all(
+    rollCalls.map(async (rollCall) => {
+      const votes = await db`
+        SELECT 
+          bvd.people_id,
+          p.name,
+          pa.party_name,
+          v.vote_desc
+        FROM ls_bill_vote_detail bvd
+        INNER JOIN ls_people p ON bvd.people_id = p.people_id
+        INNER JOIN ls_party pa ON p.party_id = pa.party_id
+        INNER JOIN ls_vote v ON bvd.vote_id = v.vote_id
+        WHERE bvd.roll_call_id = ${rollCall.roll_call_id}
+        ORDER BY p.name
+      `;
+      return { ...rollCall, votes };
+    })
+  );
+
+  return rollCallsWithVotes;
 }
 
 async function getBillHistory(billId: string): Promise<BillHistory[]> {
