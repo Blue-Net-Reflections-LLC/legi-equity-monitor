@@ -1,66 +1,45 @@
-import { Metadata } from 'next'
-import db from "@/lib/db";
-import { BillList } from "@/app/components/BillList";
-import Pagination from "@/app/components/Pagination";
-import { AuroraBackground } from "@/app/components/ui/aurora-background";
-import { Bill } from "@/app/types";
-import { Footer } from "@/app/components/layout/Footer";
-import { BillFiltersWrapper } from "@/app/components/filters/BillFiltersWrapper";
-import type { BillFilters as BillFiltersType, PartyType } from "@/app/types/filters";
-import { STATE_NAMES } from '@/app/constants/states';
-import { FilterPills } from "@/app/components/filters/FilterPills";
+import { NextRequest } from 'next/server'
+import db from "@/lib/db"
+import type { Bill } from "@/app/types"
+import type { BillFilters } from "@/app/types/filters"
 
+export const revalidate = 3600 // Cache for 1 hour
 
-type Props = {
-  params: { state: string }
-  searchParams: { [key: string]: string | string[] | undefined }
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { state: string } }
+) {
+  const { searchParams } = new URL(request.url)
+  const page = parseInt(searchParams.get('page') || '1')
+  const pageSize = 12
+  const offset = (page - 1) * pageSize
   const stateCode = params.state.toUpperCase()
-  const stateName = STATE_NAMES[stateCode] || stateCode
 
-  return {
-    title: `${stateName} Bills - LegiEquity`,
-    description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
-    openGraph: {
-      title: `${stateName} Legislative Analysis - LegiEquity`,
-      description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
-      url: `https://legiequity.us/${params.state.toLowerCase()}`,
-      siteName: 'LegiEquity',
-      images: [
-        {
-          url: `https://legiequity.us/api/og?state=${stateCode}`, // You'll need to create this API route
-          width: 1200,
-          height: 630,
-          alt: `${stateName} Legislative Analysis`,
-        },
-      ],
-      locale: 'en_US',
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `${stateName} Legislative Analysis - LegiEquity`,
-      description: `Analyze the demographic impact of ${stateName} legislation. View bills and their effects on age, disability, gender, race, and religious groups.`,
-      images: [`https://legiequity.us/api/og?state=${stateCode}`],
-    },
+  // Parse category filters
+  const categoryFilters = searchParams.getAll('category')
+    .filter(Boolean)
+    .map(categoryId => {
+      const impactType = searchParams.get(`impact_${categoryId}`)
+      const validImpactType = (impactType === 'POSITIVE' || impactType === 'BIAS' || impactType === 'NEUTRAL') 
+        ? impactType as 'POSITIVE' | 'BIAS' | 'NEUTRAL'
+        : undefined
+
+      return {
+        id: categoryId,
+        impactTypes: validImpactType ? [validImpactType] : [] as ('POSITIVE' | 'BIAS' | 'NEUTRAL')[]
+      }
+    })
+
+  const filters = {
+    committee: searchParams.getAll('committee').filter(Boolean).length > 0 
+      ? searchParams.getAll('committee').filter(Boolean)
+      : undefined,
+    categories: categoryFilters,
+    party: searchParams.get('party'),
+    support: searchParams.get('support') as 'HAS_SUPPORT' | 'NO_SUPPORT' | undefined,
   }
-}
 
-async function getBills(
-  stateCode: string,
-  page = 1,
-  pageSize = 12,
-  filters: {
-    committee?: string[] | string;
-    categories?: Array<{ id: string; impactTypes: Array<'POSITIVE' | 'BIAS' | 'NEUTRAL'> }>;
-    party?: string;
-    support?: 'HAS_SUPPORT' | 'NO_SUPPORT';
-  } = {}
-): Promise<{ bills: Bill[], totalCount: number }> {
-  const offset = (page - 1) * pageSize;
-  
+  // Get bills with filters
   const bills = await db`
     WITH filtered_bills AS (
       SELECT DISTINCT b.bill_id
@@ -72,7 +51,7 @@ async function getBills(
         LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
         LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
       `}
-      WHERE b.state_abbr = ${stateCode.toUpperCase()}
+      WHERE b.state_abbr = ${stateCode}
       AND b.bill_type_id = 1
       ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
         EXISTS (
@@ -179,9 +158,9 @@ async function getBills(
     ORDER BY latest_action_date DESC NULLS LAST, bill_id DESC
     LIMIT ${pageSize}
     OFFSET ${offset}
-  `.then(rows => rows as unknown as Bill[]);
+  `.then(rows => rows as unknown as Bill[])
 
-  // Get total count with same conditions
+  // Get total count
   const [{ count }] = await db`
     SELECT COUNT(DISTINCT b.bill_id)
     FROM lsv_bill b
@@ -192,7 +171,7 @@ async function getBills(
       LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
       LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
     `}
-    WHERE b.state_abbr = ${stateCode.toUpperCase()}
+    WHERE b.state_abbr = ${stateCode}
     AND b.bill_type_id = 1
     ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
       EXISTS (
@@ -231,83 +210,22 @@ async function getBills(
     ) >= 2` : filters.support === 'NO_SUPPORT' ? db`AND (
       SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
     ) < 2` : db``}
-  ` as unknown as [{ count: string }];
+  ` as unknown as [{ count: string }]
 
-  // Test query to verify data exists
-  await db`
-    SELECT COUNT(*) as "testCount"
-    FROM bill_analysis_results bar
-    JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-    WHERE bacs.category = 'race'
-    AND bacs.bias_score > bacs.positive_impact_score
-    AND bacs.bias_score >= 0.60
-  `;
-  
-  return {
-    bills: bills,
-    totalCount: Number(count)
-  };
-}
-
-
-export default async function StatePage({ 
-  params,
-  searchParams,
-}: {
-  params: { state: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
-  const stateCode = params.state.toUpperCase();
-  const page = parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1');
-  const pageSize = 12;
-  const offset = (page - 1) * pageSize;
-
-  // Parse category filters from URL
-  const categoryFilters = (Array.isArray(searchParams.category) 
-    ? searchParams.category 
-    : (searchParams.category as string || '').split(',')
-  ).filter(Boolean).map(categoryId => {
-    // Get impact type for this category if it exists (only take the last one if multiple)
-    const impactParam = searchParams[`impact_${categoryId}`];
-    const impactType = Array.isArray(impactParam) 
-      ? impactParam[impactParam.length - 1] 
-      : impactParam;
-
-    // Validate that the impact type is one of the allowed values
-    const validImpactType = (impactType === 'POSITIVE' || impactType === 'BIAS' || impactType === 'NEUTRAL') 
-      ? impactType as 'POSITIVE' | 'BIAS' | 'NEUTRAL'
-      : undefined;
-
-    return {
-      id: categoryId,
-      impactTypes: validImpactType ? [validImpactType] : []
-    } as const; // Use const assertion to preserve literal types
-  });
-
-  const filters = {
-    committee: Array.isArray(searchParams.committee) ? searchParams.committee : searchParams.committee ? [searchParams.committee] : undefined,
-    categories: categoryFilters,
-    party: typeof searchParams.party === 'string' ? searchParams.party : undefined,
-    support: typeof searchParams.support === 'string' ? searchParams.support as 'HAS_SUPPORT' | 'NO_SUPPORT' : undefined,
-  } as const;
-
-  const { bills, totalCount } = await getBills(stateCode, page, pageSize, filters);
-  const stateName = bills[0]?.state_name || stateCode;
-
-  // Get all available committees for the state
+  // Get all committees for the state
   const allCommittees = await db`
     SELECT DISTINCT 
       pending_committee_id as id,
       pending_committee_name as name
     FROM lsv_bill
-    WHERE state_abbr = ${stateCode.toUpperCase()}
+    WHERE state_abbr = ${stateCode}
       AND pending_committee_name IS NOT NULL
       AND pending_committee_name != ''
     ORDER BY pending_committee_name
-  `;
+  `
 
-  // Initialize filter state for the UI
-  const billFilters: BillFiltersType = {
+  // Build filter state
+  const billFilters: BillFilters = {
     impacts: [],
     categories: [
       { id: 'gender', name: 'Gender', selected: false, impactTypes: [
@@ -342,111 +260,38 @@ export default async function StatePage({
       ]}
     ],
     demographics: [],
-    party: (filters.party as PartyType) || 'ALL',
+    party: filters.party as 'D' | 'R' | 'I' | 'ALL' || 'ALL',
     committees: allCommittees.map(committee => ({
       id: committee.id || 0,
       name: committee.name,
       selected: filters.committee?.includes(committee.name) || false
     })),
     support: filters.support || 'ALL'
-  };
+  }
 
   // Update selected states based on URL params
   if (categoryFilters.length > 0) {
     categoryFilters.forEach(({ id, impactTypes }) => {
-      const category = billFilters.categories.find(c => c.id === id);
+      const category = billFilters.categories.find(c => c.id === id)
       if (category) {
-        category.selected = true;
-        // Update impact type selections
+        category.selected = true
         impactTypes.forEach(impactType => {
-          const impact = category.impactTypes.find(i => i.type === impactType);
+          const impact = category.impactTypes.find(i => i.type === impactType)
           if (impact) {
-            impact.selected = true;
+            impact.selected = true
           }
-        });
+        })
       }
-    });
+    })
   }
 
-  return (
-    <div className="min-h-screen bg-white dark:bg-zinc-900">
-      {/* Hero Section with Aurora */}
-      <section className="h-[10vh] min-h-[80px]">
-        <AuroraBackground>
-          <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white text-center">
-            {stateName} Bills
-          </h1>
-          <p className="text-sm md:text-base text-zinc-700 dark:text-neutral-200 text-center mt-1">
-            Analyzing legislative impact on demographic equity
-          </p>
-        </AuroraBackground>
-      </section>
-
-      {/* Bills Section */}
-      <section className="py-4 md:px-0 px-4">
-        <div className="max-w-7xl mx-auto space-y-4">
-          <div className="flex justify-between items-center flex-wrap">
-            <div className="text-sm text-gray-500 whitespace-nowrap">
-              Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}
-            </div>
-            <div className="flex items-center gap-3">
-              <FilterPills
-                categoryFilters={categoryFilters}
-                billFilters={billFilters}
-                filters={filters}
-                searchParams={searchParams}
-                stateCode={stateCode}
-              />
-              <BillFiltersWrapper filters={billFilters} stateCode={stateCode} />
-            </div>
-          </div>
-
-          {bills.length > 0 ? (
-            <BillList bills={bills} />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-3 mb-4">
-                <svg
-                  className="h-6 w-6 text-gray-500 dark:text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                No bills found
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-md">
-                {Object.values(filters).some(Boolean)
-                  ? "Try adjusting your filters to see more bills."
-                  : "There are no bills available at the moment."}
-              </p>
-              {Object.values(filters).some(Boolean) && (
-                <a
-                  href={`/${stateCode.toLowerCase()}`}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-                >
-                  Clear all filters
-                </a>
-              )}
-            </div>
-          )}
-          <Pagination
-            currentPage={page}
-            totalItems={totalCount}
-            pageSize={pageSize}
-            searchParams={searchParams}
-          />
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
+  return Response.json({
+    bills,
+    totalCount: Number(count),
+    filters: billFilters
+  }, {
+    headers: {
+      'Cache-Control': 'max-age=0, s-maxage=3600, stale-while-revalidate=86400'
+    }
+  })
 } 

@@ -8,11 +8,13 @@ import { Bill, Sponsor } from '@/app/types'
 import { SearchResults } from './SearchResults'
 import { embeddingService } from '@/app/services/embedding.service'
 import { debounce } from 'lodash'
+import { useRouter } from 'next/navigation'
 
 export interface SearchResult {
   type: 'bill' | 'sponsor'
   similarity: number
   item: Bill | Sponsor
+  href?: string
 }
 
 export function SearchDialog() {
@@ -22,6 +24,7 @@ export function SearchDialog() {
   const [isLoading, setIsLoading] = useState(false)
   const abortControllerRef = useRef<AbortController>()
   const previousQueryRef = useRef<string | null>(null)
+  const router = useRouter()
 
   const handleSearch = useCallback(
     debounce(async (searchQuery: string) => {
@@ -96,15 +99,24 @@ export function SearchDialog() {
     }
   }, [query, handleSearch])
 
+  const onSelect = useCallback((item: SearchResult) => {
+    setOpen(false);
+    if (item.href) {
+      router.push(item.href);
+    }
+  }, [router, setOpen]);
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      handleSearch.cancel()
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+      if (handleSearch.cancel) {
+        handleSearch.cancel();
       }
-    }
-  }, [handleSearch])
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [handleSearch]);
 
   useEffect(() => {
     if (open && query === '' && previousQueryRef.current !== query) {
@@ -152,7 +164,7 @@ export function SearchDialog() {
             <SearchResults 
               results={results} 
               isLoading={isLoading}
-              onItemClick={() => setOpen(false)}
+              onItemClick={onSelect}
             />
           </div>
         </div>

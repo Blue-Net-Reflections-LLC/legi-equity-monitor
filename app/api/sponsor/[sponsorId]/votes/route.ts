@@ -3,28 +3,36 @@ import db from '@/lib/db';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { sponsorId: string } }
 ) {
   try {
     const votes = await db`
-      SELECT
-        b.bill_id,
-        b.bill_number,
-        b.title,
-        st.state_abbr,
-        bv.roll_call_date as vote_date,
-        bv.roll_call_desc as vote_desc,
+      SELECT 
+        bv.roll_call_id,
+        bvd.vote_id,
         CASE 
           WHEN bvd.vote_id = 1 THEN 'Yea'
           WHEN bvd.vote_id = 2 THEN 'Nay'
           WHEN bvd.vote_id = 3 THEN 'Not Voting'
           ELSE 'Other'
-        END as vote
-      FROM ls_bill b
-      INNER JOIN ls_bill_vote bv ON b.bill_id = bv.bill_id
+        END as vote_text,
+        bv.roll_call_date as vote_date,
+        b.bill_id,
+        b.bill_number,
+        b.title,
+        b.description,
+        st.state_abbr,
+        bv.roll_call_desc,
+        bv.yea,
+        bv.nay,
+        bv.nv,
+        bv.absent,
+        bv.passed
+      FROM ls_bill_vote bv
       INNER JOIN ls_bill_vote_detail bvd ON bv.roll_call_id = bvd.roll_call_id
+      INNER JOIN ls_bill b ON bv.bill_id = b.bill_id
       INNER JOIN ls_state st ON b.state_id = st.state_id
-      WHERE bvd.people_id = ${params.id}
+      WHERE bvd.people_id = ${params.sponsorId}
       AND b.bill_type_id = 1
       ORDER BY bv.roll_call_date DESC
       LIMIT 50

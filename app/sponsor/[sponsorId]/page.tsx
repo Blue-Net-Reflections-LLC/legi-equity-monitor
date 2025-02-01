@@ -2,14 +2,14 @@ import db from "@/lib/db";
 import { notFound } from "next/navigation";
 import { Card } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
-import BackButton from '@/app/[state]/bill/[id]/BackButton';
-import Image from 'next/image';
+import BackButton from '@/app/[stateCode]/bill/[billId]/BackButton';
 import { OverallChart, CategoryChart } from '@/app/components/analytics/SponsorCharts';
 import { SubgroupBarChart } from '@/app/components/analytics/SubgroupBarChart';
 import { VotingHistory } from '@/app/components/sponsor/VotingHistory';
 import { Footer } from "@/app/components/layout/Footer";
 import { SponsoredBillsList } from '@/app/components/sponsor/SponsoredBillsList';
 import { Metadata } from 'next';
+import SponsorImage from '@/app/components/sponsor/SponsorImage';
 
 interface SubgroupScore {
   subgroup_code: string;
@@ -309,20 +309,40 @@ async function getVoteCounts(peopleId: string): Promise<VoteCount[]> {
   return counts;
 }
 
+interface Props {
+  params: { sponsorId: string }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const sponsor = await getSponsor(params.sponsorId);
+  
+  if (!sponsor) {
+    return {
+      title: 'Sponsor Not Found - LegiEquity',
+      description: 'The requested sponsor could not be found.',
+    }
+  }
+
+  return {
+    title: `${sponsor.name} - Legislative Profile - LegiEquity`,
+    description: `View ${sponsor.name}'s legislative profile, including sponsored bills, voting record, and demographic impact analysis.`,
+  }
+}
+
 export default async function SponsorPage({ 
   params 
 }: { 
-  params: { id: string } 
+  params: { sponsorId: string } 
 }) {
-  const sponsor = await getSponsor(params.id);
+  const sponsor = await getSponsor(params.sponsorId);
   
   if (!sponsor) {
     notFound();
   }
 
   const [sponsoredBills, voteCounts] = await Promise.all([
-    getSponsoredBills(params.id),
-    getVoteCounts(params.id)
+    getSponsoredBills(params.sponsorId),
+    getVoteCounts(params.sponsorId)
   ]);
 
   const sponsoredAnalytics = aggregateAnalytics(sponsoredBills);
@@ -352,19 +372,12 @@ export default async function SponsorPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Sidebar */}
           <div className="space-y-6">
-            {sponsor.votesmart_id && (
-              <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden">
-                <Image
-                  src={`https://static.votesmart.org/static/canphoto/${sponsor.votesmart_id}.jpg`}
-                  alt={sponsor.name}
-                  fill
-                  className="object-contain"
-                  sizes="(min-width: 1024px) 480px, 100vw"
-                  quality={100}
-                  priority
-                />
-              </div>
-            )}
+            <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+              <SponsorImage
+                votesmartId={sponsor.votesmart_id}
+                name={sponsor.name}
+              />
+            </div>
 
             {/* External Links */}
             <Card className="p-6">
@@ -492,7 +505,7 @@ export default async function SponsorPage({
               {/* Voting History */}
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Recent Votes</h2>
-                <VotingHistory sponsorId={params.id} />
+                <VotingHistory sponsorId={params.sponsorId} />
               </Card>
             </div>
           </div>
@@ -501,37 +514,4 @@ export default async function SponsorPage({
       <Footer />
     </div>
   );
-}
-
-interface Props {
-  params: { id: string }
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const sponsor = await getSponsor(params.id);
-  if (!sponsor) return {};
-
-  const title = `${sponsor.name} - Legislative Analysis | LegiEquity`;
-  const description = `Analyzing the demographic impact of legislation sponsored by ${sponsor.name}, ${sponsor.role_name} from ${sponsor.state_name}`;
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      images: [{
-        url: `/api/og/sponsor?id=${params.id}&state=${sponsor.state_abbr}`,
-        width: 1200,
-        height: 630,
-        alt: title
-      }]
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [`/api/og/sponsor?id=${params.id}&state=${sponsor.state_abbr}`],
-    }
-  };
 }

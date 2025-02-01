@@ -6,8 +6,8 @@ import { BillFilters } from "./BillFilters";
 import type { BillFilters as BillFiltersType } from "@/app/types/filters";
 import { FilterIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip";
 import { VisuallyHidden } from "@/app/components/ui/visually-hidden";
 
@@ -18,8 +18,15 @@ interface BillFiltersWrapperProps {
 
 export function BillFiltersWrapper({ filters, stateCode }: BillFiltersWrapperProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [optimisticParty, setOptimisticParty] = useState<string | undefined>(filters.party);
   const [open, setOpen] = useState(false);
+
+  // Update optimisticParty when URL changes
+  useEffect(() => {
+    const partyParam = searchParams.get('party');
+    setOptimisticParty(partyParam || undefined);
+  }, [searchParams]);
 
   const handlePartyChange = useCallback((party: string) => {
     // Optimistically update the UI

@@ -6,15 +6,14 @@ function isStateCode(param: string): boolean {
   return param.length === 2;
 }
 
-export default function StateLayout({
-  children,
-  params,
-}: {
+interface Props {
   children: React.ReactNode;
-  params: { state: string };
-}) {
+  params: { stateCode: string };
+}
+
+export default function StateLayout({ children, params }: Props) {
   // If it's not a valid state code format, show 404
-  if (!isStateCode(params.state)) {
+  if (!isStateCode(params.stateCode)) {
     notFound();
   }
 

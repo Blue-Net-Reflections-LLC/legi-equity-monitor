@@ -8,27 +8,10 @@ import { StateIcon } from './StateIcon'
 import { Star as StarIcon } from 'lucide-react'
 import { memo } from 'react'
 
-const AVATAR_COLORS = [
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-purple-500',
-  'bg-pink-500',
-  'bg-indigo-500',
-  'bg-orange-500',
-  'bg-teal-500',
-  'bg-red-500',
-  'bg-cyan-500',
-  'bg-rose-500',
-]
-
-function getAvatarColor(id: number): string {
-  return AVATAR_COLORS[id % AVATAR_COLORS.length]
-}
-
 interface SearchResultsProps {
   results: SearchResult[]
   isLoading: boolean
-  onItemClick?: () => void
+  onItemClick?: (item: SearchResult) => void
 }
 
 export const SearchResults = memo(function SearchResults({ 
@@ -40,9 +23,13 @@ export const SearchResults = memo(function SearchResults({
   const bills = results.filter(r => r.type === 'bill').slice(0, 50)
   const sponsors = results.filter(r => r.type === 'sponsor').slice(0, 50)
 
-  const handleItemClick = (path: string) => {
-    if (onItemClick) onItemClick()
-    router.push(path)
+  const handleItemClick = (item: SearchResult) => {
+    const href = item.type === 'bill' 
+      ? `/${(item.item as Bill).state_abbr.toLowerCase()}/bill/${(item.item as Bill).bill_id}`
+      : `/sponsor/${(item.item as Sponsor).people_id}`
+      
+    if (onItemClick) onItemClick({ ...item, href })
+    router.push(href)
   }
 
   if (!results.length) {
@@ -75,7 +62,7 @@ export const SearchResults = memo(function SearchResults({
                   <SponsorResult 
                     key={sponsor.people_id}
                     sponsor={sponsor}
-                    onClick={() => handleItemClick(`/sponsor/${sponsor.people_id}`)}
+                    onClick={() => handleItemClick(result)}
                   />
                 )
               })}
@@ -95,7 +82,7 @@ export const SearchResults = memo(function SearchResults({
                   <BillResult 
                     key={bill.bill_id}
                     bill={bill}
-                    onClick={() => handleItemClick(`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`)}
+                    onClick={() => handleItemClick(result)}
                   />
                 )
               })}
@@ -149,23 +136,39 @@ const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponso
       onClick={onClick}
     >
       {sponsor.votesmart_id ? (
-        <div className="relative w-9 h-9 rounded overflow-hidden">
+        <div className="relative w-9 h-9" data-sponsor-id={sponsor.people_id}>
           <Image
             src={`https://static.votesmart.org/static/canphoto/${sponsor.votesmart_id}.jpg`}
             alt={sponsor.name}
             fill
             className="object-cover"
-            sizes="36px"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/images/placeholder-headshot.png';
+            sizes="48px"
+            onError={() => {
+              const imgContainer = document.querySelector(`[data-sponsor-id="${sponsor.people_id}"]`);
+              if (imgContainer) {
+                imgContainer.innerHTML = `
+                  <div class="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+                    <svg 
+                      class="w-8 h-8 text-zinc-400"
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                `;
+              }
             }}
           />
         </div>
       ) : (
-        <div className={`w-9 h-9 rounded ${getAvatarColor(sponsor.people_id)} flex items-center justify-center text-sm font-medium text-white`}>
-          {sponsor.first_name[0]}{sponsor.last_name[0]}
-        </div>
+        <AvatarPlaceholder />
       )}
       <div className="min-w-0 flex-1">
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -177,4 +180,24 @@ const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponso
       </div>
     </div>
   )
-}) 
+})
+
+function AvatarPlaceholder() {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+      <svg 
+        className="w-8 h-8 text-zinc-400" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1}
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
+      </svg>
+    </div>
+  );
+} 
