@@ -44,8 +44,9 @@ export default function AboutPage() {
             <div className="mb-12">
               <h2 className="text-3xl font-bold mb-6 text-zinc-900 dark:text-white">Our Vision</h2>
               <p className="text-lg leading-relaxed text-zinc-700 dark:text-zinc-300">
-                <Link href="https://voterai.chat" className="hover:text-zinc-800 dark:hover:text-zinc-300">LegiEquity</Link> represents a groundbreaking collaboration between <Link href="https://voterai.chat" className="hover:text-zinc-800 dark:hover:text-zinc-300">VoterAI</Link> and <Link href="https://bluenetreflection.com" className="hover:text-zinc-800 dark:hover:text-zinc-300">BLUE NET REFLECTION, LLC</Link>, 
+                <Link href="https://legiequity.us" className="hover:text-zinc-800 dark:hover:text-zinc-300 link-underline">LegiEquity</Link> represents a groundbreaking collaboration between <Link href="https://voterai.chat" className="hover:text-zinc-800 dark:hover:text-zinc-300 link-underline">VoterAI</Link> and <Link href="http://bluenetreflections.com" className="hover:text-zinc-800 dark:hover:text-zinc-300 link-underline">BLUE NET REFLECTION, LLC</Link>, 
                 dedicated to revolutionizing how we understand and interact with legislative processes. 
+
                 Through advanced AI analysis, we&apos;re making complex legislative information accessible and 
                 meaningful to everyone.
 
