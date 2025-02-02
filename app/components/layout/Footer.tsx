@@ -13,10 +13,12 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">LegiEquity</h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              A collaboration between VoterAI and Bluenetreflection
+              A collaboration between <Link href="https://voterai.chat" className="hover:text-zinc-800 dark:hover:text-zinc-300">VoterAI</Link> and <Link href="http://bluenetreflections.com" className="hover:text-zinc-800 dark:hover:text-zinc-300">BLUE NET REFLECTION, LLC</Link>
             </p>
+
             <div className="flex items-center space-x-2 text-sm text-zinc-500 dark:text-zinc-400">
               <Mail className="w-4 h-4" />
+
               <a href="mailto:info@voterai.chat" className="hover:text-zinc-800 dark:hover:text-zinc-300">
                 info@voterai.chat
               </a>
@@ -89,10 +91,11 @@ export function Footer() {
         {/* Copyright */}
         <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
           <div className="text-sm text-center text-zinc-500 dark:text-zinc-400">
-            © 2025 BLUE NET REFLECTIONS, LLC. All rights reserved.
+            © 2025 <Link href="http://bluenetreflections.com" className="hover:text-zinc-800 dark:hover:text-zinc-300">BLUE NET REFLECTIONS, LLC</Link>. All rights reserved.
           </div>
         </div>
       </div>
+
     </footer>
   );
 } 
