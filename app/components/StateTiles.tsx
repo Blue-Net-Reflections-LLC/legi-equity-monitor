@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { STATES, State } from '../constants/states';
+import { STATES } from '../constants/states';
 
 export default function StateTiles() {
   return (
