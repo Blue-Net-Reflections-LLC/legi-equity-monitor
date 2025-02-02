@@ -78,7 +78,7 @@ export function BillCard({ bill }: BillCardProps) {
     // Neutral - show the higher of the two scores
     return { 
       color: "text-neutral-500", 
-      label: "Neutral Impact",
+      label: "Neutral",
       Icon: MinusCircle,
       score: Math.max(positiveScore, biasScore)
     };
@@ -105,15 +105,13 @@ export function BillCard({ bill }: BillCardProps) {
                   const { Icon } = getImpactDisplay(bill.analysis_results);
                   return <Icon className="w-4 h-4" />;
                 })()}
-                <span className="hidden lg:inline">
+                <span className="hidden xl:inline lg:hidden">
                   {getImpactDisplay(bill.analysis_results).score >= 60 
-                    ? `${bill.analysis_results.overall_score}% ${getImpactDisplay(bill.analysis_results).label}`
-                    : 'Neutral'}
+                    ? `${bill.analysis_results.overall_score}%`
+                    : ''} {getImpactDisplay(bill.analysis_results).label}
                 </span>
-                <span className="inline lg:hidden">
-                  {getImpactDisplay(bill.analysis_results).score >= 60 
-                    ? getImpactDisplay(bill.analysis_results).label
-                    : 'Neutral'}
+                <span className="inline lg:inline xl:hidden">
+                  {getImpactDisplay(bill.analysis_results).label}
                 </span>
               </span>
             ) : null}
@@ -149,7 +147,7 @@ export function BillCard({ bill }: BillCardProps) {
           )}
 
           {/* Sponsors Info and Date */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg !my-4">
+          <div className="grid grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg !my-4">
             {/* Action Date */}
             <div className="flex flex-col">
               <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
@@ -159,7 +157,7 @@ export function BillCard({ bill }: BillCardProps) {
                 Date
               </div>
               <div className="text-sm">
-                {new Date(bill.latest_action_date).toLocaleDateString()}
+                {bill.latest_action_date ? new Date(bill.latest_action_date).toLocaleDateString() : 'No date available'}
               </div>
             </div>
             
@@ -177,7 +175,7 @@ export function BillCard({ bill }: BillCardProps) {
             </div>
 
             {/* Party */}
-            <div className="flex flex-col">
+            <div className="flex lg:hidden xl:flex flex-col">
               <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400 mb-1">
                 <Flag className="w-4 h-4" />
                 Party

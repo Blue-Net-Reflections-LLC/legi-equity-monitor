@@ -38,15 +38,20 @@ interface FilterPillsProps {
 }
 
 export function FilterPills({ 
-  categoryFilters, 
+  categoryFilters = [],
   billFilters, 
-  filters, 
+  filters = {},
   searchParams, 
   stateCode 
 }: FilterPillsProps) {
   const router = useRouter();
 
-  if (!(categoryFilters.length > 0 || filters.party || filters.support || filters.committee)) {
+  const hasActiveFilters = (categoryFilters?.length > 0) || 
+    filters.party || 
+    filters.support || 
+    ((filters.committee ?? []).length > 0);
+
+  if (!hasActiveFilters) {
     return null;
   }
 
@@ -54,7 +59,7 @@ export function FilterPills({
     <div className="flex items-center gap-3">
       <div className="flex flex-wrap gap-2 justify-end">
         {/* Category filters with impact types */}
-        {categoryFilters.map(({ id }) => {
+        {categoryFilters?.map(({ id }) => {
           const category = billFilters.categories.find(c => c.id === id);
           if (!category || !categoryColors[id as keyof typeof categoryColors]) return null;
           const selectedImpacts = category.impactTypes.filter(i => i.selected);

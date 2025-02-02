@@ -3,7 +3,7 @@ import db from "@/lib/db";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { sponsorId: string } }
 ) {
   try {
     const [sponsor] = await db`
@@ -34,7 +34,7 @@ export async function GET(
       INNER JOIN ls_party pa ON p.party_id = pa.party_id
       INNER JOIN ls_role r ON p.role_id = r.role_id
       INNER JOIN ls_state st ON p.state_id = st.state_id
-      WHERE p.people_id = ${params.id}
+      WHERE p.people_id = ${params.sponsorId}
     `
 
     if (!sponsor) {

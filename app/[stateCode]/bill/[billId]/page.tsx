@@ -51,6 +51,7 @@ interface Sponsor {
   role_name: string;
   sponsor_type_desc: string;
   votesmart_id: string | null;
+  sponsor_order: number;
 }
 
 interface RollCall {
@@ -63,6 +64,12 @@ interface RollCall {
   absent: number;
   passed: number;
   roll_call_body_name: string;
+  votes: Array<{
+    people_id: number;
+    name: string;
+    party_name: string;
+    vote_desc: string;
+  }>;
 }
 
 interface BillHistory {
@@ -117,12 +124,15 @@ interface BillAnalysis {
 }
 
 interface Props {
-  params: { state: string; id: string }
+  params: { 
+    stateCode: string;  // The state code (e.g., 'CA', 'NY')
+    billId: string;    // The bill ID
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const stateCode = params.state.toUpperCase();
-  const bill = await getBill(stateCode, params.id);
+  const stateCode = params.stateCode.toUpperCase();
+  const bill = await getBill(stateCode, params.billId);
   
   if (!bill) {
     return {
@@ -143,11 +153,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${title} - ${stateName} Legislature`,
       description,
-      url: `https://legiequity.us/${params.state.toLowerCase()}/bill/${params.id}`,
+      url: `https://legiequity.us/${params.stateCode.toLowerCase()}/bill/${params.billId}`,
       siteName: 'LegiEquity',
       images: [
         {
-          url: `https://legiequity.us/api/og/bill?state=${stateCode}&id=${params.id}`,
+          url: `https://legiequity.us/api/og/bill?state=${stateCode}&id=${params.billId}`,
           width: 1200,
           height: 630,
           alt: `${bill.bill_number} - ${stateName} Legislature`,
@@ -160,7 +170,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: `${title} - ${stateName} Legislature`,
       description,
-      images: [`https://legiequity.us/api/og/bill?state=${stateCode}&id=${params.id}`],
+      images: [`https://legiequity.us/api/og/bill?state=${stateCode}&id=${params.billId}`],
     },
   }
 }
@@ -268,6 +278,7 @@ async function getSponsors(billId: string): Promise<Sponsor[]> {
       bs.party_name,
       bs.role_name,
       bs.sponsor_type_desc,
+      bs.sponsor_order,
       p.votesmart_id
     FROM lsv_bill_sponsor bs
     LEFT JOIN ls_people p ON bs.people_id = p.people_id
@@ -277,21 +288,60 @@ async function getSponsors(billId: string): Promise<Sponsor[]> {
 }
 
 async function getRollCalls(billId: string): Promise<RollCall[]> {
-  return db`
+  const rollCalls = await db`
     SELECT 
-      roll_call_id,
-      roll_call_date,
-      roll_call_desc,
-      yea,
-      nay,
-      nv,
-      absent,
-      passed,
-      roll_call_body_name
-    FROM lsv_bill_vote
-    WHERE bill_id = ${billId}
-    ORDER BY roll_call_date DESC
+      bv.roll_call_id,
+      bv.roll_call_date,
+      bv.roll_call_desc,
+      bv.yea,
+      bv.nay,
+      bv.nv,
+      bv.absent,
+      bv.passed,
+      bv.roll_call_body_name
+    FROM lsv_bill_vote bv
+    WHERE bv.bill_id = ${billId}
+    ORDER BY bv.roll_call_date DESC
   `;
+
+  // Fetch individual votes for each roll call
+  const rollCallsWithVotes = await Promise.all(
+    rollCalls.map(async (rollCall) => {
+      const votes = await db`
+        SELECT 
+          bvd.people_id,
+          p.name,
+          pa.party_name,
+          v.vote_desc
+        FROM ls_bill_vote_detail bvd
+        INNER JOIN ls_people p ON bvd.people_id = p.people_id
+        INNER JOIN ls_party pa ON p.party_id = pa.party_id
+        INNER JOIN ls_vote v ON bvd.vote_id = v.vote_id
+        WHERE bvd.roll_call_id = ${rollCall.roll_call_id}
+        ORDER BY p.name
+      `;
+      
+      return {
+        roll_call_id: Number(rollCall.roll_call_id),
+        roll_call_date: new Date(rollCall.roll_call_date),
+        roll_call_desc: String(rollCall.roll_call_desc),
+        yea: Number(rollCall.yea),
+        nay: Number(rollCall.nay),
+        nv: Number(rollCall.nv),
+        absent: Number(rollCall.absent),
+        passed: Number(rollCall.passed),
+        roll_call_body_name: String(rollCall.roll_call_body_name),
+        votes: votes.map(v => ({
+          people_id: Number(v.people_id),
+          name: String(v.name),
+          party_name: String(v.party_name),
+          vote_desc: String(v.vote_desc)
+        }))
+      } satisfies RollCall;
+    })
+  );
+
+  return rollCallsWithVotes;
 }
 
 async function getBillHistory(billId: string): Promise<BillHistory[]> {
@@ -371,18 +421,18 @@ async function getBillAnalysis(billId: string): Promise<BillAnalysis | null> {
 export default async function BillPage({ 
   params 
 }: { 
-  params: { state: string; id: string } 
+  params: { stateCode: string; billId: string } 
 }) {
-  const stateCode = params.state.toUpperCase();
+  const stateCode = params.stateCode.toUpperCase();
   
   const [bill, sponsors, rollCalls, history, documents, analysis, amendments] = await Promise.all([
-    getBill(stateCode, params.id),
-    getSponsors(params.id),
-    getRollCalls(params.id),
-    getBillHistory(params.id),
-    getBillDocuments(params.id),
-    getBillAnalysis(params.id),
-    getAmendments(params.id)
+    getBill(stateCode, params.billId),
+    getSponsors(params.billId),
+    getRollCalls(params.billId),
+    getBillHistory(params.billId),
+    getBillDocuments(params.billId),
+    getBillAnalysis(params.billId),
+    getAmendments(params.billId)
   ]);
   
   if (!bill) {
@@ -595,10 +645,7 @@ export default async function BillPage({
             {sponsors.length > 0 && (
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Sponsors</h2>
-                <SponsorList sponsors={sponsors.sort((a, b) => 
-                  a.sponsor_type_desc === 'Primary Sponsor' ? -1 : 
-                  b.sponsor_type_desc === 'Primary Sponsor' ? 1 : 0
-                )} />
+                <SponsorList sponsors={sponsors} />
               </Card>
             )}
 

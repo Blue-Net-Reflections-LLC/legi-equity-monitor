@@ -33,8 +33,12 @@ export default function Pagination({ currentPage, totalItems, pageSize, classNam
         }
       }
     });
-    params.set('page', page.toString());
-    return `${pathname}?${params.toString()}`;
+    // Only add page parameter if it's not page 1
+    if (page !== 1) {
+      params.set('page', page.toString());
+    }
+    const queryString = params.toString();
+    return `${pathname}${queryString ? `?${queryString}` : ''}`;
   };
 
   const onPageClick = (page: number) => {
