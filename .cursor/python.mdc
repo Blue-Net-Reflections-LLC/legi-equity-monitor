@@ -1,0 +1,146 @@
+---
+description: 
+globs: 
+---
+ ---
+description: Python code standards and best practices
+globs: ["*.py"]
+---
+
+You are an expert in Python, SQLAlchemy, FastAPI, asyncio, and ML/NLP tools (PyTorch, transformers, UMAP, HDBSCAN).
+
+Code Style and Structure
+- Follow PEP 8 style guide with modern Python idioms
+- Use type hints consistently
+- Prefer composition over inheritance
+- Keep functions focused and small (under 50 lines)
+- Use descriptive variable names (e.g., is_loading, has_error)
+- Structure modules: imports, constants, classes, functions
+- Use absolute imports from project root
+
+Code Organization
+- Group related functionality into modules
+- Use __init__.py to define public API
+- Keep one class per file when possible
+- Structure directories by feature/domain
+- Use relative imports only within a package
+
+Naming Conventions
+- Use snake_case for functions and variables
+- Use PascalCase for classes
+- Use UPPER_CASE for constants
+- Prefix private attributes with underscore
+- Use verb phrases for function names
+- Use noun phrases for class names
+
+Python Best Practices
+- Use dataclasses or Pydantic for data models
+- Implement proper exception handling
+- Use context managers (with statements)
+- Follow SOLID principles
+- Use dependency injection
+- Implement proper logging
+- Use f-strings for string formatting
+- Use pathlib instead of os.path
+- Use type annotations and generics
+
+Async Programming
+- Use asyncio for async/await patterns
+- Handle coroutines properly
+- Use proper async context managers
+- Implement proper connection pooling
+- Handle task cancellation gracefully
+- Use proper error handling in async code
+
+Database Practices
+- Use SQLAlchemy Core for raw SQL
+- Use SQLAlchemy ORM for object mapping
+- Implement proper connection pooling
+- Use migrations for schema changes
+- Implement proper transaction handling
+- Use appropriate indexes
+- Follow normalization rules
+- Handle connection errors gracefully
+
+ML/NLP Best Practices
+- Implement proper model loading/unloading
+- Handle CUDA/CPU fallbacks gracefully
+- Implement proper batching
+- Use proper data preprocessing
+- Implement proper error handling
+- Use appropriate data structures
+- Follow memory management best practices
+- Implement proper logging for ML operations
+
+Error Handling
+- Use specific exceptions
+- Implement proper error logging
+- Use try/except blocks appropriately
+- Implement proper cleanup in finally blocks
+- Use context managers for resource handling
+- Implement proper error messages
+- Handle edge cases explicitly
+
+Logging
+- Use proper logging levels
+- Implement structured logging
+- Use proper log formatting
+- Implement proper log rotation
+- Use proper log handlers
+- Include relevant context in logs
+- Follow logging hierarchy
+
+Testing
+- Write unit tests with pytest
+- Implement proper test fixtures
+- Use proper test assertions
+- Implement proper test coverage
+- Use proper test naming
+- Implement proper test isolation
+- Use proper test categories
+
+Performance
+- Use proper data structures
+- Implement proper caching
+- Use generators for large datasets
+- Implement proper memory management
+- Use proper batch processing
+- Implement proper indexing
+- Use proper async patterns
+
+Security
+- Implement proper input validation
+- Use proper password hashing
+- Implement proper access control
+- Use proper SSL/TLS
+- Handle sensitive data properly
+- Implement proper session management
+- Use proper security headers
+
+Configuration
+- Use environment variables
+- Implement proper config validation
+- Use proper config hierarchy
+- Handle config errors gracefully
+- Use proper defaults
+- Implement proper config loading
+- Use proper config types
+
+Documentation
+- Write clear docstrings (Google style)
+- Document exceptions
+- Document parameters
+- Document return types
+- Include usage examples
+- Document side effects
+- Keep documentation up to date
+
+Key Conventions
+- Use Poetry for dependency management
+- Use pre-commit hooks
+- Follow semantic versioning
+- Use proper package structure
+- Implement proper CI/CD
+- Use proper linting (ruff)
+- Use proper formatting (black)
+- Use proper type checking (mypy)
