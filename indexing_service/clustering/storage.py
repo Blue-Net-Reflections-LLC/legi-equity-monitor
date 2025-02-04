@@ -19,8 +19,10 @@ def generate_cluster_dml(clusters: list, metadata: list, embeddings: np.ndarray,
     # Initialize batches
     cluster_batches = []
     bill_batches = []
+    analysis_batches = []
     current_cluster_batch = []
     current_bill_batch = []
+    current_analysis_batch = []
     
     # Process each cluster
     for cluster_info in clusters:
@@ -35,6 +37,14 @@ def generate_cluster_dml(clusters: list, metadata: list, embeddings: np.ndarray,
             'min_date': cluster_info['min_date'],
             'max_date': cluster_info['max_date'],
             'cluster_description': '',  # Can be populated later with analysis
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow()
+        })
+        
+        # Add pending analysis record
+        current_analysis_batch.append({
+            'analysis_id': uuid.uuid4(),
+            'cluster_id': cluster_id,
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         })
@@ -58,10 +68,13 @@ def generate_cluster_dml(clusters: list, metadata: list, embeddings: np.ndarray,
         if len(current_cluster_batch) >= batch_size:
             cluster_batches.append(current_cluster_batch)
             current_cluster_batch = []
+            analysis_batches.append(current_analysis_batch)
+            current_analysis_batch = []
     
     # Add any remaining items to batches
     if current_cluster_batch:
         cluster_batches.append(current_cluster_batch)
+        analysis_batches.append(current_analysis_batch)
     if current_bill_batch:
         bill_batches.append(current_bill_batch)
     
@@ -99,6 +112,29 @@ def generate_cluster_dml(clusters: list, metadata: list, embeddings: np.ndarray,
         
         if dry_run:
             logger.info(f"Would insert {len(batch)} clusters")
+    
+    # Analysis insert statements
+    for batch in analysis_batches:
+        analysis_ids = [a['analysis_id'] for a in batch]
+        cluster_ids = [a['cluster_id'] for a in batch]
+        created_ats = [a['created_at'] for a in batch]
+        updated_ats = [a['updated_at'] for a in batch]
+        
+        stmt = """
+        INSERT INTO cluster_analysis (
+            analysis_id, cluster_id, status, created_at, updated_at
+        ) SELECT * FROM unnest(
+            $1::uuid[], $2::uuid[], $3::analysis_status[], $4::timestamptz[], $5::timestamptz[]
+        )
+        """
+        dml_statements.append((stmt, (
+            analysis_ids, cluster_ids, 
+            ['pending'] * len(batch),  # Default status for all records
+            created_ats, updated_ats
+        )))
+        
+        if dry_run:
+            logger.info(f"Would insert {len(batch)} pending analysis records")
     
     # Bill membership insert statements
     for batch in bill_batches:
