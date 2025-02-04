@@ -6,11 +6,15 @@ import logging
 import asyncio
 import argparse
 from pathlib import Path
+import asyncpg
+from typing import Optional
+import os
 
 from .embeddings import EmbeddingGenerator
 from .clustering import cluster_embeddings, reduce_dimensions
 from .analysis import analyze_clusters, generate_cluster_report
 from .data import fetch_bills
+from .storage import store_clusters, generate_cluster_dml
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -19,6 +23,15 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 MODELS_DIR = PROJECT_ROOT / "models"
 DEFAULT_MODEL_DIR = MODELS_DIR / "bge-m3"
+
+async def get_db_connection(db_url: str) -> Optional[asyncpg.Connection]:
+    """Create database connection."""
+    try:
+        conn = await asyncpg.connect(db_url)
+        return conn
+    except Exception as e:
+        logger.error(f"Database connection error: {str(e)}")
+        return None
 
 async def main():
     parser = argparse.ArgumentParser(description='Bill clustering service')
@@ -29,6 +42,8 @@ async def main():
     parser.add_argument('--model-path', type=str, default=str(DEFAULT_MODEL_DIR), 
                        help='Path to the model directory (absolute path or relative to project root)')
     parser.add_argument('--use-local', action='store_true', help='Use local model files only')
+    parser.add_argument('--dry-run', action='store_true', help='Generate SQL but do not execute')
+    parser.add_argument('--batch-size', type=int, default=1000, help='Batch size for database operations')
     
     args = parser.parse_args()
     
@@ -66,6 +81,33 @@ async def main():
         
         # 5. Generate clustering report
         generate_cluster_report(clusters, metadata, embeddings, labels)
+
+        # 6. Store results
+        # Get database connection from environment
+        db_url = os.getenv('LEGISCAN_DB_URL')
+        if not db_url:
+            raise ValueError("LEGISCAN_DB_URL environment variable is required")
+            
+        conn = await get_db_connection(db_url)
+        if conn is None:
+            raise RuntimeError("Failed to connect to database")
+            
+        try:
+            await store_clusters(
+                conn=conn,
+                clusters=clusters,
+                metadata=metadata,
+                embeddings=embeddings,
+                labels=labels,
+                batch_size=args.batch_size,
+                dry_run=args.dry_run
+            )
+            if args.dry_run:
+                logger.info("Dry run completed - all changes rolled back")
+            else:
+                logger.info("Successfully stored clustering results")
+        finally:
+            await conn.close()
             
     except ValueError as ve:
         logger.error(f"Invalid input: {str(ve)}")
