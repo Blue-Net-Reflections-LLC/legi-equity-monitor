@@ -17,19 +17,19 @@ def reduce_dimensions(embeddings: np.ndarray) -> np.ndarray:
     # Normalize embeddings
     normalized = normalize(embeddings)
     
-    # Configure UMAP - increase dimensions and adjust for better separation
+    # Configure UMAP for optimal CPU performance
     reducer = UMAP(
-        n_components=256,          # Increased from 128 to preserve more information
-        n_neighbors=50,           # Increased to capture more global structure
-        min_dist=0.05,           # Reduced to allow tighter clusters
+        n_components=256,
+        n_neighbors=50,
+        min_dist=0.05,
         metric='cosine',
-        random_state=42
+        random_state=42,
+        n_jobs=-1  # Use all available CPU cores
     )
     
     # Reduce dimensions
     reduced = reducer.fit_transform(normalized)
     logger.info(f"Reduced shape: {reduced.shape}")
-    
     return reduced
 
 def cluster_embeddings(reduced_embeddings: np.ndarray):
@@ -37,12 +37,13 @@ def cluster_embeddings(reduced_embeddings: np.ndarray):
     logger.info("\nClustering reduced embeddings...")
     
     clusterer = hdbscan.HDBSCAN(
-        min_cluster_size=12,      # Reduced from 15 to allow more granular clusters
-        min_samples=4,            # Increased from 3 for more reliable clusters
-        cluster_selection_epsilon=0.2,  # Increased from 0.15 to merge similar clusters
+        min_cluster_size=12,
+        min_samples=4,
+        cluster_selection_epsilon=0.2,
         metric='euclidean',
-        cluster_selection_method='eom',  # Keep EOM for better separation
-        prediction_data=True
+        cluster_selection_method='eom',
+        prediction_data=True,
+        core_dist_n_jobs=-1  # Use all available CPU cores
     )
     
     labels = clusterer.fit_predict(reduced_embeddings)

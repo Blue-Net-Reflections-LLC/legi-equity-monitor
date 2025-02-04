@@ -29,5 +29,6 @@ hdbscan==0.8.40
 pandas==2.2.0
 scipy==1.12.0
 
-# GPU support (optional)
-cupy-cuda12x==12.3.0  # For CUDA 12.x support 
+# Note: RAPIDS packages (cudf and cuml) should be installed via conda:
+# conda install -c rapidsai -c conda-forge -c nvidia \
+#   cudf=24.2 cuml=24.2 python=3.12 cuda-version=12.0 
