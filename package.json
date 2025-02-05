@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "analyze": "npx tsx scripts/process-all-bills.ts"
+    "analyze": "npx tsx scripts/process-all-bills.ts",
+    "cluster:analyze": "npx tsx analysis_service/src/cluster-analysis.ts",
+    "cluster:dry-run": "npx tsx analysis_service/src/cluster-analysis.ts --dry-run"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.3.2",
@@ -38,7 +40,8 @@
     "stopword": "^3.1.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.0.5"
+    "uuid": "^11.0.5",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0",

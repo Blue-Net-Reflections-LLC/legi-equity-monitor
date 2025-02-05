@@ -28,6 +28,71 @@ def get_week_dates(week: int, year: int) -> Tuple[datetime, datetime]:
     
     return start_date, end_date
 
+def is_template_bill(title: str, description: str) -> bool:
+    """Detect if a bill is a template/shell bill."""
+    if not title or not description:
+        return False
+        
+    # Check for Oklahoma template patterns
+    ok_patterns = [
+        # Standard format
+        r'^[^;]+; Oklahoma [A-Za-z\s]+ Act of \d{4}; effective date\.$',
+        # Variation without Oklahoma prefix
+        r'^[^;]+; [A-Za-z\s]+ Act of \d{4}; effective date\.$',
+        # Variation with period instead of semicolon
+        r'^[^;]+; Oklahoma [A-Za-z\s]+ Act of \d{4}\. Effective date\.$',
+        # Variation with additional details
+        r'^[^;]+; Oklahoma [A-Za-z\s]+ Act of \d{4};[^.]+; effective date\.$',
+        # Variation without semicolon prefix
+        r'^[A-Za-z\s]+; Oklahoma [A-Za-z\s]+ Act of \d{4}; effective date\.$',
+        # Variation with Emergency
+        r'^[^;]+; Oklahoma [A-Za-z\s]+ Act of \d{4}; emergency\.$',
+        # Variation with just Act of 2025
+        r'^[^;]+; [A-Za-z\s]+ Act of \d{4}; effective date$'
+    ]
+    
+    # Check for Illinois template patterns
+    il_patterns = [
+        # Technical change patterns
+        r'^[A-Z\s-]+\-TECH$',  # Matches "LOCAL GOVERNMENT-TECH", "EDUCATION-TECH", etc.
+        r'Makes a technical change in a Section concerning the short title\.$',
+        r'Makes a technical change in the short title Section\.$',
+        r'Contains only a short title provision\.$',
+        # Common Illinois template descriptions
+        r'^Amends the .+ Act\. Makes a technical change in a Section concerning .+\.$',
+        r'^Creates the .+ Act\. Contains only a short title provision\.$'
+    ]
+
+    # Check for North Dakota template patterns
+    nd_patterns = [
+        # Common title patterns
+        r'^The [a-z\s]+\.$',  # Matches simple titles like "The homestead tax credit."
+        r'^[A-Za-z\s]+ and to provide [a-z\s]+\.$',  # Matches "X and to provide a penalty."
+        
+        # Common description patterns
+        r'^A BILL for an Act to amend and reenact section \d+-\d+(?:-\d+)?(?:\.\d+)? of the North Dakota Century Code, relating to [^;]+(?:; and to provide (?:a penalty|an effective date|an appropriation|for application))?\.$',
+        r'^A BILL for an Act to create and enact (?:a new section|new sections) to chapter \d+-\d+(?:\.\d+)? of the North Dakota Century Code, relating to [^;]+(?:; and to provide (?:a penalty|an effective date|an appropriation|for application))?\.$',
+        
+        # Extremely short titles that are likely templates
+        r'^[A-Za-z\s]{1,25}\.$',  # Very short titles ending in period
+        
+        # Common boilerplate endings
+        r'; and to provide a penalty\.$',
+        r'; and to provide an effective date\.$',
+        r'; and to provide an appropriation\.$',
+        r'; and to provide for application\.$',
+        r'; and to declare an emergency\.$'
+    ]
+    
+    # Check title and description against all patterns
+    return (
+        any(bool(re.match(pattern, title, re.IGNORECASE)) for pattern in ok_patterns) or
+        any(bool(re.match(pattern, title)) for pattern in il_patterns) or  # Case sensitive for IL title patterns
+        any(bool(re.match(pattern, description)) for pattern in il_patterns) or  # Check description too
+        any(bool(re.match(pattern, title)) for pattern in nd_patterns) or  # Check ND patterns
+        any(bool(re.match(pattern, description)) for pattern in nd_patterns)  # Check ND patterns in description
+    )
+
 def prepare_bill_text(bill: Dict[str, Any]) -> str:
     """Prepare bill text for embedding by combining title and description."""
     title = (bill['title'] or '').strip()
@@ -41,22 +106,71 @@ def prepare_bill_text(bill: Dict[str, Any]) -> str:
     
     # Remove state-specific patterns
     patterns_to_remove = [
-        # State code references
-        r'^AN ACT to amend [A-Za-z\s]+ Code[^.]+\.',  # Matches any state code reference
-        r'Chapter \d+[^.]+\.',  # Chapter references
-        r'Title \d+[^.]+\.',    # Title references
-        r'Section \d+[^.]+\.',  # Section references
+        # North Dakota specific patterns
+        r'^A BILL for an Act to\s+',
+        r'amend and reenact\s+(?:section|subsection|subdivision|paragraph|chapter)\s+[\d\.\-]+(?:\s+of\s+the\s+North\s+Dakota\s+Century\s+Code)?,?\s*',
+        r'create and enact\s+(?:a new section|new sections|a new subdivision|new subdivisions|a new subsection|new subsections|a new paragraph|new paragraphs)\s+to\s+(?:section|chapter)\s+[\d\.\-]+(?:\s+of\s+the\s+North\s+Dakota\s+Century\s+Code)?,?\s*',
+        r'repeal\s+(?:section|subsection|subdivision|paragraph|chapter)\s+[\d\.\-]+(?:\s+of\s+the\s+North\s+Dakota\s+Century\s+Code)?,?\s*',
+        r'of the North Dakota Century Code,?\s*',
+        r'relating to\s+',
+        r';\s*and\s+to\s+provide\s+(?:a penalty|an effective date|an appropriation|for application)\s*',
+        r';\s*and\s+to\s+declare\s+an\s+emergency\s*',
+        r';\s*to\s+provide\s+for\s+a\s+legislative\s+management\s+(?:study|report)\s*',
+        r';\s*to\s+provide\s+for\s+application\s*',
+        r';\s*to\s+provide\s+a\s+continuing\s+appropriation\s*',
+        r';\s*to\s+provide\s+legislative\s+intent\s*',
+        r';\s*to\s+provide\s+for\s+retroactive\s+application\s*',
+        r';\s*to\s+provide\s+an\s+expiration\s+date\s*',
+        r';\s*to\s+provide\s+for\s+a\s+transfer\s*',
+        r';\s*to\s+provide\s+for\s+a\s+report\s*',
+        r';\s*to\s+provide\s+for\s+a\s+penalty\s*',
+        r';\s*to\s+provide\s+for\s+an\s+effective\s+date\s*',
+        r';\s*to\s+provide\s+for\s+retroactive\s+application\s*',
+        r';\s*to\s+provide\s+for\s+a\s+contingent\s+effective\s+date\s*',
+        r';\s*to\s+provide\s+for\s+a\s+contingent\s+expiration\s+date\s*',
+        
+        # South Carolina specific patterns
+        r'^Amend The South Carolina Code Of Laws\s+',
+        r'By Amending Section \d+-\d+-\d+[^,\.]+',
+        r'By Adding Section \d+-\d+-\d+[^,\.]+',
+        r'By Adding Article \d+ To[^,\.]+',
+        r'By Adding Chapter \d+ To[^,\.]+',
+        r'By Repealing Section \d+-\d+-\d+[^,\.]+',
+        r'Relating To[^,\.]+,\s*',
+        r'So As To\s+',
+        r'And To\s+',
+        r'To Direct[^,\.]+',
+        r'To Define[^,\.]+',
+        r'To Provide[^,\.]+',
+        r'To Make[^,\.]+',
+        r'To Designate[^,\.]+',
+        
+        # General state code references
+        r'^AN ACT to amend [A-Za-z\s]+ Code[^.]+\.',
+        r'Chapter \d+[^.]+\.',
+        r'Title \d+[^.]+\.',
+        r'Section \d+[^.]+\.',
         
         # Common prefixes
-        r'^Budget Act of \d{4}\.',  # Budget acts
+        r'^Budget Act of \d{4}\.',
         r'^As introduced,\s*',
         r'An act to\s+',
         r'An act relating to\s+',
         r'Relating to\s+',
         r'Concerning\s+',
+        r'^To\s+',
+        r'^TO CREATE\s+',
+        r'^TO AMEND\s+',
+        r'^TO ESTABLISH\s+',
+        r'^TO PROVIDE\s+',
+        r'^TO REQUIRE\s+',
+        r'^TO MODIFY\s+',
+        r'^TO IMPLEMENT\s+',
+        r'^TO AUTHORIZE\s+',
+        r'^TO MAKE\s+',
         
         # Bill numbers and identifiers
-        r'\([A-Z]+\d+\)',  # Bill numbers in parentheses
+        r'\([A-Z]+\d+\)',
         r'Bill No\. \d+',
         r'Senate Bill \d+',
         r'House Bill \d+',
@@ -66,6 +180,11 @@ def prepare_bill_text(bill: Dict[str, Any]) -> str:
         r'this state[\'s]*',
         r'state legislature',
         r'general assembly',
+        r'South Carolina Code',
+        r'South Carolina Constitution',
+        r'South Carolina State',
+        r'South Carolina Department of',
+        r'South Carolina Division of'
     ]
     
     for pattern in patterns_to_remove:
@@ -218,8 +337,14 @@ async def fetch_bills(week: int, year: int, test_mode: bool = False, model_path:
         # Prepare texts and metadata
         texts = []
         metadata = []
+        skipped_template_bills = 0
         
         for row in rows:
+            # Skip Oklahoma template bills
+            if is_template_bill(row['title'], row['description']):
+                skipped_template_bills += 1
+                continue
+                
             text = prepare_bill_text(dict(row))
             texts.append(text)
             metadata.append({
@@ -230,6 +355,9 @@ async def fetch_bills(week: int, year: int, test_mode: bool = False, model_path:
                 'created': row['created']
             })
         
+        if skipped_template_bills > 0:
+            logger.info(f"\nSkipped {skipped_template_bills} template bills")
+            
         # Analyze bill data before generating embeddings
         analyze_bill_data(metadata, texts)
         
