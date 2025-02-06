@@ -7,7 +7,7 @@ import { produce } from 'immer'
 interface AdminState {
   sidebarExpanded: boolean
   activeSection: string | null
-  loading: boolean
+  loading: Record<string, boolean>
   error: string | null
 }
 
@@ -15,14 +15,14 @@ interface AdminState {
 type AdminAction =
   | { type: 'SET_SIDEBAR_EXPANDED'; payload: boolean }
   | { type: 'SET_ACTIVE_SECTION'; payload: string | null }
-  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_LOADING'; payload: { feature: string; value: boolean } }
   | { type: 'SET_ERROR'; payload: string | null }
 
 // Initial state
 const initialState: AdminState = {
   sidebarExpanded: false,
   activeSection: null,
-  loading: false,
+  loading: {},
   error: null
 }
 
@@ -36,7 +36,7 @@ const adminReducer = produce((draft: AdminState, action: AdminAction) => {
       draft.activeSection = action.payload
       break
     case 'SET_LOADING':
-      draft.loading = action.payload
+      draft.loading[action.payload.feature] = action.payload.value
       break
     case 'SET_ERROR':
       draft.error = action.payload
@@ -73,6 +73,8 @@ export function useAdmin() {
   return {
     // State
     state,
+    loading: state.loading,
+    error: state.error,
     
     // Actions
     setSidebarExpanded: (expanded: boolean) => 
@@ -81,8 +83,8 @@ export function useAdmin() {
     setActiveSection: (section: string | null) => 
       dispatch({ type: 'SET_ACTIVE_SECTION', payload: section }),
       
-    setLoading: (loading: boolean) => 
-      dispatch({ type: 'SET_LOADING', payload: loading }),
+    setLoading: (feature: string, value: boolean) => 
+      dispatch({ type: 'SET_LOADING', payload: { feature, value } }),
       
     setError: (error: string | null) => 
       dispatch({ type: 'SET_ERROR', payload: error })
