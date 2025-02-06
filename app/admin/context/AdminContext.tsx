@@ -13,14 +13,14 @@ interface AdminState {
 
 // Define action types
 type AdminAction =
-  | { type: 'TOGGLE_SIDEBAR'; payload: boolean }
-  | { type: 'SET_ACTIVE_SECTION'; payload: string }
+  | { type: 'SET_SIDEBAR_EXPANDED'; payload: boolean }
+  | { type: 'SET_ACTIVE_SECTION'; payload: string | null }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
 
 // Initial state
 const initialState: AdminState = {
-  sidebarExpanded: false,
+  sidebarExpanded: true,
   activeSection: null,
   loading: false,
   error: null
@@ -29,18 +29,15 @@ const initialState: AdminState = {
 // Create reducer with Immer
 const adminReducer = produce((draft: AdminState, action: AdminAction) => {
   switch (action.type) {
-    case 'TOGGLE_SIDEBAR':
+    case 'SET_SIDEBAR_EXPANDED':
       draft.sidebarExpanded = action.payload
       break
-      
     case 'SET_ACTIVE_SECTION':
       draft.activeSection = action.payload
       break
-      
     case 'SET_LOADING':
       draft.loading = action.payload
       break
-      
     case 'SET_ERROR':
       draft.error = action.payload
       break
@@ -48,12 +45,10 @@ const adminReducer = produce((draft: AdminState, action: AdminAction) => {
 })
 
 // Create context with dispatch
-interface AdminContextType {
+const AdminContext = createContext<{
   state: AdminState
   dispatch: React.Dispatch<AdminAction>
-}
-
-const AdminContext = createContext<AdminContextType | undefined>(undefined)
+} | undefined>(undefined)
 
 // Create provider
 export function AdminProvider({ children }: { children: ReactNode }) {
@@ -81,9 +76,9 @@ export function useAdmin() {
     
     // Actions
     setSidebarExpanded: (expanded: boolean) => 
-      dispatch({ type: 'TOGGLE_SIDEBAR', payload: expanded }),
+      dispatch({ type: 'SET_SIDEBAR_EXPANDED', payload: expanded }),
       
-    setActiveSection: (section: string) => 
+    setActiveSection: (section: string | null) => 
       dispatch({ type: 'SET_ACTIVE_SECTION', payload: section }),
       
     setLoading: (loading: boolean) => 

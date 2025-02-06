@@ -1,116 +1,31 @@
-'use client'
+import { auth } from "@/app/(auth)/auth"
+import { redirect } from "next/navigation"
+import { ADMIN_ROLES } from "@/app/constants/user-roles"
+import { Providers } from "./context/Providers"
+import { AdminSidebar } from "./components/AdminSidebar"
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { LayoutDashboard, ScrollText, Network, ClipboardList, Users } from 'lucide-react'
-import { AdminProvider, useAdmin } from './context/AdminContext'
-
-const adminNavItems = [
-  {
-    title: 'Home',
-    href: '/admin',
-    icon: LayoutDashboard
-  },
-  {
-    title: 'Blog Posts',
-    href: '/admin/blog',
-    icon: ScrollText
-  },
-  {
-    title: 'Clustering',
-    href: '/admin/clustering',
-    icon: Network
-  },
-  {
-    title: 'Bills Analysis',
-    href: '/admin/bills',
-    icon: ClipboardList
-  },
-  {
-    title: 'Users',
-    href: '/admin/users',
-    icon: Users
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const session = await auth()
+  
+  if (!session) {
+    redirect('/login')
   }
-]
-
-function AdminLayoutContent({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const { state, setSidebarExpanded, setActiveSection } = useAdmin()
-  const pathname = usePathname()
-
-  // Update active section when pathname changes
-  useEffect(() => {
-    const section = adminNavItems.find(item => 
-      pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
-    )
-    if (section) {
-      setActiveSection(section.title)
-    }
-  }, [pathname, setActiveSection])
+  if (session?.user?.role && !ADMIN_ROLES.includes(session.user.role)) {
+    redirect('/login')
+  }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      {/* Sidebar */}
-      <div 
-        className={cn(
-          "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 transition-all duration-300 z-20",
-          state.sidebarExpanded ? "w-48" : "w-16"
-        )}
-        onMouseEnter={() => setSidebarExpanded(true)}
-        onMouseLeave={() => setSidebarExpanded(false)}
-      >
-        <nav className="p-3 space-y-2">
-          {adminNavItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center space-x-2 px-3 py-2 rounded-md transition-colors whitespace-nowrap",
-                  isActive 
-                    ? "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400" 
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                <span className={cn(
-                  "transition-opacity",
-                  state.sidebarExpanded ? "opacity-100" : "opacity-0"
-                )}>
-                  {item.title}
-                </span>
-              </Link>
-            )
-          })}
-        </nav>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 pl-16">
-        <div className="max-w-[2000px] mx-auto p-6">
+    <Providers>
+      <div className="flex h-[calc(100vh-4rem)] mt-[4rem]">
+        <AdminSidebar />
+        <main className="flex-1 overflow-y-auto pl-16">
           {children}
-        </div>
+        </main>
       </div>
-    </div>
-  )
-}
-
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <AdminProvider>
-      <AdminLayoutContent>
-        {children}
-      </AdminLayoutContent>
-    </AdminProvider>
+    </Providers>
   )
 } 
