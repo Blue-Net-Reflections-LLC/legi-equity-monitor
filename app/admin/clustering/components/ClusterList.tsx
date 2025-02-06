@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import {
   useReactTable,
@@ -9,22 +9,16 @@ import {
   getPaginationRowModel,
   getFilteredRowModel,
   flexRender,
-  type SortingState,
-  type ColumnFiltersState,
-  type PaginationState,
   type ColumnDef
 } from '@tanstack/react-table'
 import { format } from 'date-fns'
-import { useCluster } from '../context/ClusterContext'
 import { useAdmin } from '../../context/AdminContext'
 import { LoadingState } from '@/app/admin/components/LoadingState'
 import { StatusBadge } from './StatusBadge'
 import { ClusterActions } from './ClusterActions'
-import { type ClusterListItem } from '../types'
 import { Badge } from '@/components/ui/badge'
 
-// Define columns based on our design doc
-const columns: ColumnDef<ClusterListItem>[] = [
+const columns: ColumnDef<any>[] = [
   {
     id: 'cluster_id',
     header: 'Cluster ID',
@@ -95,16 +89,18 @@ const columns: ColumnDef<ClusterListItem>[] = [
 export function ClusterList() {
   const { loading, setLoading, setError } = useAdmin()
   const { 
-    items,
-    filters,
-    pagination,
-    sorting,
-    columnFilters,
-    setItems,
-    setPagination,
-    setSorting,
-    setColumnFilters
-  } = useCluster()
+    clustering: {
+      items,
+      filters,
+      pagination,
+      sorting,
+      columnFilters,
+      setItems,
+      setPagination,
+      setSorting,
+      setColumnFilters
+    }
+  } = useAdmin()
 
   // Initialize table
   const table = useReactTable({

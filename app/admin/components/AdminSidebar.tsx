@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -36,25 +35,14 @@ const adminNavItems = [
 ]
 
 export function AdminSidebar() {
-  const { state, setSidebarExpanded, setActiveSection } = useAdmin()
+  const { sidebarExpanded, setSidebarExpanded, setActiveSection } = useAdmin()
   const pathname = usePathname()
-
-  // Update active section when pathname changes
-  useEffect(() => {
-    const section = adminNavItems.find(item => 
-      pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
-    )
-    if (section) {
-      setActiveSection(section.title)
-    }
-  }, [pathname, setActiveSection])
 
   return (
     <div 
       className={cn(
-        // CURSOR: Please do not change the mt-2 padding as it looks good
         "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 transition-all duration-300 z-20 mt-2",
-        state.sidebarExpanded ? "w-48" : "w-16"
+        sidebarExpanded ? "w-48" : "w-16"
       )}
       onMouseEnter={() => setSidebarExpanded(true)}
       onMouseLeave={() => setSidebarExpanded(false)}
@@ -76,7 +64,7 @@ export function AdminSidebar() {
               <item.icon className="h-5 w-5 shrink-0" />
               <span className={cn(
                 "transition-opacity",
-                state.sidebarExpanded ? "opacity-100" : "opacity-0"
+                sidebarExpanded ? "opacity-100" : "opacity-0"
               )}>
                 {item.title}
               </span>

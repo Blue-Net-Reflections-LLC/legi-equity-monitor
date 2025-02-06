@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdmin } from '../../context/AdminContext'
 import { Button } from '@/components/ui/button'
-import { type ClusterListItem } from '../types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,12 +13,15 @@ import {
 import { MoreVertical, FileText, RefreshCw } from 'lucide-react'
 
 interface ClusterActionsProps {
-  cluster: ClusterListItem
+  cluster: {
+    cluster_id: string
+    status: string
+  }
 }
 
 export function ClusterActions({ cluster }: ClusterActionsProps) {
   const router = useRouter()
-  const { loading } = useAdmin()
+  const { loading, setLoading, setError } = useAdmin()
   const [isOpen, setIsOpen] = useState(false)
 
   const handleCreateBlogPost = async () => {
@@ -34,10 +36,12 @@ export function ClusterActions({ cluster }: ClusterActionsProps) {
       router.push(`/admin/blog/${blogPostId}`)
     } catch (error) {
       console.error('Error creating blog post:', error)
+      setError(error instanceof Error ? error.message : 'Failed to create blog post')
     }
   }
 
   const handleReanalyze = async () => {
+    setLoading('cluster-analysis', true)
     try {
       await fetch(`/admin/api/clustering/${cluster.cluster_id}/analyze`, {
         method: 'POST'
@@ -46,6 +50,9 @@ export function ClusterActions({ cluster }: ClusterActionsProps) {
       router.refresh()
     } catch (error) {
       console.error('Error triggering reanalysis:', error)
+      setError(error instanceof Error ? error.message : 'Failed to trigger reanalysis')
+    } finally {
+      setLoading('cluster-analysis', false)
     }
   }
 

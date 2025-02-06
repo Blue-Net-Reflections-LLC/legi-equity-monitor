@@ -1,25 +1,33 @@
 'use client'
 
-import { format } from 'date-fns'
-import { useCluster } from '../context/ClusterContext'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { getWeekRanges } from '@/lib/date-utils'
+import { useAdmin } from '../../context/AdminContext'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getWeek } from 'date-fns'
 
 export function ClusterFilters() {
-  const { filters, setFilters } = useCluster()
-  const weeks = getWeekRanges(filters.year)
-  
+  const { clustering: { filters, setFilters } } = useAdmin()
+
+  // Get current year and week
+  const currentYear = new Date().getFullYear()
+  const currentWeek = getWeek(new Date())
+
+  // Generate years (current year and previous year)
+  const years = [currentYear, currentYear - 1]
+
+  // Generate weeks (1-52)
+  const weeks = Array.from({ length: 52 }, (_, i) => i + 1)
+
   return (
-    <div className="flex gap-4">
+    <div className="flex items-center gap-4">
       <Select
         value={filters.year.toString()}
-        onValueChange={(year) => setFilters({ year: parseInt(year) })}
+        onValueChange={(value) => setFilters({ year: parseInt(value) })}
       >
-        <SelectTrigger>
-          {filters.year}
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Select year" />
         </SelectTrigger>
         <SelectContent>
-          {[2023, 2024].map((year) => (
+          {years.map((year) => (
             <SelectItem key={year} value={year.toString()}>
               {year}
             </SelectItem>
@@ -29,15 +37,15 @@ export function ClusterFilters() {
 
       <Select
         value={filters.week.toString()}
-        onValueChange={(week) => setFilters({ week: parseInt(week) })}
+        onValueChange={(value) => setFilters({ week: parseInt(value) })}
       >
-        <SelectTrigger>
-          Week {filters.week}
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Select week" />
         </SelectTrigger>
         <SelectContent>
-          {weeks.map((range) => (
-            <SelectItem key={range.week} value={range.week.toString()}>
-              Week {range.week}: {format(range.startDate, 'MMM d')} - {format(range.endDate, 'MMM d')}
+          {weeks.map((week) => (
+            <SelectItem key={week} value={week.toString()}>
+              Week {week}
             </SelectItem>
           ))}
         </SelectContent>
