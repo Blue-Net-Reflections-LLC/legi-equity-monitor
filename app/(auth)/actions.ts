@@ -2,17 +2,19 @@
 
 import { signIn, signOut } from './auth';
 
-export async function googleAuthenticate() {
+export async function googleAuthenticate(prompt: boolean = false) {
+  const promptObject = prompt ? { prompt: "login" } : undefined;
   await signIn('google', {
     callbackUrl: '/admin',
     redirect: true
-  }, { prompt: "login" });
+  }, promptObject);
 }
+
 
 export async function signOutAction(redirect: boolean = true) {
   await signOut({
     redirectTo: '/',
-    redirect: redirect
+    redirect
   });
 }
 
@@ -20,6 +22,6 @@ export async function signOutNoRedirectAction() {
   await signOut({
       redirect: false
   });
-  await googleAuthenticate();
+  await googleAuthenticate(true);
 }
 
