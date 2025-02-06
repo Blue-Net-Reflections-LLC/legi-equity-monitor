@@ -50,7 +50,6 @@ export default function RightSidebar() {
           throw new Error('Failed to fetch filter options');
         }
         const data = await response.json();
-        console.log('Received filter options:', data);
         
         if (!data.committees || !Array.isArray(data.committees)) {
           throw new Error('Invalid committee data received');

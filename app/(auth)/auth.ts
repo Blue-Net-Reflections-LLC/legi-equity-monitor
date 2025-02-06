@@ -94,7 +94,6 @@ export const { handlers: { GET, POST }, auth, signIn, signOut } = NextAuth({
       const firstName = nameParts[0] || null;
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
 
-      console.log(profile);
       await upsertUser({
         id: user.id,
         email: profile.email as string,
