@@ -11,6 +11,7 @@ export const store = configureStore({
     blog: blogReducer,
     bills: billsReducer,
   },
+  devTools: true
 })
 
 export type RootState = ReturnType<typeof store.getState>
