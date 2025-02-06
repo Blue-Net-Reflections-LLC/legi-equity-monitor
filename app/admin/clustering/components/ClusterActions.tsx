@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAdmin } from '../../context/AdminContext'
+import { useAppDispatch, useAppSelector } from '@/app/lib/redux/hooks'
+import { setLoading, setError } from '@/app/lib/redux/features/ui/uiSlice'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,7 +22,8 @@ interface ClusterActionsProps {
 
 export function ClusterActions({ cluster }: ClusterActionsProps) {
   const router = useRouter()
-  const { loading, setLoading, setError } = useAdmin()
+  const dispatch = useAppDispatch()
+  const loading = useAppSelector(state => state.ui.loading)
   const [isOpen, setIsOpen] = useState(false)
 
   const handleCreateBlogPost = async () => {
@@ -36,12 +38,12 @@ export function ClusterActions({ cluster }: ClusterActionsProps) {
       router.push(`/admin/blog/${blogPostId}`)
     } catch (error) {
       console.error('Error creating blog post:', error)
-      setError(error instanceof Error ? error.message : 'Failed to create blog post')
+      dispatch(setError(error instanceof Error ? error.message : 'Failed to create blog post'))
     }
   }
 
   const handleReanalyze = async () => {
-    setLoading('cluster-analysis', true)
+    dispatch(setLoading({ feature: 'cluster-analysis', value: true }))
     try {
       await fetch(`/admin/api/clustering/${cluster.cluster_id}/analyze`, {
         method: 'POST'
@@ -50,9 +52,9 @@ export function ClusterActions({ cluster }: ClusterActionsProps) {
       router.refresh()
     } catch (error) {
       console.error('Error triggering reanalysis:', error)
-      setError(error instanceof Error ? error.message : 'Failed to trigger reanalysis')
+      dispatch(setError(error instanceof Error ? error.message : 'Failed to trigger reanalysis'))
     } finally {
-      setLoading('cluster-analysis', false)
+      dispatch(setLoading({ feature: 'cluster-analysis', value: false }))
     }
   }
 

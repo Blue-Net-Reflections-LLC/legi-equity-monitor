@@ -12,7 +12,9 @@ import {
   type ColumnDef
 } from '@tanstack/react-table'
 import { format } from 'date-fns'
-import { useAdmin } from '../../context/AdminContext'
+import { useAppDispatch, useAppSelector } from '@/app/lib/redux/hooks'
+import { setItems, setPagination, setSorting, setColumnFilters } from '@/app/lib/redux/features/clustering/clusteringSlice'
+import { setLoading, setError } from '@/app/lib/redux/features/ui/uiSlice'
 import { LoadingState } from '@/app/admin/components/LoadingState'
 import { StatusBadge } from './StatusBadge'
 import { ClusterActions } from './ClusterActions'
@@ -87,59 +89,16 @@ const columns: ColumnDef<any>[] = [
 ]
 
 export function ClusterList() {
-  const { loading, setLoading, setError } = useAdmin()
-  const { 
-    clustering: {
-      items,
-      filters,
-      pagination,
-      sorting,
-      columnFilters,
-      setItems,
-      setPagination,
-      setSorting,
-      setColumnFilters
-    }
-  } = useAdmin()
-
-  // Initialize table
-  const table = useReactTable({
-    data: items,
-    columns,
-    state: {
-      sorting,
-      pagination: { 
-        pageIndex: pagination.pageIndex, 
-        pageSize: pagination.pageSize 
-      },
-      columnFilters
-    },
-    onSortingChange: (updater) => setSorting(typeof updater === 'function' ? updater(sorting) : updater),
-    onPaginationChange: (updater) => {
-      const newPagination = typeof updater === 'function' ? 
-        updater({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize }) : 
-        updater
-      setPagination({
-        pageIndex: newPagination.pageIndex,
-        pageSize: newPagination.pageSize,
-        total: pagination.total
-      })
-    },
-    onColumnFiltersChange: (updater) => setColumnFilters(typeof updater === 'function' ? updater(columnFilters) : updater),
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    manualPagination: true,
-    pageCount: Math.ceil(pagination.total / pagination.pageSize)
-  })
+  const dispatch = useAppDispatch()
+  const loading = useAppSelector(state => state.ui.loading)
+  const { items, filters, pagination, sorting, columnFilters } = useAppSelector(state => state.clustering)
 
   // Fetch data when filters or pagination change
   useEffect(() => {
     let ignore = false
 
     const fetchClusters = async () => {
-      setLoading('clusters', true)
+      dispatch(setLoading({ feature: 'clusters', value: true }))
       try {
         const params = new URLSearchParams({
           page: (pagination.pageIndex + 1).toString(),
@@ -154,20 +113,20 @@ export function ClusterList() {
 
         const data = await response.json()
         if (!ignore) {
-          setItems(data.items)
-          setPagination({
+          dispatch(setItems(data.items))
+          dispatch(setPagination({
             ...pagination,
             total: data.total
-          })
+          }))
         }
       } catch (error) {
         if (!ignore) {
           console.error('Error fetching clusters:', error)
-          setError(error instanceof Error ? error.message : 'Failed to fetch clusters')
+          dispatch(setError(error instanceof Error ? error.message : 'Failed to fetch clusters'))
         }
       } finally {
         if (!ignore) {
-          setLoading('clusters', false)
+          dispatch(setLoading({ feature: 'clusters', value: false }))
         }
       }
     }
@@ -184,6 +143,38 @@ export function ClusterList() {
     pagination.pageIndex,
     pagination.pageSize
   ])
+
+  // Initialize table
+  const table = useReactTable({
+    data: items,
+    columns,
+    state: {
+      sorting,
+      pagination: { 
+        pageIndex: pagination.pageIndex, 
+        pageSize: pagination.pageSize 
+      },
+      columnFilters
+    },
+    onSortingChange: (updater) => dispatch(setSorting(typeof updater === 'function' ? updater(sorting) : updater)),
+    onPaginationChange: (updater) => {
+      const newPagination = typeof updater === 'function' ? 
+        updater({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize }) : 
+        updater
+      dispatch(setPagination({
+        pageIndex: newPagination.pageIndex,
+        pageSize: newPagination.pageSize,
+        total: pagination.total
+      }))
+    },
+    onColumnFiltersChange: (updater) => dispatch(setColumnFilters(typeof updater === 'function' ? updater(columnFilters) : updater)),
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    manualPagination: true,
+    pageCount: Math.ceil(pagination.total / pagination.pageSize)
+  })
 
   return (
     <div className="relative">

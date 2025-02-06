@@ -1,10 +1,10 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
-import { useAdmin } from '../context/AdminContext'
+import { useAppSelector } from '@/app/lib/redux/hooks'
 
 export function LoadingState({ feature }: { feature: string }) {
-  const { loading } = useAdmin()
+  const loading = useAppSelector(state => state.ui.loading)
   
   if (!loading || !loading[feature]) return null
   

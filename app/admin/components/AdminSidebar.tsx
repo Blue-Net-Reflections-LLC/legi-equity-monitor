@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { LayoutDashboard, ScrollText, Network, ClipboardList, Users } from 'lucide-react'
-import { useAdmin } from '../context/AdminContext'
+import { useAppDispatch, useAppSelector } from '@/app/lib/redux/hooks'
+import { setSidebarExpanded, setActiveSection } from '@/app/lib/redux/features/ui/uiSlice'
 
 const adminNavItems = [
   {
@@ -35,7 +36,8 @@ const adminNavItems = [
 ]
 
 export function AdminSidebar() {
-  const { sidebarExpanded, setSidebarExpanded, setActiveSection } = useAdmin()
+  const dispatch = useAppDispatch()
+  const sidebarExpanded = useAppSelector(state => state.ui.sidebarExpanded)
   const pathname = usePathname()
 
   return (
@@ -44,8 +46,8 @@ export function AdminSidebar() {
         "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 transition-all duration-300 z-20 mt-2",
         sidebarExpanded ? "w-48" : "w-16"
       )}
-      onMouseEnter={() => setSidebarExpanded(true)}
-      onMouseLeave={() => setSidebarExpanded(false)}
+      onMouseEnter={() => dispatch(setSidebarExpanded(true))}
+      onMouseLeave={() => dispatch(setSidebarExpanded(false))}
     >
       <nav className="p-3 space-y-2">
         {adminNavItems.map((item) => {
@@ -60,6 +62,7 @@ export function AdminSidebar() {
                   ? "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400" 
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               )}
+              onClick={() => dispatch(setActiveSection(item.title))}
             >
               <item.icon className="h-5 w-5 shrink-0" />
               <span className={cn(

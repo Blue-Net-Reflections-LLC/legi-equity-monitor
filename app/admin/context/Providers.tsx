@@ -1,7 +1,8 @@
 'use client'
 
 import { ReactNode } from 'react'
-import { AdminProvider } from './AdminContext'
+import { Provider } from 'react-redux'
+import { store } from '@/app/lib/redux/store' 
 
 interface ProvidersProps {
   children: ReactNode
@@ -9,8 +10,9 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <AdminProvider>
+
+    <Provider store={store}>
       {children}
-    </AdminProvider>
+    </Provider>
   )
 } 

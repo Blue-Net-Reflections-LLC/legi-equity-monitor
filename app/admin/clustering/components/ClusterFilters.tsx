@@ -1,11 +1,13 @@
 'use client'
 
-import { useAdmin } from '../../context/AdminContext'
+import { useAppDispatch, useAppSelector } from '@/app/lib/redux/hooks'
+import { setFilters } from '@/app/lib/redux/features/clustering/clusteringSlice'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getWeek } from 'date-fns'
 
 export function ClusterFilters() {
-  const { clustering: { filters, setFilters } } = useAdmin()
+  const dispatch = useAppDispatch()
+  const filters = useAppSelector(state => state.clustering.filters)
 
   // Get current year and week
   const currentYear = new Date().getFullYear()
@@ -21,7 +23,7 @@ export function ClusterFilters() {
     <div className="flex items-center gap-4">
       <Select
         value={filters.year.toString()}
-        onValueChange={(value) => setFilters({ year: parseInt(value) })}
+        onValueChange={(value) => dispatch(setFilters({ year: parseInt(value) }))}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select year" />
@@ -37,7 +39,7 @@ export function ClusterFilters() {
 
       <Select
         value={filters.week.toString()}
-        onValueChange={(value) => setFilters({ week: parseInt(value) })}
+        onValueChange={(value) => dispatch(setFilters({ week: parseInt(value) }))}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select week" />
