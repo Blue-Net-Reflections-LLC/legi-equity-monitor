@@ -21,14 +21,16 @@ export default function StatePage({ params }: StatePageProps) {
   const stateCode = params.stateCode.toUpperCase()
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
       {/* Hero Section - Server Side */}
       <StateHero stateCode={stateCode} />
 
       {/* Bill List - Client Side */}
-      <BillList 
-        stateCode={stateCode}
-      />
+      <div className="w-full">
+        <BillList 
+          stateCode={stateCode}
+        />
+      </div>
     </div>
   )
 } 

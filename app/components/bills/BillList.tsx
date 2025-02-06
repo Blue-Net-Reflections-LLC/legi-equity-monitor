@@ -47,8 +47,8 @@ export function BillList({ stateCode }: BillListProps) {
   }, [stateCode, searchParams])
 
   return (
-    <section className="py-4 md:px-0 px-4">
-      <div className="max-w-7xl mx-auto space-y-4">
+    <section className="py-4 px-6">
+      <div className="max-w-[2000px] mx-auto space-y-4">
         <div className="flex justify-between items-center flex-wrap">
           <div className="text-sm text-zinc-500 whitespace-nowrap">
             {(!loading && bills.length > 0) && (
@@ -79,13 +79,13 @@ export function BillList({ stateCode }: BillListProps) {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
             {Array.from({ length: pageSize }).map((_, i) => (
               <BillCardSkeleton key={i} />
             ))}
           </div>
         ) : bills.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
             {bills.map(bill => (
               <BillCard key={bill.bill_id} bill={bill} />
             ))}

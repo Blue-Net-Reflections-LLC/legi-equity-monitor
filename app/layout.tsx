@@ -33,7 +33,7 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <ClientLayout>
             <Header />
-            <main className="container mx-auto px-4 pt-8 pb-2">
+            <main className="w-full pt-8 pb-2">
               <AnalyticsProvider>
                 {children}
               </AnalyticsProvider>
