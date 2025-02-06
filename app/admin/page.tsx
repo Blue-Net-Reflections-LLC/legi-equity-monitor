@@ -14,8 +14,8 @@ export default async function AdminPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-4rem)]">
-      <div className="max-w-[2000px] mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="max-w-[2000px] mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
         
         <div className="bg-white dark:bg-zinc-800 shadow-md rounded-lg p-6">
           <div className="mb-4">
