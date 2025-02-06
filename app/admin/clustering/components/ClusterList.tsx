@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
   useReactTable,
@@ -21,6 +21,7 @@ import { LoadingState } from '@/app/admin/components/LoadingState'
 import { StatusBadge } from './StatusBadge'
 import { ClusterActions } from './ClusterActions'
 import { type ClusterListItem } from '../types'
+import { Badge } from '@/components/ui/badge'
 
 // Define columns based on our design doc
 const columns: ColumnDef<ClusterListItem>[] = [
@@ -32,7 +33,7 @@ const columns: ColumnDef<ClusterListItem>[] = [
         href={`/admin/clustering/${row.original.cluster_id}`}
         className="text-orange-600 dark:text-orange-400 hover:underline"
       >
-        {row.original.cluster_id.slice(0, 8)}...
+        {row.original.cluster_id}
       </Link>
     )
   },
@@ -42,10 +43,15 @@ const columns: ColumnDef<ClusterListItem>[] = [
     cell: ({ row }) => row.original.bill_count
   },
   {
+    id: 'state_count',
+    header: 'States',
+    cell: ({ row }) => row.original.state_count
+  },
+  {
     id: 'executive_summary',
     header: 'Summary',
     cell: ({ row }) => (
-      <div className="max-w-md truncate" title={row.original.executive_summary}>
+      <div className="max-w-md truncate">
         {row.original.executive_summary}
       </div>
     )
@@ -53,13 +59,23 @@ const columns: ColumnDef<ClusterListItem>[] = [
   {
     id: 'status',
     header: 'Status',
-    cell: ({ row }) => <StatusBadge status={row.original.status} />
+    cell: ({ row }) => (
+      <Badge variant={
+        row.original.status === 'pending' ? 'default' :
+        row.original.status === 'processing' ? 'secondary' :
+        row.original.status === 'completed' ? 'success' :
+        row.original.status === 'failed' ? 'destructive' :
+        'outline'
+      }>
+        {row.original.status}
+      </Badge>
+    )
   },
   {
     id: 'dates',
     header: 'Dates',
     cell: ({ row }) => (
-      <div className="text-sm space-y-1">
+      <div className="space-y-1 text-sm">
         <div className="text-zinc-500 dark:text-zinc-400">
           Created: {format(new Date(row.original.created_at), 'MMM d, yyyy')}
         </div>
@@ -77,7 +93,7 @@ const columns: ColumnDef<ClusterListItem>[] = [
 ]
 
 export function ClusterList() {
-  const { loading } = useAdmin()
+  const { loading, setLoading, setError } = useAdmin()
   const { 
     items,
     filters,
@@ -96,45 +112,82 @@ export function ClusterList() {
     columns,
     state: {
       sorting,
-      pagination: { pageIndex: pagination.pageIndex, pageSize: pagination.pageSize },
+      pagination: { 
+        pageIndex: pagination.pageIndex, 
+        pageSize: pagination.pageSize 
+      },
       columnFilters
     },
     onSortingChange: (updater) => setSorting(typeof updater === 'function' ? updater(sorting) : updater),
     onPaginationChange: (updater) => {
-      const newPagination = typeof updater === 'function' ? updater(pagination) : updater
-      setPagination({ ...pagination, ...newPagination })
+      const newPagination = typeof updater === 'function' ? 
+        updater({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize }) : 
+        updater
+      setPagination({
+        pageIndex: newPagination.pageIndex,
+        pageSize: newPagination.pageSize,
+        total: pagination.total
+      })
     },
     onColumnFiltersChange: (updater) => setColumnFilters(typeof updater === 'function' ? updater(columnFilters) : updater),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getFilteredRowModel: getFilteredRowModel()
+    getFilteredRowModel: getFilteredRowModel(),
+    manualPagination: true,
+    pageCount: Math.ceil(pagination.total / pagination.pageSize)
   })
 
-  // Fetch data when filters change
+  // Fetch data when filters or pagination change
   useEffect(() => {
+    let ignore = false
+
     const fetchClusters = async () => {
+      setLoading('clusters', true)
       try {
-        const response = await fetch(`/admin/api/clustering?${new URLSearchParams({
+        const params = new URLSearchParams({
           page: (pagination.pageIndex + 1).toString(),
           pageSize: pagination.pageSize.toString(),
           week: filters.week.toString(),
           year: filters.year.toString(),
           ...(filters.status && { status: filters.status })
-        })}`)
+        })
 
+        const response = await fetch(`/admin/api/clustering?${params}`)
         if (!response.ok) throw new Error('Failed to fetch clusters')
 
         const data = await response.json()
-        setItems(data.items)
-        setPagination({ total: data.total })
+        if (!ignore) {
+          setItems(data.items)
+          setPagination({
+            ...pagination,
+            total: data.total
+          })
+        }
       } catch (error) {
-        console.error('Error fetching clusters:', error)
+        if (!ignore) {
+          console.error('Error fetching clusters:', error)
+          setError(error instanceof Error ? error.message : 'Failed to fetch clusters')
+        }
+      } finally {
+        if (!ignore) {
+          setLoading('clusters', false)
+        }
       }
     }
 
     fetchClusters()
-  }, [filters, pagination.pageIndex, pagination.pageSize])
+
+    return () => {
+      ignore = true
+    }
+  }, [
+    filters.week,
+    filters.year,
+    filters.status,
+    pagination.pageIndex,
+    pagination.pageSize
+  ])
 
   return (
     <div className="relative">

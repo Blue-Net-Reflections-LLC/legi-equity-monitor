@@ -22,7 +22,12 @@ type AdminAction =
 const initialState: AdminState = {
   sidebarExpanded: false,
   activeSection: null,
-  loading: {},
+  loading: {
+    clusters: false,
+    bills: false,
+    users: false,
+    blog: false
+  },
   error: null
 }
 

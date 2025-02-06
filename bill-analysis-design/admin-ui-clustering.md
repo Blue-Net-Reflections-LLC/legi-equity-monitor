@@ -1,5 +1,28 @@
 # Admin Clustering Analysis UI Design
 
+## User Requirements
+New task to document the approach, no coding please:
+
+Hey, May I get you help providing a technical solution for a Admin Clustering Analysis UI with data stored in the cluster_analysis table in DB to:
+(1) Display all clusters for a given week in a year.  The display (table?) shall display the number of bills affected.  Paritial of the executive summary, Analysis status, created and updated dates, there should be an action panel (or column) to execute actions like Create Blog Post, reanalyze (placeholder), change status, "Pending", "no_theme"
+
+(2) Display needs to be paginated 
+
+(3) Data must be fetched into the UI and under the protected /admin endpoint.
+
+(4) When user clicks a Analysis Cluster, they are taking to a detail page where the following sensible fields are display:
+- Add data in the Display all clusters view
+- Complete execute summary
+- cluster and analysis ids 
+- Bills affected
+- Staes affected
+- Analysis results from the cluster_analysis
+- a summary of demographic groups in charts.  See @001_create_bill_analysis_tables.sql 
+- Action panel similar to the requirements in the display all groups.
+
+This is brainstorm and reasoning task for the approach and documentation into @admin-ui-clustering.md 
+
+
 ## Overview
 This document outlines the technical approach for implementing an administrative interface for managing and viewing cluster analysis results. The interface uses Client-Side Rendering (CSR) with Next.js for dynamic data loading and interaction.
 
