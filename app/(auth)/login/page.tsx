@@ -14,7 +14,6 @@ export default function LoginPage() {
 	const { data: session } = useSession();
 	const isUnauthorizedUser = session?.user && !ADMIN_ROLES.includes(session.user.role || 'user');
 	const searchParams = useSearchParams();
-	let sessionStorage = typeof window !== 'undefined' ? window.sessionStorage : null;
 
 	const doRedirect = (val: string) => {
 		if (val.startsWith('/admin') && isUnauthorizedUser) {
@@ -26,11 +25,11 @@ export default function LoginPage() {
 	}
 
 	useEffect(() => {
-		if (sessionStorage && searchParams.get('redirect')) {
+		if (searchParams.get('redirect')) {
 			sessionStorage.setItem('redirect', searchParams.get('redirect') || '/');
 		}
 
-		if (sessionStorage && session?.user?.role) {
+		if (session?.user?.role) {
 			let redirectUrl
 
 			if (!isUnauthorizedUser && !sessionStorage.getItem('redirect')) {
