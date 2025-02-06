@@ -6,16 +6,44 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { googleAuthenticate, signOutNoRedirectAction } from '../actions';
 import { useSession } from 'next-auth/react';
-
-
-const adminRoles = ['admin', 'author', 'editor'];
+import { redirect, useSearchParams } from 'next/navigation';
+import { ADMIN_ROLES } from '@/app/constants/user-roles';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
 	const { data: session } = useSession();
-	const isUnauthorizedUser = session?.user && !adminRoles.includes(session.user.role || 'user');
+	const isUnauthorizedUser = session?.user && !ADMIN_ROLES.includes(session.user.role || 'user');
+	const searchParams = useSearchParams();
+	let sessionStorage = typeof window !== 'undefined' ? window.sessionStorage : null;
+
+	const doRedirect = (val: string) => {
+		if (val.startsWith('/admin') && isUnauthorizedUser) {
+			sessionStorage?.removeItem('redirect');
+			redirect('/login');
+		} else {
+			redirect(val);
+		}
+	}
+
+	useEffect(() => {
+		if (sessionStorage && searchParams.get('redirect')) {
+			sessionStorage.setItem('redirect', searchParams.get('redirect') || '/');
+		}
+
+		if (sessionStorage && session?.user?.role) {
+			let redirectUrl
+
+			if (!isUnauthorizedUser && !sessionStorage.getItem('redirect')) {
+				redirectUrl = '/admin';
+			} else {
+				redirectUrl = sessionStorage.getItem('redirect') || '/';
+			}
+			doRedirect(redirectUrl);
+		}
+	}, [session, isUnauthorizedUser, searchParams]);
 
 	const handleGoogleSignIn = async () => {
-		await googleAuthenticate();
+		await googleAuthenticate({});
 	};
 
 	const handleSignOut = async () => {
@@ -24,7 +52,6 @@ export default function LoginPage() {
 
 	const getMessage = () => {
 		if (session?.user) {
-
 			if (isUnauthorizedUser) {
 				return `Access denied. Your current role (${session.user.role || 'user'}) does not have sufficient permissions.`;
 			}
@@ -65,7 +92,6 @@ export default function LoginPage() {
 						</Button>
 					</CardContent>
 				</Card>
-
 			</motion.div>
 		</div>
 	);

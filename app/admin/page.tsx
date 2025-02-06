@@ -1,10 +1,14 @@
 import { auth } from "@/app/(auth)/auth"
 import { redirect } from "next/navigation"
+import { ADMIN_ROLES } from "@/app/constants/user-roles"
 
 export default async function AdminPage() {
   const session = await auth()
   
   if (!session) {
+    redirect('/login')
+  }
+  if (session?.user?.role && !ADMIN_ROLES.includes(session.user.role)) {
     redirect('/login')
   }
 

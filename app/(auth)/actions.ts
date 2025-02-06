@@ -2,14 +2,13 @@
 
 import { signIn, signOut } from './auth';
 
-export async function googleAuthenticate(prompt: boolean = false) {
+export async function googleAuthenticate({ prompt = false, callbackUrl = '/admin' }: { prompt?: boolean; callbackUrl?: string }) {
   const promptObject = prompt ? { prompt: "login" } : undefined;
   await signIn('google', {
-    callbackUrl: '/admin',
+    callbackUrl: callbackUrl,
     redirect: true
   }, promptObject);
 }
-
 
 export async function signOutAction(redirect: boolean = true) {
   await signOut({
@@ -22,6 +21,6 @@ export async function signOutNoRedirectAction() {
   await signOut({
       redirect: false
   });
-  await googleAuthenticate(true);
+  await googleAuthenticate({ prompt: true });
 }
 

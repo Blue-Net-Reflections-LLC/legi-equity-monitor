@@ -1,7 +1,5 @@
 import type { NextAuthConfig } from 'next-auth';
 
-const adminRoles = ['admin', 'author', 'editor'];
-
 export const authConfig: NextAuthConfig = {
   pages: {
     signIn: '/login',
@@ -13,16 +11,13 @@ export const authConfig: NextAuthConfig = {
       const isAdminRoute = nextUrl.pathname.startsWith('/admin');
       
       // Protect admin routes
-      if (isAdminRoute) {
-        const userRole = auth?.user?.role || 'user';
-        if (!isLoggedIn || !adminRoles.includes(userRole)) {
-          return Response.redirect(new URL('/login', nextUrl));
-        }
-        return true;
+      if (isAdminRoute && !isLoggedIn) {
+        return Response.redirect(new URL('/login?redirect=' + nextUrl.pathname, nextUrl));
       }
 
       // Allow all other routes
       return true;
+
     },
   },
 } satisfies NextAuthConfig;

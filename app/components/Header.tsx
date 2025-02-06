@@ -100,9 +100,14 @@ export default function Header() {
               <Link 
                 href="/login"
                 className="text-sm font-medium text-zinc-600 dark:text-zinc-200 hover:text-orange-500 transition-colors"
+                onClick={() => {
+                  sessionStorage.removeItem('redirect');
+                  sessionStorage.setItem('redirect', window.location.href);
+                }}
               >
                 Sign In
               </Link>
+
             ) : (
               <Popover>
                 <PopoverTrigger asChild>
