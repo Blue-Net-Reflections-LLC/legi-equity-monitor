@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Scale, Menu, Search } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import {
@@ -53,6 +53,21 @@ export default function Header() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role && ['admin', 'author', 'editor'].includes(session.user.role);
   const [open, setOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const closeTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const handleMouseLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setShowProfile(false);
+    }, 500);
+  };
+
+  const handleMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    setShowProfile(true);
+  };
 
   const handleSignOut = async () => {
     await signOutAction();
@@ -107,13 +122,14 @@ export default function Header() {
               >
                 Sign In
               </Link>
-
             ) : (
-              <Popover>
+              <Popover open={showProfile} onOpenChange={setShowProfile}>
                 <PopoverTrigger asChild>
                   <Button 
                     variant="ghost" 
                     className="flex items-center space-x-2 text-zinc-600 dark:text-zinc-200 hover:bg-accent hover:text-accent-foreground"
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
                   >
                     {session.user.image && (
                       <Image
@@ -130,6 +146,8 @@ export default function Header() {
                 <PopoverContent 
                   className="w-56 border bg-white dark:bg-zinc-900/95 border-zinc-200 dark:border-zinc-800" 
                   align="end"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <div className="space-y-3">
                     <div className="space-y-1.5">
