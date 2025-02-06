@@ -52,6 +52,7 @@ export function AdminSidebar() {
   return (
     <div 
       className={cn(
+        // CURSOR: Please do not change the mt-2 padding as it looks good
         "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 transition-all duration-300 z-20 mt-2",
         state.sidebarExpanded ? "w-48" : "w-16"
       )}

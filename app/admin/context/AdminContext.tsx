@@ -20,7 +20,7 @@ type AdminAction =
 
 // Initial state
 const initialState: AdminState = {
-  sidebarExpanded: true,
+  sidebarExpanded: false,
   activeSection: null,
   loading: false,
   error: null
