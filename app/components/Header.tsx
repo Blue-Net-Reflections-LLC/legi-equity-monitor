@@ -113,7 +113,7 @@ export default function Header() {
               </SheetContent>
             </Sheet>
 
-            {!session ? (
+            {!session || !session?.user ? (
               <Link 
                 href="/login"
                 className="text-sm font-medium text-zinc-600 dark:text-zinc-200 hover:text-orange-500 transition-colors"
