@@ -23,6 +23,8 @@ export async function GET(request: Request) {
     const week = parseInt(searchParams.get('week') || '1')
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
     const status = searchParams.get('status')
+    const sort = searchParams.get('sort')
+    const order = searchParams.get('order')
 
     // Calculate offset for pagination
     const offset = (page - 1) * pageSize
@@ -43,6 +45,7 @@ export async function GET(request: Request) {
         c.cluster_id,
         c.bill_count,
         c.state_count,
+        c.min_date,
         ca.status,
         ca.executive_summary,
         c.created_at,
@@ -52,7 +55,7 @@ export async function GET(request: Request) {
       WHERE EXTRACT(WEEK FROM c.min_date) = ${week}
       AND EXTRACT(YEAR FROM c.min_date) = ${year}
       ${status ? db`AND ca.status = ${status}` : db``}
-      ORDER BY c.created_at DESC
+      ORDER BY ${sort ? db`${db(sort)} ${order === 'asc' ? db`ASC` : db`DESC`}` : db`c.min_date DESC`}
       LIMIT ${pageSize}
       OFFSET ${offset}
     `

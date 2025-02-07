@@ -4,6 +4,7 @@ export interface ClusterListItem {
   cluster_id: string
   bill_count: number
   state_count: number
+  min_date: string
   status: ClusterStatus
   executive_summary: string
   created_at: string
