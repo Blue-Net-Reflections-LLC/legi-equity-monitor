@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
@@ -18,13 +18,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -34,39 +27,45 @@ import { cn } from '@/lib/utils';
 import { Editor } from '@/components/editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { createBlogPostSchema, type CreateBlogPost } from '@/app/lib/validations/blog';
+import { toast } from 'sonner';
 
-const formSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  slug: z.string().min(1, 'Slug is required'),
-  status: z.enum(['draft', 'review', 'published', 'archived']),
-  content: z.string().min(1, 'Content is required'),
-  publishedAt: z.date().optional(),
-  author: z.string().min(1, 'Author is required'),
-  isCurated: z.boolean().default(false),
-  heroImage: z.string().url().optional().nullable(),
-  mainImage: z.string().url().optional().nullable(),
-  thumb: z.string().url().optional().nullable(),
-});
-
-type FormData = z.infer<typeof formSchema>;
+function FormFieldWithError({ label, error, required }: { label: string; error?: boolean; required?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={cn(
+        error && "text-destructive",
+        "flex items-center gap-1"
+      )}>
+        {label}
+        {required && (
+          <span className="text-destructive text-sm">*</span>
+        )}
+      </span>
+      {error && (
+        <AlertCircle className="h-4 w-4 text-destructive" />
+      )}
+    </div>
+  );
+}
 
 export default function CreateBlogPost() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<CreateBlogPost>({
+    resolver: zodResolver(createBlogPostSchema),
     defaultValues: {
       status: 'draft',
-      isCurated: false,
+      is_curated: false,
       content: '',
     },
   });
 
-  async function onSubmit(data: FormData) {
+  async function onSubmit(data: CreateBlogPost) {
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/admin/blog/posts', {
+      const response = await fetch('/admin/api/blog/post', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,14 +73,36 @@ export default function CreateBlogPost() {
         body: JSON.stringify(data),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to create blog post');
+        // Handle validation errors
+        if (response.status === 400 && result.errors) {
+          // Set form errors
+          Object.entries(result.errors).forEach(([key, value]) => {
+            form.setError(key as keyof CreateBlogPost, {
+              message: Array.isArray(value) ? value[0] : value as string,
+            });
+          });
+          toast.error('Please fix the form errors');
+          return;
+        }
+        throw new Error(result.message || 'Failed to create blog post');
       }
 
-      const result = await response.json();
-      router.push(`/admin/blog/${result.post.slug}`);
+      if (data.status === 'published') {
+        // For published posts, redirect to the blog listing page
+        toast.success('Blog post published successfully');
+        router.push('/admin/blog');
+      } else {
+        // For drafts, show success message and let user continue editing
+        toast.success('Draft saved successfully');
+        // Update form with returned data to ensure we have the correct ID/timestamps
+        form.reset(result.post);
+      }
     } catch (error) {
       console.error('Error creating blog post:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create blog post');
     } finally {
       setIsSubmitting(false);
     }
@@ -90,8 +111,8 @@ export default function CreateBlogPost() {
   return (
     <div className="h-[calc(100vh-4rem)]">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="h-full">
-          <div className="grid grid-cols-[1fr,300px] gap-6 h-full">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="grid grid-cols-[1fr,300px] gap-6">
             {/* Main Content */}
             <div className="flex flex-col h-full">
               <FormField
@@ -99,10 +120,20 @@ export default function CreateBlogPost() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
+                    <FormLabel>
+                      <FormFieldWithError 
+                        label="Title"
+                        error={!!form.formState.errors.title}
+                        required={true}
+                      />
+                    </FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Enter post title" 
-                        className="text-2xl h-auto py-3 px-4 border-0 focus-visible:ring-0 rounded-none border-b"
+                        className={cn(
+                          "text-2xl h-auto py-3 px-4 border focus-visible:ring-0",
+                          form.formState.errors.title && "border-destructive"
+                        )}
                         {...field} 
                       />
                     </FormControl>
@@ -111,14 +142,24 @@ export default function CreateBlogPost() {
                 )}
               />
 
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 min-h-0 mt-6">
                 <FormField
                   control={form.control}
                   name="content"
                   render={({ field }) => (
                     <FormItem className="h-full">
+                      <FormLabel>
+                        <FormFieldWithError 
+                          label="Content"
+                          error={!!form.formState.errors.content}
+                          required={true}
+                        />
+                      </FormLabel>
                       <FormControl>
-                        <div className="h-full">
+                        <div className={cn(
+                          "h-full",
+                          form.formState.errors.content && "border-destructive"
+                        )}>
                           <Editor 
                             value={field.value}
                             onChange={field.onChange}
@@ -131,15 +172,27 @@ export default function CreateBlogPost() {
                 />
               </div>
 
-              <div className="border-t">
+              <div className="border-t mt-0">
                 <FormField
                   control={form.control}
                   name="slug"
                   render={({ field }) => (
                     <FormItem className="py-4">
-                      <FormLabel>Slug</FormLabel>
+                      <FormLabel>
+                        <FormFieldWithError 
+                          label="Slug"
+                          error={!!form.formState.errors.slug}
+                          required={true}
+                        />
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder="enter-post-slug" {...field} />
+                        <Input 
+                          placeholder="enter-post-slug" 
+                          className={cn(
+                            form.formState.errors.slug && "border-destructive"
+                          )}
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -149,7 +202,7 @@ export default function CreateBlogPost() {
                 <div className="grid grid-cols-3 gap-4 py-4">
                   <FormField
                     control={form.control}
-                    name="heroImage"
+                    name="hero_image"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Hero Image URL</FormLabel>
@@ -157,7 +210,7 @@ export default function CreateBlogPost() {
                           <Input 
                             placeholder="https://..." 
                             {...field}
-                            value={field.value || ''}
+                            value={field.value ?? ''}
                           />
                         </FormControl>
                         <FormMessage />
@@ -167,7 +220,7 @@ export default function CreateBlogPost() {
 
                   <FormField
                     control={form.control}
-                    name="mainImage"
+                    name="main_image"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Main Image URL</FormLabel>
@@ -175,7 +228,7 @@ export default function CreateBlogPost() {
                           <Input 
                             placeholder="https://..." 
                             {...field}
-                            value={field.value || ''}
+                            value={field.value ?? ''}
                           />
                         </FormControl>
                         <FormMessage />
@@ -193,7 +246,7 @@ export default function CreateBlogPost() {
                           <Input 
                             placeholder="https://..." 
                             {...field}
-                            value={field.value || ''}
+                            value={field.value ?? ''}
                           />
                         </FormControl>
                         <FormMessage />
@@ -220,8 +273,8 @@ export default function CreateBlogPost() {
 
                   <FormField
                     control={form.control}
-                    name="publishedAt"
-                    render={({ field }) => (
+                    name="published_at"
+                    render={({ field: { value, onChange, ...field } }) => (
                       <FormItem>
                         <div className="flex items-center justify-between">
                           <FormLabel>Publish Date</FormLabel>
@@ -234,8 +287,8 @@ export default function CreateBlogPost() {
                             <PopoverContent className="w-auto p-0" align="end">
                               <Calendar
                                 mode="single"
-                                selected={field.value || undefined}
-                                onSelect={(date: Date | undefined) => field.onChange(date || null)}
+                                selected={value as Date}
+                                onSelect={onChange}
                                 initialFocus
                               />
                             </PopoverContent>
@@ -243,8 +296,9 @@ export default function CreateBlogPost() {
                         </div>
                         <FormControl>
                           <Input 
-                            value={field.value ? format(field.value, 'PPP') : 'Immediately'} 
+                            value={value ? format(value as Date, 'PPP') : 'Immediately'} 
                             readOnly
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -257,9 +311,21 @@ export default function CreateBlogPost() {
                     name="author"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Author</FormLabel>
+                        <FormLabel>
+                          <FormFieldWithError 
+                            label="Author"
+                            error={!!form.formState.errors.author}
+                            required={true}
+                          />
+                        </FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter author name" {...field} />
+                          <Input 
+                            placeholder="Enter author name" 
+                            className={cn(
+                              form.formState.errors.author && "border-destructive"
+                            )}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -271,16 +337,18 @@ export default function CreateBlogPost() {
                       type="submit"
                       onClick={() => form.setValue('status', 'published')}
                       className="w-full"
+                      disabled={isSubmitting}
                     >
-                      Publish
+                      {isSubmitting ? 'Publishing...' : 'Publish'}
                     </Button>
                     <Button
                       type="submit"
                       variant="outline"
                       onClick={() => form.setValue('status', 'draft')}
                       className="w-full"
+                      disabled={isSubmitting}
                     >
-                      Save Draft
+                      {isSubmitting ? 'Saving...' : 'Save Draft'}
                     </Button>
                   </div>
                 </CardContent>

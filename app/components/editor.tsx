@@ -1,23 +1,13 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Heading from '@tiptap/extension-heading';
-import Link from '@tiptap/extension-link';
-import { Button } from './ui/button';
-import {
-  Bold,
-  Italic,
-  List,
-  ListOrdered,
-  Quote,
-  Redo,
-  Undo,
-  Link as LinkIcon,
-  Heading1,
-  Heading2,
-  Heading3,
-} from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useMemo, useRef } from 'react';
+
+// Dynamically import Jodit with no SSR
+const JoditEditor = dynamic(() => import('jodit-react'), {
+  ssr: false,
+  loading: () => <div className="h-[500px] w-full border rounded-md bg-muted/10" />
+});
 
 interface EditorProps {
   value: string;
@@ -25,138 +15,61 @@ interface EditorProps {
 }
 
 export function Editor({ value, onChange }: EditorProps) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-      }),
-      Heading.configure({
-        levels: [1, 2, 3],
-      }),
-      Link.configure({
-        openOnClick: false,
-      }),
-    ],
-    content: value,
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
-    },
-  });
+  const editor = useRef(null);
 
-  if (!editor) {
-    return null;
-  }
+  const config = useMemo(() => ({
+    readonly: false,
+    height: '500px',
+    buttons: [
+      'source', '|',
+      'bold', 'strikethrough', 'underline', 'italic', '|',
+      'h2', 'h3', 'h4', 'h5', '|',
+      'ul', 'ol', '|',
+      'outdent', 'indent', '|',
+      'font', 'fontsize', 'brush', 'paragraph', '|',
+      'image', 'table', 'link', '|',
+      'align', 'undo', 'redo', '|',
+      'hr', 'eraser', 'copyformat', '|',
+      'fullsize'
+    ],
+    uploader: {
+      insertImageAsBase64URI: true
+    },
+    removeButtons: ['about'],
+    showXPathInStatusbar: false,
+    showCharsCounter: false,
+    showWordsCounter: false,
+    toolbarAdaptive: false,
+    defaultMode: 1,
+    style: {
+      backgroundColor: '#fff',
+      color: '#000'
+    },
+    list: {
+      style: {
+        'list-style-type': 'inherit'
+      }
+    },
+    iframe: true,
+    iframeStyle: `
+      ul { list-style-type: disc !important; padding-left: 2em !important; }
+      ol { list-style-type: decimal !important; padding-left: 2em !important; }
+      ul ul { list-style-type: circle !important; }
+      ol ol { list-style-type: lower-alpha !important; }
+      ul ul ul { list-style-type: square !important; }
+      ol ol ol { list-style-type: lower-roman !important; }
+    `
+  }), []);
 
   return (
-    <div className="border border-input rounded-md h-full flex flex-col overflow-hidden">
-      <div className="border-b border-input p-2 flex flex-wrap gap-2 bg-background">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          data-active={editor.isActive('bold')}
-          className="data-[active=true]:bg-muted"
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          data-active={editor.isActive('italic')}
-          className="data-[active=true]:bg-muted"
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          data-active={editor.isActive('heading', { level: 1 })}
-          className="data-[active=true]:bg-muted"
-        >
-          <Heading1 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          data-active={editor.isActive('heading', { level: 2 })}
-          className="data-[active=true]:bg-muted"
-        >
-          <Heading2 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          data-active={editor.isActive('heading', { level: 3 })}
-          className="data-[active=true]:bg-muted"
-        >
-          <Heading3 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          data-active={editor.isActive('bulletList')}
-          className="data-[active=true]:bg-muted"
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          data-active={editor.isActive('orderedList')}
-          className="data-[active=true]:bg-muted"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          data-active={editor.isActive('blockquote')}
-          className="data-[active=true]:bg-muted"
-        >
-          <Quote className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            const url = window.prompt('Enter URL');
-            if (url) {
-              editor.chain().focus().setLink({ href: url }).run();
-            }
-          }}
-          data-active={editor.isActive('link')}
-          className="data-[active=true]:bg-muted"
-        >
-          <LinkIcon className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().undo().run()}
-        >
-          <Undo className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().redo().run()}
-        >
-          <Redo className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="flex-1 overflow-auto">
-        <EditorContent 
-          editor={editor} 
-          className="prose prose-sm dark:prose-invert max-w-none p-4 h-full"
-        />
-      </div>
+    <div className="border border-input rounded-md overflow-hidden">
+      <JoditEditor
+        ref={editor}
+        value={value}
+        config={config}
+        onBlur={onChange}
+        onChange={newContent => {}}
+      />
     </div>
   );
 } 
