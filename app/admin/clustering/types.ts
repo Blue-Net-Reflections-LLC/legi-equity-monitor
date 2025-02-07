@@ -64,8 +64,8 @@ export interface ClusterAnalysis {
   cluster_id: string;
   status: ClusterAnalysisStatus;
   executive_summary: string | null;
-  policy_impacts: Record<string, any> | null;
-  risk_assessment: Record<string, any> | null;
+  policy_impacts: Record<string, string | string[]> | null;
+  risk_assessment: Record<string, string> | null;
   future_outlook: string | null;
   created_at: string;
   updated_at: string;

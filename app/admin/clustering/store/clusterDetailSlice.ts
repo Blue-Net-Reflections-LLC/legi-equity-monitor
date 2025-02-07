@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { ClusterDetailState, ClusterDetail, ClusterAnalysis, ClusterBill } from '../types';
+import { ClusterDetailState } from '@/app/admin/clustering/types';
 
 const initialState: ClusterDetailState = {
   cluster: null,

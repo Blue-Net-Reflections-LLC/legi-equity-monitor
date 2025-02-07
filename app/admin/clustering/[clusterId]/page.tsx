@@ -90,20 +90,21 @@ const chartOptions = {
   },
 };
 
-// Add interface for bill categories
-interface BillCategory {
-  category: string;
-  bias_score: number;
-  positive_impact_score: number;
+interface PolicyImpact {
+  [key: string]: string | string[];
 }
 
-function formatPolicyImpacts(impacts: any) {
+interface RiskAssessment {
+  [key: string]: string;
+}
+
+function formatPolicyImpacts(impacts: PolicyImpact | null) {
   if (!impacts) return null;
   try {
-    const parsed = typeof impacts === 'string' ? JSON.parse(impacts) : impacts;
+    const parsed = typeof impacts === 'string' ? JSON.parse(impacts) as PolicyImpact : impacts;
     return (
       <div className="space-y-4">
-        {Object.entries(parsed).map(([key, value]: [string, any]) => (
+        {Object.entries(parsed).map(([key, value]) => (
           <div key={key} className="space-y-2">
             <h4 className="font-medium">{key.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}</h4>
             {Array.isArray(value) ? (
@@ -119,18 +120,18 @@ function formatPolicyImpacts(impacts: any) {
         ))}
       </div>
     );
-  } catch (e) {
+  } catch {
     return <p className="text-sm text-muted-foreground">Unable to parse policy impacts</p>;
   }
 }
 
-function formatRiskAssessment(risks: any) {
+function formatRiskAssessment(risks: RiskAssessment | null) {
   if (!risks) return null;
   try {
-    const parsed = typeof risks === 'string' ? JSON.parse(risks) : risks;
+    const parsed = typeof risks === 'string' ? JSON.parse(risks) as RiskAssessment : risks;
     return (
       <div className="space-y-4">
-        {Object.entries(parsed).map(([key, value]: [string, any]) => (
+        {Object.entries(parsed).map(([key, value]) => (
           <div key={key} className="space-y-2">
             <h4 className="font-medium">{key.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}</h4>
             <p className="text-sm">{value}</p>
@@ -138,7 +139,7 @@ function formatRiskAssessment(risks: any) {
         ))}
       </div>
     );
-  } catch (e) {
+  } catch {
     return <p className="text-sm text-muted-foreground">Unable to parse risk assessment</p>;
   }
 }

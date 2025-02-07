@@ -10,7 +10,6 @@ import { LoadingState } from '@/app/admin/components/LoadingState'
 import { StatusBadge } from './StatusBadge'
 import { ClusterActions } from './ClusterActions'
 import { type ClusterListItem } from '@/app/admin/clustering/types'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select'
 
 // Add sorting state type
 type SortConfig = {
