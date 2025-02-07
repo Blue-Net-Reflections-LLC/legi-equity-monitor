@@ -25,7 +25,7 @@ export default async function RootLayout({
   const session = await auth()
   
   return (
-    <html lang="en" className="[color-scheme:dark_light] horace">
+    <html lang="en" className="[color-scheme:dark_light]">
       <head>
         <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
       </head>
