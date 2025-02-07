@@ -133,7 +133,7 @@ export default function Header() {
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
                   >
-                    {session.user.image && (
+                    {session?.user?.image && (
                       <Image
                         src={session.user.image}
                         alt="Profile"

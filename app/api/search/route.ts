@@ -54,7 +54,7 @@ export async function POST(request: Request) {
               )
           END as item_data
         FROM ranked e
-        LEFT JOIN lsv_bill bill ON e.entity_type = 'bill' AND e.entity_id = bill.bill_id
+        LEFT JOIN lsv_bill bill ON e.entity_type = 'bill' AND e.entity_id = bill.bill_id AND bill.bill_type_id = 1
         LEFT JOIN ls_committee c ON bill.pending_committee_id = c.committee_id
         LEFT JOIN ls_bill_history h ON bill.bill_id = h.bill_id 
           AND h.history_step = (SELECT MAX(history_step) FROM ls_bill_history WHERE bill_id = bill.bill_id)
@@ -75,14 +75,16 @@ export async function POST(request: Request) {
       WITH pre_filtered AS (
         -- Step 1: Tokenize the phrase and apply ILIKE for flexible matching
         SELECT 
-          entity_type,
-          entity_id,
-          search_text,
-          state_abbr,
-          state_name
-        FROM vector_index
+          vi.entity_type,
+          vi.entity_id,
+          vi.search_text,
+          vi.state_abbr,
+          vi.state_name
+        FROM vector_index vi
+        LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
         WHERE ${tokens}
-        ORDER BY LENGTH(search_text) ASC  -- Prefer shorter, more relevant matches
+        AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
+        ORDER BY LENGTH(vi.search_text) ASC  -- Prefer shorter, more relevant matches
         LIMIT 1000  -- Reduce processing load
       ),
       ranked AS (
@@ -111,15 +113,17 @@ export async function POST(request: Request) {
       const embeddingQuery = `
         WITH ranked AS (
           SELECT 
-            entity_type,
-            entity_id,
-            search_text,
-            state_abbr,
-            state_name,
-            1 - (embedding <=> '${vectorString}'::vector) as similarity
-          FROM vector_index
-          WHERE embedding IS NOT NULL
-          ORDER BY embedding <=> '${vectorString}'::vector
+            vi.entity_type,
+            vi.entity_id,
+            vi.search_text,
+            vi.state_abbr,
+            vi.state_name,
+            1 - (vi.embedding <=> '${vectorString}'::vector) as similarity
+          FROM vector_index vi
+          LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
+          WHERE vi.embedding IS NOT NULL
+          AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
+          ORDER BY vi.embedding <=> '${vectorString}'::vector
           LIMIT 25
         ),
         ${entityDataCTE}
