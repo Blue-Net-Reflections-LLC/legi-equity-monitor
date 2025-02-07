@@ -48,8 +48,8 @@ export function Editor({ value, onChange }: EditorProps) {
   }
 
   return (
-    <div className="border border-input rounded-md">
-      <div className="border-b border-input p-2 flex flex-wrap gap-2">
+    <div className="border border-input rounded-md h-full flex flex-col overflow-hidden">
+      <div className="border-b border-input p-2 flex flex-wrap gap-2 bg-background">
         <Button
           variant="ghost"
           size="sm"
@@ -151,10 +151,12 @@ export function Editor({ value, onChange }: EditorProps) {
           <Redo className="h-4 w-4" />
         </Button>
       </div>
-      <EditorContent 
-        editor={editor} 
-        className="prose prose-sm dark:prose-invert max-w-none p-4"
-      />
+      <div className="flex-1 overflow-auto">
+        <EditorContent 
+          editor={editor} 
+          className="prose prose-sm dark:prose-invert max-w-none p-4 h-full"
+        />
+      </div>
     </div>
   );
 } 

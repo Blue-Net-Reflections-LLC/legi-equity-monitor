@@ -76,9 +76,10 @@ CREATE TABLE blog_posts (
     metadata JSONB,
     author VARCHAR(100),
     is_curated BOOLEAN NOT NULL DEFAULT false,
-    published_at TIMESTAMPTZ,
+    published_at TIMESTAMPTZ NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+
 );
 
 -- Create indexes for efficient querying
