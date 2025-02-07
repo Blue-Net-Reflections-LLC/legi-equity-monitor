@@ -15,6 +15,7 @@ import { Button } from "../components/ui/button";
 import { Separator } from "../components/ui/separator";
 import { signOutAction } from '../(auth)/actions';
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
+import { SearchDialog } from './search/SearchDialog'
 
 const NavLinks = ({ onClick }: { onClick?: () => void }) => (
   <nav className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6">
@@ -91,9 +92,7 @@ export default function Header() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="p-2 hover:bg-accent rounded-full text-zinc-600 dark:text-zinc-200">
-              <Search className="h-5 w-5" />
-            </button>
+            <SearchDialog />
 
             <ThemeToggle />
 
