@@ -20,11 +20,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
     const size = Math.max(1, parseInt(searchParams.get('size') || '10'))
-    const week = parseInt(searchParams.get('week') || '1')
+    const week = parseInt(searchParams.get('week') || '0')
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
     const status = searchParams.get('status')
-    const sort = searchParams.get('sort')
-    const order = searchParams.get('order')
+    const sort = searchParams.get('sort') || 'min_date'
+    const order = searchParams.get('order') || 'desc'
 
     // Calculate offset from 1-based page number
     const offset = (page - 1) * size
@@ -43,8 +43,8 @@ export async function GET(request: Request) {
           c.updated_at
         FROM legislation_clusters c
         JOIN cluster_analysis ca ON c.cluster_id = ca.cluster_id
-        WHERE EXTRACT(WEEK FROM c.min_date) = ${week}
-        AND EXTRACT(YEAR FROM c.min_date) = ${year}
+        WHERE EXTRACT(YEAR FROM c.min_date) = ${year}
+        ${week > 0 ? db`AND EXTRACT(WEEK FROM c.min_date) = ${week}` : db``}
         ${status ? db`AND ca.status = ${status}` : db``}
         ORDER BY ${sort ? db`${db(sort)} ${order === 'asc' ? db`ASC` : db`DESC`}` : db`c.created_at DESC`}
         LIMIT ${size}
@@ -54,8 +54,8 @@ export async function GET(request: Request) {
         SELECT COUNT(DISTINCT c.cluster_id)::int as total 
         FROM legislation_clusters c
         JOIN cluster_analysis ca ON c.cluster_id = ca.cluster_id
-        WHERE EXTRACT(WEEK FROM c.min_date) = ${week}
-        AND EXTRACT(YEAR FROM c.min_date) = ${year}
+        WHERE EXTRACT(YEAR FROM c.min_date) = ${year}
+        ${week > 0 ? db`AND EXTRACT(WEEK FROM c.min_date) = ${week}` : db``}
         ${status ? db`AND ca.status = ${status}` : db``}
       `
     ])

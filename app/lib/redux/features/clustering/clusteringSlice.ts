@@ -4,7 +4,7 @@ import { type TableState, type TablePagination } from '../table/types'
 import { type ClusterListItem, type ClusterDetail, type SortConfig } from '@/app/admin/clustering/types'
 
 interface ClusterFilters {
-  week: number
+  week: number  // 0 means all weeks
   year: number
   status?: 'pending' | 'processing' | 'completed' | 'failed' | 'no_theme'
 }
@@ -22,7 +22,7 @@ const initialState: ClusteringState = {
   items: [],
   currentCluster: null,
   filters: {
-    week: getWeek(new Date()),
+    week: 0, // Default to all weeks
     year: new Date().getFullYear()
   },
   pagination: {
@@ -113,23 +113,28 @@ export const fetchClusters = createAsyncThunk(
     pageIndex: number; 
     pageSize: number; 
     filters: ClusterFilters;
-    sorting: SortConfig  // Change this to match the component's type
+    sorting: SortConfig
   }) => {
     const queryParams = new URLSearchParams({
       page: (params.pageIndex + 1).toString(),
       size: params.pageSize.toString(),
-      week: params.filters.week.toString(),
       year: params.filters.year.toString()
     })
+    
+    // Only add week parameter if it's not 0 (all weeks)
+    if (params.filters.week !== 0) {
+      queryParams.append('week', params.filters.week.toString())
+    }
     
     if (params.filters.status) {
       queryParams.append('status', params.filters.status)
     }
 
-    if (params.sorting) {  // This check handles null case
-      queryParams.append('sort', params.sorting.key)
-      queryParams.append('order', params.sorting.direction)
-    }
+    // Default to sorting by min_date desc if no sorting specified
+    const sortKey = params.sorting?.key || 'min_date'
+    const sortDirection = params.sorting?.direction || 'desc'
+    queryParams.append('sort', sortKey)
+    queryParams.append('order', sortDirection)
 
     const response = await fetch(`/admin/api/clustering?${queryParams}`)
     return response.json()
