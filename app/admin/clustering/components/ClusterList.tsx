@@ -9,6 +9,7 @@ import { setPagination, fetchClusters } from '@/app/lib/redux/features/clusterin
 import { LoadingState } from '@/app/admin/components/LoadingState'
 import { StatusBadge } from './StatusBadge'
 import { ClusterActions } from './ClusterActions'
+import { type ClusterListItem } from '@/app/admin/clustering/types'
 
 // Add sorting state type
 type SortConfig = {
@@ -94,7 +95,7 @@ export function ClusterList() {
             No clusters found
           </div>
         ) : (
-          items.map((item) => (
+          items.map((item: ClusterListItem) => (
             <div key={item.cluster_id} className="grid grid-cols-[2fr_1fr_1fr_3fr_1fr_1fr_auto] gap-4 px-6 py-4 items-center hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
               <div className="text-sm">
                 <Link 
