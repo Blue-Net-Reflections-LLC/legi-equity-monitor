@@ -4,7 +4,7 @@ import asyncio
 
 import torch
 from transformers import AutoTokenizer, AutoModel
-from sqlalchemy import select, join, text
+from sqlalchemy import select, join, text as sql_text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
@@ -184,21 +184,41 @@ class VectorIndexer:
             return
 
         # Prepare texts and generate embeddings
-        texts = [prepare_text_func(item) for item in items]
-        embeddings = self._batch_generate_embeddings(texts)
+        search_texts = [prepare_text_func(item) for item in items]
+        embeddings = self._batch_generate_embeddings(search_texts)
 
-        # Update database
-        for item, text, embedding in zip(items, texts, embeddings):
-            vector_index = VectorIndex(
-                entity_type=entity_type,
-                entity_id=item[f'{entity_type}_id'],
-                search_text=text,
-                embedding=embedding.tolist(),
-                source_hash=item['changed_hash'],
-                state_abbr=item['state_abbr'],
-                state_name=STATE_MAPPING.get(item['state_abbr'], '')
+        # Update database using raw SQL for upsert
+        for item, search_text, embedding in zip(items, search_texts, embeddings):
+            # Convert numpy array to list and format as PostgreSQL vector literal
+            vector_str = f"[{','.join(str(x) for x in embedding.tolist())}]"
+            
+            await session.execute(
+                sql_text("""
+                    INSERT INTO vector_index (
+                        entity_type, entity_id, search_text, embedding, 
+                        source_hash, state_abbr, state_name
+                    ) VALUES (
+                        :entity_type, :entity_id, :search_text, :embedding,
+                        :source_hash, :state_abbr, :state_name
+                    )
+                    ON CONFLICT (entity_type, entity_id) DO UPDATE SET
+                        search_text = EXCLUDED.search_text,
+                        embedding = EXCLUDED.embedding,
+                        source_hash = EXCLUDED.source_hash,
+                        state_abbr = EXCLUDED.state_abbr,
+                        state_name = EXCLUDED.state_name,
+                        indexed_at = CURRENT_TIMESTAMP
+                """),
+                {
+                    'entity_type': entity_type,
+                    'entity_id': item[f'{entity_type}_id'],
+                    'search_text': search_text,
+                    'embedding': vector_str,  # Already formatted as a PostgreSQL vector literal
+                    'source_hash': item['changed_hash'],
+                    'state_abbr': item['state_abbr'],
+                    'state_name': STATE_MAPPING.get(item['state_abbr'], '')
+                }
             )
-            await session.merge(vector_index)
 
         await session.commit()
 
@@ -223,7 +243,7 @@ class VectorIndexer:
 
             # Verify counts
             result = await session.execute(
-                text("SELECT entity_type, COUNT(*) FROM vector_index GROUP BY entity_type")
+                sql_text("SELECT entity_type, COUNT(*) FROM vector_index GROUP BY entity_type")
             )
             for type_, count in result.fetchall():
                 logger.info(f"Total embeddings for {type_}: {count}")

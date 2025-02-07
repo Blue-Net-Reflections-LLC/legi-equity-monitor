@@ -4,7 +4,7 @@ torch==2.5.1
 
 # Core dependencies
 transformers==4.36.2
-numpy==1.24.3
+numpy==1.26.4  # Updated to version with Python 3.12 wheels  DO NOT CHANGE THIS
 huggingface-hub==0.19.4
 protobuf==5.29.2
 sentencepiece==0.1.99  # Required for tokenizers
@@ -17,6 +17,18 @@ asyncpg==0.29.0  # Required for async PostgreSQL support
 # Utilities
 python-dotenv==1.0.0
 tqdm==4.66.1
+pyarrow==15.0.0  # Required for pandas 3.0
 
 # Testing
-pytest-asyncio==0.25.1 
+pytest-asyncio==0.25.1
+
+# Clustering dependencies
+umap-learn==0.5.5
+scikit-learn==1.4.0
+hdbscan==0.8.40
+pandas==2.2.0
+scipy==1.12.0
+
+# Note: RAPIDS packages (cudf and cuml) should be installed via conda:
+# conda install -c rapidsai -c conda-forge -c nvidia \
+#   cudf=24.2 cuml=24.2 python=3.12 cuda-version=12.0 

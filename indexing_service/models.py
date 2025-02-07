@@ -1,9 +1,23 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, func, SmallInteger, Date, Index
-from sqlalchemy.dialects.postgresql import ARRAY, FLOAT
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, func, SmallInteger, Date, Index, Float, Enum, Boolean, JSON, REAL
+from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, UUID, JSONB, TSVECTOR, DOUBLE_PRECISION
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+import enum
+import uuid
 
 Base = declarative_base()
+
+class AnalysisStatus(enum.Enum):
+    pending = 'pending'
+    processing = 'processing'
+    completed = 'completed'
+    failed = 'failed'
+
+class BlogPostStatus(enum.Enum):
+    draft = 'draft'
+    review = 'review'
+    published = 'published'
+    archived = 'archived'
 
 class VectorIndex(Base):
     __tablename__ = 'vector_index'
@@ -103,4 +117,81 @@ class Sponsor(Base):
 
     # Relationships
     state = relationship('State')
-    party = relationship('Party') 
+    party = relationship('Party')
+
+class LegislationCluster(Base):
+    __tablename__ = 'legislation_clusters'
+
+    cluster_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cluster_name = Column(String(255))
+    centroid_vector = Column(ARRAY(FLOAT))
+    reduced_vector = Column(ARRAY(FLOAT))
+    min_date = Column(Date)
+    max_date = Column(Date)
+    bill_count = Column(Integer, nullable=False, default=0)
+    state_count = Column(Integer, nullable=False, default=0)
+    cluster_description = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class ClusterBill(Base):
+    __tablename__ = 'cluster_bills'
+
+    cluster_id = Column(UUID(as_uuid=True), ForeignKey('legislation_clusters.cluster_id'), primary_key=True)
+    bill_id = Column(Integer, ForeignKey('ls_bill.bill_id'), primary_key=True)
+    distance_to_centroid = Column(Float)
+    membership_confidence = Column(Float)
+    added_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    cluster = relationship('LegislationCluster')
+    bill = relationship('Bill')
+
+class ClusterAnalysis(Base):
+    __tablename__ = 'cluster_analysis'
+
+    analysis_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cluster_id = Column(UUID(as_uuid=True), ForeignKey('legislation_clusters.cluster_id'))
+    status = Column(Enum(AnalysisStatus), nullable=False, default=AnalysisStatus.pending)
+    input_token_count = Column(Integer)
+    output_token_count = Column(Integer)
+    analysis_parameters = Column(JSONB)
+    executive_summary = Column(Text)
+    policy_impacts = Column(JSONB)
+    risk_assessment = Column(JSONB)
+    future_outlook = Column(Text)
+    raw_llm_response = Column(JSONB)
+    error_message = Column(Text)
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    cluster = relationship('LegislationCluster')
+
+class BlogPost(Base):
+    __tablename__ = 'blog_posts'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cluster_id = Column(UUID(as_uuid=True), ForeignKey('legislation_clusters.cluster_id'), nullable=True)
+    analysis_id = Column(UUID(as_uuid=True), ForeignKey('cluster_analysis.analysis_id'), nullable=True)
+    title = Column(String(255), nullable=False)
+    slug = Column(String(255), nullable=False, unique=True)
+    status = Column(Enum(BlogPostStatus), nullable=False, default=BlogPostStatus.draft)
+    content = Column(Text, nullable=False)
+    post_metadata = Column(JSONB, nullable=True)
+    author = Column(String(100))
+    is_curated = Column(Boolean, nullable=False, default=False)
+    published_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    search_vector = Column(TSVECTOR)
+
+    # Relationships
+    cluster = relationship('LegislationCluster')
+    analysis = relationship('ClusterAnalysis')
+
+    __table_args__ = (
+        Index('ix_blog_posts_search_vector', 'search_vector', postgresql_using='gin'),
+    ) 
