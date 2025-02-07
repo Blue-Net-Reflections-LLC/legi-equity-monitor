@@ -58,12 +58,16 @@ export const createBlogPostSchema = blogPostSchema.omit({
 })
 
 // Schema for updating a blog post
-export const updateBlogPostSchema = blogPostSchema.partial().extend({
-  published_at: z.union([
-    z.string().datetime({ message: 'Invalid date format' }),
-    z.date(),
-    z.null()
-  ]).optional()
+export const updateBlogPostSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  content: z.string().min(1, 'Content is required'),
+  slug: z.string().min(1, 'Slug is required'),
+  status: z.enum(['draft', 'review', 'published', 'archived']),
+  author: z.string().min(1, 'Author is required'),
+  hero_image: z.string().nullable(),
+  main_image: z.string().nullable(),
+  thumb: z.string().nullable(),
+  published_at: z.date().nullable(),
 })
 
 // Schema for batch updating blog posts

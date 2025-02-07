@@ -22,16 +22,10 @@ export async function GET(
   }
 
   try {
-    const id = parseInt(params.id)
-    
-    if (isNaN(id)) {
-      return new NextResponse('Invalid ID', { status: 400 })
-    }
-
     // Fetch blog post
     const [post] = await db`
       SELECT * FROM blog_posts 
-      WHERE id = ${id}
+      WHERE post_id = ${params.id}::uuid
     `
 
     if (!post) {
@@ -63,12 +57,6 @@ export async function PUT(
   }
 
   try {
-    const id = parseInt(params.id)
-    
-    if (isNaN(id)) {
-      return new NextResponse('Invalid ID', { status: 400 })
-    }
-
     const body = await request.json()
     
     // Validate request body
@@ -91,19 +79,17 @@ export async function PUT(
     // Update blog post
     const [post] = await db`
       UPDATE blog_posts 
-      SET ${db(validatedData, [
-        'title',
-        'slug',
-        'content',
-        'status',
-        'published_at',
-        'author',
-        'is_curated',
-        'hero_image',
-        'main_image',
-        'thumb'
-      ])}
-      WHERE id = ${id}
+      SET 
+        title = ${validatedData.title},
+        content = ${validatedData.content},
+        slug = ${validatedData.slug},
+        status = ${validatedData.status},
+        published_at = ${validatedData.published_at},
+        author = ${validatedData.author},
+        hero_image = ${validatedData.hero_image},
+        main_image = ${validatedData.main_image},
+        thumb = ${validatedData.thumb}
+      WHERE post_id = ${params.id}::uuid
       RETURNING *
     `
 
@@ -145,16 +131,10 @@ export async function DELETE(
   }
 
   try {
-    const id = parseInt(params.id)
-    
-    if (isNaN(id)) {
-      return new NextResponse('Invalid ID', { status: 400 })
-    }
-
     // Delete blog post
     const [post] = await db`
       DELETE FROM blog_posts 
-      WHERE id = ${id}
+      WHERE post_id = ${params.id}::uuid
       RETURNING *
     `
 

@@ -4,87 +4,128 @@ import { batchUpdateBlogPostSchema } from '@/app/lib/validations/blog'
 import db from '@/lib/db'
 import { NextResponse } from 'next/server'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 
-// GET - List blog posts with pagination and filters
+// GET - List all blog posts with filtering and pagination
 export async function GET(request: Request) {
-  const session = await auth()
-  
-  // Check authentication
-  if (!session) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Check admin role
-  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
-
   try {
+    const session = await auth()
+    
+    // Check authentication
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    // Check admin role
+    if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '12'))
     const status = searchParams.get('status')
     const search = searchParams.get('search')
-    
-    // Validate pagination params
-    if (isNaN(page) || page < 1) {
-      return NextResponse.json(
-        { errors: { page: ['Invalid page number'] } },
-        { status: 400 }
-      )
-    }
-    
-    if (isNaN(limit) || limit < 1 || limit > 100) {
-      return NextResponse.json(
-        { errors: { limit: ['Limit must be between 1 and 100'] } },
-        { status: 400 }
-      )
-    }
 
+    // Calculate offset
     const offset = (page - 1) * limit
 
-    // Build query conditions
-    const conditions: string[] = []
-    const params: string[] = []
+    // Build the base query
+    let query = db`
+      SELECT 
+        post_id,
+        title,
+        slug,
+        status,
+        author,
+        published_at,
+        created_at,
+        is_curated
+      FROM blog_posts
+    `
 
+    let countQuery = db`SELECT COUNT(*)::int as total FROM blog_posts`
+    let conditions = []
+    let countConditions = []
 
+    // Add status filter if provided
     if (status) {
-      conditions.push('status = $1')
-      params.push(status)
+      conditions.push(db`status = ${status}`)
+      countConditions.push(db`status = ${status}`)
     }
 
+    // Add search filter if provided
     if (search) {
-      const searchParam = `%${search}%`
-      conditions.push('(title ILIKE $${params.length + 1} OR content ILIKE $${params.length + 1})')
-      params.push(searchParam)
+      const searchCondition = db`(
+        title ILIKE ${'%' + search + '%'} OR 
+        content ILIKE ${'%' + search + '%'}
+      )`
+      conditions.push(searchCondition)
+      countConditions.push(searchCondition)
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    // Combine conditions if any exist
+    if (conditions.length > 0) {
+      query = db`
+        SELECT 
+          post_id,
+          title,
+          slug,
+          status,
+          author,
+          published_at,
+          created_at,
+          is_curated
+        FROM blog_posts
+        WHERE ${db.unsafe(conditions.map(c => `(${c})`).join(' AND '))}
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `
+      countQuery = db`
+        SELECT COUNT(*)::int as total 
+        FROM blog_posts
+        WHERE ${db.unsafe(countConditions.map(c => `(${c})`).join(' AND '))}
+      `
+    } else {
+      query = db`
+        SELECT 
+          post_id,
+          title,
+          slug,
+          status,
+          author,
+          published_at,
+          created_at,
+          is_curated
+        FROM blog_posts
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `
+    }
 
-    // Get total count
-    const [{ total }] = await db`
-      SELECT COUNT(*) as total 
-      FROM blog_posts 
-      ${db(whereClause)}
-    `
+    // Execute queries
+    const [posts, [{ total }]] = await Promise.all([
+      query,
+      countQuery
+    ])
 
-    // Get paginated posts
-    const posts = await db`
-      SELECT * 
-      FROM blog_posts 
-      ${db(whereClause)}
-      ORDER BY created_at DESC 
-      LIMIT ${limit} 
-      OFFSET ${offset}
-    `
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit)
+    const hasNextPage = page < totalPages
+    const hasPrevPage = page > 1
 
     return NextResponse.json({
       posts,
       pagination: {
-        total: parseInt(total),
         page,
         limit,
-        totalPages: Math.ceil(parseInt(total) / limit)
+        total,
+        totalPages,
+        hasNextPage,
+        hasPrevPage
       }
     })
   } catch (error) {
@@ -134,54 +175,41 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT - Update a blog post
+// PUT - Update blog post status
 export async function PUT(request: Request) {
-  const session = await auth()
-  
-  // Check authentication
-  if (!session) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Check admin role
-  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
-
   try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-
-    if (!id) {
-      return new NextResponse('Post ID is required', { status: 400 })
+    const session = await auth()
+    
+    // Check authentication
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    const body = await request.json()
+    // Check admin role
+    if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
+      return new NextResponse('Forbidden', { status: 403 })
+    }
 
-    // Update post
-    const [post] = await db`
+    const { postId, status } = await request.json()
+
+    if (!postId || !status) {
+      return new NextResponse('Missing required fields', { status: 400 })
+    }
+
+    const [updatedPost] = await db`
       UPDATE blog_posts
-      SET ${db(body, [
-        'title',
-        'slug',
-        'content',
-        'status',
-        'published_at',
-        'author',
-        'is_curated',
-        'hero_image',
-        'main_image',
-        'thumb'
-      ])}
-      WHERE id = ${parseInt(id)}
+      SET 
+        status = ${status},
+        published_at = CASE 
+          WHEN ${status} = 'published' THEN CURRENT_TIMESTAMP
+          ELSE NULL
+        END,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE post_id = ${postId}
       RETURNING *
     `
 
-    if (!post) {
-      return new NextResponse('Post not found', { status: 404 })
-    }
-
-    return NextResponse.json({ post })
+    return NextResponse.json(updatedPost)
   } catch (error) {
     console.error('Error updating blog post:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
