@@ -16,6 +16,7 @@ import { Separator } from "../components/ui/separator";
 import { signOutAction } from '../(auth)/actions';
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
 import { SearchDialog } from './search/SearchDialog'
+import { usePathname } from 'next/navigation'
 
 const NavLinks = ({ onClick }: { onClick?: () => void }) => (
   <nav className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6">
@@ -53,6 +54,8 @@ const NavLinks = ({ onClick }: { onClick?: () => void }) => (
 export default function Header() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role && ['admin', 'author', 'editor'].includes(session.user.role);
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/admin');
   const [open, setOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const closeTimeoutRef = useRef<NodeJS.Timeout>();
@@ -76,7 +79,7 @@ export default function Header() {
   }
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-200 dark:border-zinc-800">
+    <header className={`${isAdminRoute ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-200 dark:border-zinc-800`}>
       <div className="w-full max-w-[2000px] mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Link href="/" className="flex items-center space-x-2">
