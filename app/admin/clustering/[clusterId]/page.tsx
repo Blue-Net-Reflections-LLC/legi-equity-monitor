@@ -15,6 +15,80 @@ import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/components/ui/table';
 import { ClusterBill } from '../types';
 import Link from 'next/link';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    title: {
+      display: true,
+      text: 'Impact Distribution',
+      color: 'rgba(156, 163, 175, 0.8)',
+      font: {
+        size: 16,
+      },
+      padding: {
+        bottom: 16,
+      },
+    },
+    legend: {
+      position: 'bottom' as const,
+      labels: {
+        padding: 20,
+        color: 'rgba(156, 163, 175, 0.8)'
+      },
+    },
+  },
+  scales: {
+    x: {
+      grid: {
+        display: true,
+        color: 'rgba(156, 163, 175, 0.1)',
+        drawBorder: true,
+        borderColor: 'rgba(156, 163, 175, 0.2)'
+      },
+      ticks: {
+        color: 'rgba(156, 163, 175, 0.8)'
+      },
+      border: {
+        color: 'rgba(156, 163, 175, 0.2)'
+      }
+    },
+    y: {
+      grid: {
+        display: true,
+        color: 'rgba(156, 163, 175, 0.1)',
+        drawBorder: true,
+        borderColor: 'rgba(156, 163, 175, 0.2)'
+      },
+      ticks: {
+        color: 'rgba(156, 163, 175, 0.8)'
+      },
+      border: {
+        color: 'rgba(156, 163, 175, 0.2)'
+      }
+    },
+  },
+};
 
 // Add interface for bill categories
 interface BillCategory {
@@ -79,7 +153,7 @@ export default function ClusterDetailPage() {
   );
 
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof ClusterBill;
+    key: keyof ClusterBill | 'impact_category';
     direction: 'asc' | 'desc';
   } | null>(null);
 
@@ -138,6 +212,26 @@ export default function ClusterDetailPage() {
     };
   }, [clusterId, dispatch]);
 
+  // Add impact stats calculation
+  const impactStats = bills?.reduce((acc, bill) => {
+    if (bill.overall_bias_score === null || bill.overall_positive_impact_score === null) {
+      acc.noAnalysis++;
+    } else if (bill.overall_bias_score === bill.overall_positive_impact_score) {
+      acc.neutral++;
+    } else if (Math.abs(bill.overall_bias_score) > Math.abs(bill.overall_positive_impact_score)) {
+      acc.bias++;
+    } else {
+      acc.positive++;
+    }
+    return acc;
+  }, { positive: 0, neutral: 0, bias: 0, noAnalysis: 0 });
+
+  const chartData = [
+    { name: 'Positive', value: impactStats?.positive || 0, color: '#22C55E' },
+    { name: 'Neutral', value: impactStats?.neutral || 0, color: '#94A3B8' },
+    { name: 'Bias', value: impactStats?.bias || 0, color: '#EF4444' },
+  ].filter(item => item.value > 0);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -163,18 +257,13 @@ export default function ClusterDetailPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Clusters
-          </Button>
-          <h1 className="text-2xl font-bold">
-            {cluster.cluster_name || `Cluster ${clusterId}`}
-          </h1>
-        </div>
-        <Badge variant={analysis?.status === 'completed' ? 'success' : 'secondary'}>
-          {analysis?.status || 'No Analysis'}
-        </Badge>
+        <h1 className="text-2xl font-bold">
+          {cluster.cluster_name || `Cluster ${clusterId}`}
+        </h1>
+        <Button variant="ghost" onClick={() => router.back()}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Clusters
+        </Button>
       </div>
 
       <Separator />
@@ -188,6 +277,14 @@ export default function ClusterDetailPage() {
               <CardTitle>Cluster Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Status</p>
+                <div className="mt-1">
+                  <Badge variant={analysis?.status === 'completed' ? 'success' : 'secondary'}>
+                    {analysis?.status || 'No Analysis'}
+                  </Badge>
+                </div>
+              </div>
               <div>
                 <p className="text-sm text-muted-foreground">Bills</p>
                 <p className="text-lg font-medium">{cluster.bill_count}</p>
@@ -209,6 +306,36 @@ export default function ClusterDetailPage() {
                   {format(new Date(cluster.created_at), 'MMM d, yyyy')}
                 </p>
               </div>
+              {chartData.length > 0 && (
+                <div className="pt-4">
+                  <p className="text-sm text-muted-foreground mb-2">Impact Distribution</p>
+                  <div className="h-[200px] w-full">
+                    <Bar 
+                      options={chartOptions} 
+                      data={{
+                        labels: ['Impact Distribution'],
+                        datasets: [
+                          {
+                            label: 'Positive',
+                            data: [impactStats?.positive || 0],
+                            backgroundColor: '#22c55e',
+                          },
+                          {
+                            label: 'Neutral',
+                            data: [impactStats?.neutral || 0],
+                            backgroundColor: '#9ca3af',
+                          },
+                          {
+                            label: 'Bias',
+                            data: [impactStats?.bias || 0],
+                            backgroundColor: '#ef4444',
+                          },
+                        ],
+                      }} 
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -303,6 +430,7 @@ export default function ClusterDetailPage() {
                   <TableHead onClick={() => handleSort('impact_category')} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
                     Categories <ArrowUpDown className="ml-1 h-4 w-4 inline" />
                   </TableHead>
+                  <TableHead className="text-right">Impact Scores</TableHead>
                   <TableHead onClick={() => handleSort('membership_confidence')} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
                     Confidence <ArrowUpDown className="ml-1 h-4 w-4 inline" />
                   </TableHead>
@@ -374,6 +502,22 @@ export default function ClusterDetailPage() {
                           </>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {bill.overall_bias_score !== null && bill.overall_positive_impact_score !== null ? (
+                        <div className="space-y-1">
+                          <div className="text-xs">
+                            <span className="text-red-600 dark:text-red-400">Bias: </span>
+                            <span>{Number(bill.overall_bias_score).toFixed(2)}</span>
+                          </div>
+                          <div className="text-xs">
+                            <span className="text-green-600 dark:text-green-400">Positive: </span>
+                            <span>{Number(bill.overall_positive_impact_score).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No scores</span>
+                      )}
                     </TableCell>
                     <TableCell>{(bill.membership_confidence * 100).toFixed(1)}%</TableCell>
                   </TableRow>
