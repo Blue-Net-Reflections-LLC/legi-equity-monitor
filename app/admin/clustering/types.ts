@@ -1,4 +1,14 @@
-export type ClusterStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'no_theme'
+export type ClusterStatus = 
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'no_theme';
+
+export type ClusterType = 
+  | 'bills'
+  | 'amendments'
+  | 'resolutions';
 
 export interface ClusterListItem {
   cluster_id: string
@@ -25,15 +35,15 @@ export interface PaginationState {
 
 export type SetPaginationState = (state: Partial<PaginationState>) => void
 
-export interface SortingState {
+export type SortingState = Array<{
   id: string
   desc: boolean
-}[]
+}>
 
-export interface ColumnFiltersState {
+export type ColumnFiltersState = Array<{
   id: string
   value: unknown
-}[]
+}>
 
 export interface ClusterDetail extends ClusterListItem {
   bills: {

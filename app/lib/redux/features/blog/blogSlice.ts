@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { type TableState } from '../table/tableSlice'
+import { type TableState, TablePagination } from '../table/types'
 
 interface BlogPost {
   id: string
@@ -16,7 +16,23 @@ interface BlogFilters {
   dateRange?: { start: Date; end: Date }
 }
 
-const initialState: TableState<BlogPost, BlogFilters> = {
+interface FetchPostsPayload {
+  data: BlogPost[]
+  total: number
+}
+
+interface ErrorPayload {
+  message: string
+}
+
+interface BlogState extends TableState<BlogPost, BlogFilters> {
+  loading: boolean
+  error: string | null
+  data: BlogPost[]
+  total: number
+}
+
+const initialState: BlogState = {
   items: [],
   filters: {},
   pagination: {
@@ -25,7 +41,11 @@ const initialState: TableState<BlogPost, BlogFilters> = {
     total: 0
   },
   sorting: [],
-  columnFilters: []
+  columnFilters: [],
+  loading: false,
+  error: null,
+  data: [],
+  total: 0
 }
 
 const blogSlice = createSlice({
@@ -39,14 +59,26 @@ const blogSlice = createSlice({
       state.filters = { ...state.filters, ...action.payload }
       state.pagination.pageIndex = 0
     },
-    setPagination: (state, action: PayloadAction<Partial<TableState<any, any>['pagination']>>) => {
+    setPagination: (state, action: PayloadAction<Partial<TablePagination>>) => {
       state.pagination = { ...state.pagination, ...action.payload }
     },
-    setSorting: (state, action: PayloadAction<TableState<any, any>['sorting']>) => {
+    setSorting: (state, action: PayloadAction<TableState<BlogPost, BlogFilters>['sorting']>) => {
       state.sorting = action.payload
     },
-    setColumnFilters: (state, action: PayloadAction<TableState<any, any>['columnFilters']>) => {
+    setColumnFilters: (state, action: PayloadAction<TableState<BlogPost, BlogFilters>['columnFilters']>) => {
       state.columnFilters = action.payload
+    },
+    fetchPostsStart: (state) => {
+      state.loading = true
+    },
+    fetchPostsSuccess: (state, action: PayloadAction<FetchPostsPayload>) => {
+      state.loading = false
+      state.data = action.payload.data
+      state.total = action.payload.total
+    },
+    fetchPostsFailure: (state, action: PayloadAction<ErrorPayload>) => {
+      state.loading = false
+      state.error = action.payload.message
     }
   }
 })

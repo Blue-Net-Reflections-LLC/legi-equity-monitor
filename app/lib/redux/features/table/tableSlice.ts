@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { type SortingState, type ColumnFiltersState, type PaginationState } from '@tanstack/react-table'
+import { type Draft } from '@reduxjs/toolkit'
 
 export interface TableState<I, F> {
   items: I[]
@@ -14,7 +15,7 @@ export const createTableSlice = <I, F>(name: string, initialState: TableState<I,
     name,
     initialState,
     reducers: {
-      setItems: (state, action: PayloadAction<I[]>) => {
+      setItems: (state, action: PayloadAction<Draft<I>[]>) => {
         state.items = action.payload
       },
       setFilters: (state, action: PayloadAction<Partial<F>>) => {

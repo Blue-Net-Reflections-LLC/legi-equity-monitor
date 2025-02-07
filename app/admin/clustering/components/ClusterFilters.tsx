@@ -3,15 +3,13 @@
 import { useAppDispatch, useAppSelector } from '@/app/lib/redux/hooks'
 import { setFilters } from '@/app/lib/redux/features/clustering/clusteringSlice'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { getWeek } from 'date-fns'
 
 export function ClusterFilters() {
   const dispatch = useAppDispatch()
-  const filters = useAppSelector(state => state.clustering.filters)
+  const { week = 1, year = new Date().getFullYear() } = useAppSelector(state => state.clustering.filters)
 
-  // Get current year and week
+  // Get current year only since we don't use currentWeek
   const currentYear = new Date().getFullYear()
-  const currentWeek = getWeek(new Date())
 
   // Generate years (current year and previous year)
   const years = [currentYear, currentYear - 1]
@@ -19,11 +17,21 @@ export function ClusterFilters() {
   // Generate weeks (1-52)
   const weeks = Array.from({ length: 52 }, (_, i) => i + 1)
 
+  const handleYearChange = (value: string) => {
+    console.log('Dispatching year change:', parseInt(value))
+    dispatch(setFilters({ year: parseInt(value) }))
+  }
+
+  const handleWeekChange = (value: string) => {
+    console.log('Dispatching week change:', parseInt(value))
+    dispatch(setFilters({ week: parseInt(value) }))
+  }
+
   return (
     <div className="flex items-center gap-4">
       <Select
-        value={filters.year.toString()}
-        onValueChange={(value) => dispatch(setFilters({ year: parseInt(value) }))}
+        value={year.toString()}
+        onValueChange={handleYearChange}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select year" />
@@ -38,8 +46,8 @@ export function ClusterFilters() {
       </Select>
 
       <Select
-        value={filters.week.toString()}
-        onValueChange={(value) => dispatch(setFilters({ week: parseInt(value) }))}
+        value={week.toString()}
+        onValueChange={handleWeekChange}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select week" />

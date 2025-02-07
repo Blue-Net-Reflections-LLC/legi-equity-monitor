@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { type TableState } from '../table/tableSlice'
+import { type TableState, TablePagination } from '../table/types'
 
 interface Bill {
   bill_id: number
@@ -16,7 +16,14 @@ interface BillFilters {
   dateRange?: { start: Date; end: Date }
 }
 
-const initialState: TableState<Bill, BillFilters> = {
+interface BillsState extends TableState<Bill, BillFilters> {
+  loading: boolean
+  error: string | null
+  data: Bill[]
+  total: number
+}
+
+const initialState: BillsState = {
   items: [],
   filters: {},
   pagination: {
@@ -25,7 +32,20 @@ const initialState: TableState<Bill, BillFilters> = {
     total: 0
   },
   sorting: [],
-  columnFilters: []
+  columnFilters: [],
+  loading: false,
+  error: null,
+  data: [],
+  total: 0
+}
+
+interface FetchBillsPayload {
+  data: Bill[]
+  total: number
+}
+
+interface ErrorPayload {
+  message: string
 }
 
 const billsSlice = createSlice({
@@ -39,14 +59,26 @@ const billsSlice = createSlice({
       state.filters = { ...state.filters, ...action.payload }
       state.pagination.pageIndex = 0
     },
-    setPagination: (state, action: PayloadAction<Partial<TableState<any, any>['pagination']>>) => {
+    setPagination: (state, action: PayloadAction<Partial<TablePagination>>) => {
       state.pagination = { ...state.pagination, ...action.payload }
     },
-    setSorting: (state, action: PayloadAction<TableState<any, any>['sorting']>) => {
+    setSorting: (state, action: PayloadAction<TableState<Bill, BillFilters>['sorting']>) => {
       state.sorting = action.payload
     },
-    setColumnFilters: (state, action: PayloadAction<TableState<any, any>['columnFilters']>) => {
+    setColumnFilters: (state, action: PayloadAction<TableState<Bill, BillFilters>['columnFilters']>) => {
       state.columnFilters = action.payload
+    },
+    fetchBillsStart: (state) => {
+      state.loading = true
+    },
+    fetchBillsSuccess: (state, action: PayloadAction<FetchBillsPayload>) => {
+      state.loading = false
+      state.data = action.payload.data
+      state.total = action.payload.total
+    },
+    fetchBillsFailure: (state, action: PayloadAction<ErrorPayload>) => {
+      state.loading = false
+      state.error = action.payload.message
     }
   }
 })

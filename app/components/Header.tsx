@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Scale, Menu, Search } from 'lucide-react'
+import { Scale, Menu } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 import { useState, useRef } from 'react'
 import Image from 'next/image'

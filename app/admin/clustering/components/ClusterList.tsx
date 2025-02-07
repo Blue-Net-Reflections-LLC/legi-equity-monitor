@@ -5,8 +5,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import { useAppDispatch, useAppSelector } from '@/app/lib/redux/hooks'
-import { setItems, setPagination } from '@/app/lib/redux/features/clustering/clusteringSlice'
-import { setLoading, setError } from '@/app/lib/redux/features/ui/uiSlice'
+import { setPagination, fetchClusters } from '@/app/lib/redux/features/clustering/clusteringSlice'
 import { LoadingState } from '@/app/admin/components/LoadingState'
 import { StatusBadge } from './StatusBadge'
 import { ClusterActions } from './ClusterActions'
@@ -53,8 +52,7 @@ const formatDate = (dateString: string | null | undefined) => {
 
 export function ClusterList() {
   const dispatch = useAppDispatch()
-  const loading = useAppSelector(state => state.ui.loading)
-  const { items, filters, pagination } = useAppSelector(state => state.clustering)
+  const { items, pagination, filters } = useAppSelector(state => state.clustering)
   const [sortConfig, setSortConfig] = useState<SortConfig>(null)
 
   const handleSort = (key: string) => {
@@ -65,52 +63,11 @@ export function ClusterList() {
   };
 
   useEffect(() => {
-    let ignore = false
-
-    const fetchClusters = async () => {
-      dispatch(setLoading({ feature: 'clusters', value: true }))
-      try {
-        const params = new URLSearchParams({
-          page: (pagination.pageIndex + 1).toString(),
-          pageSize: pagination.pageSize.toString(),
-          week: filters.week.toString(),
-          year: filters.year.toString(),
-          ...(filters.status && { status: filters.status }),
-          ...(sortConfig && { 
-            sort: sortConfig.key,
-            order: sortConfig.direction 
-          })
-        })
-
-        const response = await fetch(`/admin/api/clustering?${params}`)
-        if (!response.ok) throw new Error('Failed to fetch clusters')
-
-        const data = await response.json()
-        if (!ignore) {
-          dispatch(setItems(data.items))
-          dispatch(setPagination({
-            ...pagination,
-            total: data.total
-          }))
-        }
-      } catch (error) {
-        if (!ignore) {
-          console.error('Error fetching clusters:', error)
-          dispatch(setError(error instanceof Error ? error.message : 'Failed to fetch clusters'))
-        }
-      } finally {
-        if (!ignore) {
-          dispatch(setLoading({ feature: 'clusters', value: false }))
-        }
-      }
-    }
-
-    fetchClusters()
-
-    return () => {
-      ignore = true
-    }
-  }, [filters.week, filters.year, filters.status, pagination.pageIndex, pagination.pageSize, sortConfig])
+    dispatch(fetchClusters({ 
+      ...pagination, 
+      filters: filters
+    }))
+  }, [dispatch, pagination, filters])
 
   return (
     <div className="relative">
@@ -129,60 +86,70 @@ export function ClusterList() {
 
       {/* Rows */}
       <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-        {items.map((item) => (
-          <div key={item.cluster_id} className="grid grid-cols-[2fr_1fr_1fr_3fr_1fr_1fr_auto] gap-4 px-6 py-4 items-center hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-            <div className="text-sm">
-              <Link 
-                href={`/admin/clustering/${item.cluster_id}`}
-                className="text-orange-600 dark:text-orange-400 hover:underline"
-              >
-                {item.cluster_id}
-              </Link>
-            </div>
-            <div className="text-sm">{item.bill_count}</div>
-            <div className="text-sm">{item.state_count}</div>
-            <div className="text-sm truncate">{item.executive_summary}</div>
-            <div className="text-sm"><StatusBadge status={item.status} /></div>
-            <div className="text-sm text-zinc-500 dark:text-zinc-400">{formatDate(item.min_date)}</div>
-            <div><ClusterActions cluster={item} /></div>
+        {items.length === 0 ? (
+          <div className="px-6 py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+            No clusters found
           </div>
-        ))}
+        ) : (
+          items.map((item) => (
+            <div key={item.cluster_id} className="grid grid-cols-[2fr_1fr_1fr_3fr_1fr_1fr_auto] gap-4 px-6 py-4 items-center hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+              <div className="text-sm">
+                <Link 
+                  href={`/admin/clustering/${item.cluster_id}`}
+                  className="text-orange-600 dark:text-orange-400 hover:underline"
+                >
+                  {item.cluster_id}
+                </Link>
+              </div>
+              <div className="text-sm">{item.bill_count}</div>
+              <div className="text-sm">{item.state_count}</div>
+              <div className="text-sm truncate">{item.executive_summary}</div>
+              <div className="text-sm"><StatusBadge status={item.status} /></div>
+              <div className="text-sm text-zinc-500 dark:text-zinc-400">{formatDate(item.min_date)}</div>
+              <div><ClusterActions cluster={item} /></div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Pagination */}
-      <div className="px-6 py-4 flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800">
-        <div>
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
-            Showing{' '}
-            <span className="font-medium">{pagination.pageSize * pagination.pageIndex + 1}</span>
-            {' '}to{' '}
-            <span className="font-medium">
-              {Math.min(pagination.pageSize * (pagination.pageIndex + 1), pagination.total)}
-            </span>
-            {' '}of{' '}
-            <span className="font-medium">{pagination.total}</span>
-            {' '}results
-          </p>
+      {items.length > 0 && (
+        <div className="px-6 py-4 flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800">
+          <div>
+            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+              Showing{' '}
+              <span className="font-medium">
+                {pagination.pageIndex * pagination.pageSize + 1}
+              </span>
+              {' '}to{' '}
+              <span className="font-medium">
+                {Math.min((pagination.pageIndex + 1) * pagination.pageSize, pagination.total)}
+              </span>
+              {' '}of{' '}
+              <span className="font-medium">{pagination.total}</span>
+              {' '}results
+            </p>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+              <button
+                onClick={() => dispatch(setPagination({ pageIndex: pagination.pageIndex - 1 }))}
+                disabled={pagination.pageIndex === 0}
+                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => dispatch(setPagination({ pageIndex: pagination.pageIndex + 1 }))}
+                disabled={pagination.pageIndex >= Math.ceil(pagination.total / pagination.pageSize) - 1}
+                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </nav>
+          </div>
         </div>
-        <div>
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-            <button
-              onClick={() => dispatch(setPagination({ ...pagination, pageIndex: pagination.pageIndex - 1 }))}
-              disabled={pagination.pageIndex === 0}
-              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => dispatch(setPagination({ ...pagination, pageIndex: pagination.pageIndex + 1 }))}
-              disabled={pagination.pageIndex >= Math.ceil(pagination.total / pagination.pageSize) - 1}
-              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </nav>
-        </div>
-      </div>
+      )}
     </div>
   )
 } 
