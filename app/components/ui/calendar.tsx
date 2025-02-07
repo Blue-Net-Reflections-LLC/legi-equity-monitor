@@ -1,15 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { DayPicker } from 'react-day-picker';
+import { DayPicker, DayPickerSingleProps } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 
-interface CalendarProps {
+interface CalendarProps extends Omit<DayPickerSingleProps, 'mode'> {
   selected: Date | undefined;
   onSelect: (date: Date | undefined) => void;
   disabled?: (date: Date) => boolean;
   initialFocus?: boolean;
-  mode?: 'single' | 'range';
   className?: string;
 }
 
@@ -18,7 +17,7 @@ export function Calendar({
   onSelect, 
   disabled,
   className,
-  mode = 'single' 
+  ...props
 }: CalendarProps) {
   return (
     <DayPicker
@@ -31,6 +30,7 @@ export function Calendar({
         className
       )}
       required={false}
+      {...props}
     />
   );
 } 

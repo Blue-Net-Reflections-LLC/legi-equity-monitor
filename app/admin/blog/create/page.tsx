@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
@@ -286,10 +285,10 @@ export default function CreateBlogPost() {
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="end">
                               <Calendar
-                                mode="single"
                                 selected={value as Date}
                                 onSelect={onChange}
                                 initialFocus
+
                               />
                             </PopoverContent>
                           </Popover>

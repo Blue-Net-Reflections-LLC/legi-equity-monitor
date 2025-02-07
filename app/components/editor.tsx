@@ -68,7 +68,7 @@ export function Editor({ value, onChange }: EditorProps) {
         value={value}
         config={config}
         onBlur={onChange}
-        onChange={newContent => {}}
+        onChange={() => {}}
       />
     </div>
   );

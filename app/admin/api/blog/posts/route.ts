@@ -44,8 +44,9 @@ export async function GET(request: Request) {
     const offset = (page - 1) * limit
 
     // Build query conditions
-    let conditions = []
-    let params = []
+    const conditions: string[] = []
+    const params: string[] = []
+
 
     if (status) {
       conditions.push('status = $1')
