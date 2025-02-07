@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import { getWeek } from 'date-fns'
 import { type TableState, type TablePagination } from '../table/types'
-import { type ClusterListItem, type ClusterDetail } from '@/app/admin/clustering/types'
+import { type ClusterListItem, type ClusterDetail, type SortConfig } from '@/app/admin/clustering/types'
 
 interface ClusterFilters {
   week: number
@@ -109,7 +109,12 @@ const clusteringSlice = createSlice({
 // Create async thunk for fetching clusters
 export const fetchClusters = createAsyncThunk(
   'clustering/fetchClusters',
-  async (params: { pageIndex: number; pageSize: number; filters: ClusterFilters }) => {
+  async (params: { 
+    pageIndex: number; 
+    pageSize: number; 
+    filters: ClusterFilters;
+    sorting: SortConfig  // Change this to match the component's type
+  }) => {
     const queryParams = new URLSearchParams({
       page: (params.pageIndex + 1).toString(),
       size: params.pageSize.toString(),
@@ -119,6 +124,11 @@ export const fetchClusters = createAsyncThunk(
     
     if (params.filters.status) {
       queryParams.append('status', params.filters.status)
+    }
+
+    if (params.sorting) {  // This check handles null case
+      queryParams.append('sort', params.sorting.key)
+      queryParams.append('order', params.sorting.direction)
     }
 
     const response = await fetch(`/admin/api/clustering?${queryParams}`)

@@ -6,8 +6,14 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const session = await auth()
   
-  if (!session?.user) {
+  // Check authentication
+  if (!session) {
     return new NextResponse('Unauthorized', { status: 401 })
+  }
+
+  // Check admin role
+  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
+    return new NextResponse('Forbidden', { status: 403 })
   }
 
   try {
@@ -17,6 +23,8 @@ export async function GET(request: Request) {
     const week = parseInt(searchParams.get('week') || '1')
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
     const status = searchParams.get('status')
+    const sort = searchParams.get('sort')
+    const order = searchParams.get('order')
 
     // Calculate offset from 1-based page number
     const offset = (page - 1) * size
@@ -38,7 +46,7 @@ export async function GET(request: Request) {
         WHERE EXTRACT(WEEK FROM c.min_date) = ${week}
         AND EXTRACT(YEAR FROM c.min_date) = ${year}
         ${status ? db`AND ca.status = ${status}` : db``}
-        ORDER BY c.created_at DESC
+        ORDER BY ${sort ? db`${db(sort)} ${order === 'asc' ? db`ASC` : db`DESC`}` : db`c.created_at DESC`}
         LIMIT ${size}
         OFFSET ${offset}
       `,

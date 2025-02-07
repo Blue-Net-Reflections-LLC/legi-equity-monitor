@@ -56,18 +56,21 @@ export function ClusterList() {
   const [sortConfig, setSortConfig] = useState<SortConfig>(null)
 
   const handleSort = (key: string) => {
-    setSortConfig(current => ({
+    const newSortConfig = {
       key,
-      direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc'
-    }));
+      direction: sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+    } as const;
+    
+    setSortConfig(newSortConfig)
   };
 
   useEffect(() => {
     dispatch(fetchClusters({ 
       ...pagination, 
-      filters: filters
+      filters,
+      sorting: sortConfig
     }))
-  }, [dispatch, pagination, filters])
+  }, [dispatch, pagination, filters, sortConfig]) // Add sortConfig back to dependencies
 
   return (
     <div className="relative">

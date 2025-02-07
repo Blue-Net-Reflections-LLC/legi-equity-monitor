@@ -52,4 +52,9 @@ export interface ClusterDetail extends ClusterListItem {
     state: string
     status: string
   }[]
-} 
+}
+
+export type SortConfig = {
+  key: string;
+  direction: 'asc' | 'desc';
+} | null; 
