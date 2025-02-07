@@ -1,18 +1,27 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/app/lib/redux/store';
 import { fetchClusterDetail, fetchClusterAnalysis, fetchClusterBills, resetClusterDetail } from '@/app/lib/redux/features/clustering/clusterDetailSlice';
 import { Button } from '@/app/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Separator } from '@/app/components/ui/separator';
 import { Badge } from '@/app/components/ui/badge';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/components/ui/table';
+import { ClusterBill } from '../types';
+import Link from 'next/link';
+
+// Add interface for bill categories
+interface BillCategory {
+  category: string;
+  bias_score: number;
+  positive_impact_score: number;
+}
 
 function formatPolicyImpacts(impacts: any) {
   if (!impacts) return null;
@@ -68,6 +77,47 @@ export default function ClusterDetailPage() {
   const { cluster, analysis, bills, loading, error } = useSelector(
     (state: RootState) => state.clusterDetail
   );
+
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof ClusterBill;
+    direction: 'asc' | 'desc';
+  } | null>(null);
+
+  const sortedBills = [...(bills || [])].sort((a, b) => {
+    if (!sortConfig) return 0;
+    
+    if (sortConfig.key === 'impact_category') {
+      const getImpactValue = (bill: ClusterBill) => {
+        if (!bill.overall_bias_score || !bill.overall_positive_impact_score) return 0;
+        if (bill.overall_bias_score === bill.overall_positive_impact_score) return 1; // Neutral
+        return Math.abs(bill.overall_bias_score) > Math.abs(bill.overall_positive_impact_score) ? 2 : 3; // Bias: 2, Positive: 3
+      };
+      
+      const aValue = getImpactValue(a);
+      const bValue = getImpactValue(b);
+      return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+    
+    const aValue = a[sortConfig.key];
+    const bValue = b[sortConfig.key];
+    
+    if (sortConfig.key === 'membership_confidence') {
+      return sortConfig.direction === 'asc' 
+        ? (aValue as number) - (bValue as number)
+        : (bValue as number) - (aValue as number);
+    }
+    
+    return sortConfig.direction === 'asc'
+      ? String(aValue).localeCompare(String(bValue))
+      : String(bValue).localeCompare(String(aValue));
+  });
+
+  const handleSort = (key: keyof ClusterBill | 'impact_category') => {
+    setSortConfig(current => ({
+      key,
+      direction: current?.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
   useEffect(() => {
     if (clusterId) {
@@ -241,18 +291,90 @@ export default function ClusterDetailPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Bill Number</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Confidence</TableHead>
+                  <TableHead onClick={() => handleSort('bill_number')} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                    Bill Number <ArrowUpDown className="ml-1 h-4 w-4 inline" />
+                  </TableHead>
+                  <TableHead onClick={() => handleSort('state_abbr')} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                    State <ArrowUpDown className="ml-1 h-4 w-4 inline" />
+                  </TableHead>
+                  <TableHead onClick={() => handleSort('title')} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                    Title <ArrowUpDown className="ml-1 h-4 w-4 inline" />
+                  </TableHead>
+                  <TableHead onClick={() => handleSort('impact_category')} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                    Categories <ArrowUpDown className="ml-1 h-4 w-4 inline" />
+                  </TableHead>
+                  <TableHead onClick={() => handleSort('membership_confidence')} className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                    Confidence <ArrowUpDown className="ml-1 h-4 w-4 inline" />
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bills?.map((bill) => (
+                {sortedBills.map((bill) => (
                   <TableRow key={bill.bill_id}>
-                    <TableCell>{bill.bill_number}</TableCell>
+                    <TableCell>
+                      <Link 
+                        href={`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`}
+                        target="_blank"
+                        className="text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {bill.bill_number}
+                      </Link>
+                    </TableCell>
                     <TableCell>{bill.state_abbr}</TableCell>
                     <TableCell className="max-w-md truncate">{bill.title}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {bill.overall_bias_score !== null && bill.overall_positive_impact_score !== null && (
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            bill.overall_bias_score === bill.overall_positive_impact_score
+                              ? 'bg-gray-400 text-white dark:bg-gray-400 dark:text-white'
+                              : Math.abs(bill.overall_bias_score) > Math.abs(bill.overall_positive_impact_score)
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          }`}>
+                            {bill.overall_bias_score === bill.overall_positive_impact_score
+                              ? 'Neutral'
+                              : Math.abs(bill.overall_bias_score) > Math.abs(bill.overall_positive_impact_score)
+                                ? 'Bias'
+                                : 'Positive'
+                            }
+                          </span>
+                        )}
+                        {bill.categories && bill.categories.length > 0 && (
+                          <>
+                            <svg 
+                              className="w-4 h-4 text-zinc-400 dark:text-zinc-500" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                strokeWidth={2} 
+                                d="M14 5l7 7-7 7M3 12h18"
+                              />
+                            </svg>
+                            {bill.categories.map((cat) => (
+                              <span 
+                                key={cat.category}
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  cat.bias_score === cat.positive_impact_score
+                                    ? 'bg-gray-400 text-white dark:bg-gray-400 dark:text-white'
+                                    : Math.abs(cat.bias_score) > Math.abs(cat.positive_impact_score)
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                }`}
+                              >
+                                {cat.category.split('_')
+                                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                  .join(' ')}
+                              </span>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{(bill.membership_confidence * 100).toFixed(1)}%</TableCell>
                   </TableRow>
                 ))}

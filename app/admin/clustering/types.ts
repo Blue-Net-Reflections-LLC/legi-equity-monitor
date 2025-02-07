@@ -82,6 +82,13 @@ export interface ClusterBill {
   status_date: string;
   state_abbr: string;
   state_name: string;
+  overall_bias_score: number | null;
+  overall_positive_impact_score: number | null;
+  categories: Array<{
+    category: string;
+    bias_score: number;
+    positive_impact_score: number;
+  }> | null;
 }
 
 export interface ClusterDetailState {
