@@ -34,7 +34,6 @@ export default function EditBlogPost({ params }: { params: { postId: string } })
   }, [params.postId]);
 
   const handleSubmit = async (data: BlogPost) => {
-    debugger;
     setIsSubmitting(true);
     try {
       const response = await fetch(`/admin/api/blog/post/${params.postId}`, {

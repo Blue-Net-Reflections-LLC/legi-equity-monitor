@@ -71,8 +71,15 @@ export async function PUT(
 
     const validatedData = validationResult.data
 
-    // If status is being changed to archived, set published_at to null
-    if (validatedData.status === 'archived') {
+    // Convert string date to Date object if needed
+    if (validatedData.published_at && typeof validatedData.published_at === 'string') {
+      validatedData.published_at = new Date(validatedData.published_at)
+    }
+
+    // Handle published_at based on status
+    if (validatedData.status === 'published' && !validatedData.published_at) {
+      validatedData.published_at = new Date()
+    } else if (validatedData.status === 'archived') {
       validatedData.published_at = null
     }
 
