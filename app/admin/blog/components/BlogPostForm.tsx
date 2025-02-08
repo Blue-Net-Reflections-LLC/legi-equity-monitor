@@ -253,7 +253,6 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="end">
                               <Calendar
-                                mode="single"
                                 selected={value as Date}
                                 onSelect={onChange}
                                 initialFocus

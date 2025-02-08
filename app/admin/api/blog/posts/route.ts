@@ -46,8 +46,9 @@ export async function GET(request: Request) {
     `
 
     let countQuery = db`SELECT COUNT(*)::int as total FROM blog_posts`
-    let conditions = []
-    let countConditions = []
+    const conditions = []
+    const countConditions = []
+
 
     // Add status filter if provided
     if (status) {

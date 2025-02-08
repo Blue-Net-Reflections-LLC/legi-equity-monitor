@@ -2,6 +2,7 @@ import * as z from 'zod'
 
 // Base schema for blog post fields
 export const blogPostSchema = z.object({
+  post_id: z.string().uuid().optional(),
   title: z.string()
     .min(1, 'Title is required')
     .max(255, 'Title must be less than 255 characters'),
