@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import { type TableState, TablePagination } from '../table/types'
+import { type TableState } from '../table/types'
 import type { BlogPost } from '@/app/lib/validations/blog'
 
 interface BlogFilters {
@@ -7,15 +7,6 @@ interface BlogFilters {
   author?: string
   dateRange?: { start: Date; end: Date }
   search: string
-}
-
-interface FetchPostsPayload {
-  data: BlogPost[]
-  total: number
-}
-
-interface ErrorPayload {
-  message: string
 }
 
 interface BlogState extends TableState<BlogPost, BlogFilters> {
@@ -90,7 +81,7 @@ const blogSlice = createSlice({
     },
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload }
-      state.pagination.page = 1
+      state.pagination.pageIndex = 0
     },
     setPagination: (state, action) => {
       state.pagination = { ...state.pagination, ...action.payload }

@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       FROM blog_posts
     `
 
-    let conditions = []
+    const conditions = []
     
     // Add status filter if provided and not 'all'
     if (status && status !== 'all') {
@@ -102,93 +102,6 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error('Error fetching blog posts:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
-  }
-}
-
-// POST - Create a new blog post
-export async function POST(request: Request) {
-  const session = await auth()
-  
-  // Check authentication
-  if (!session) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Check admin role
-  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
-
-  try {
-    const body = await request.json()
-    
-    // Set published_at for published posts if not provided
-    if (body.status === 'published' && !body.published_at) {
-      body.published_at = new Date()
-    }
-    
-    // Insert new blog post
-    const [post] = await db`
-      INSERT INTO blog_posts ${db(body, [
-        'title',
-        'slug',
-        'content',
-        'status',
-        'published_at',
-        'author',
-        'is_curated',
-        'hero_image',
-        'main_image',
-        'thumb'
-      ])}
-      RETURNING *
-    `
-
-    return NextResponse.json({ post }, { status: 201 })
-  } catch (error) {
-    console.error('Error creating blog post:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
-  }
-}
-
-// PUT - Update blog post status
-export async function PUT(request: Request) {
-  try {
-    const session = await auth()
-    
-    // Check authentication
-    if (!session) {
-      return new NextResponse('Unauthorized', { status: 401 })
-    }
-
-    // Check admin role
-    if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-      return new NextResponse('Forbidden', { status: 403 })
-    }
-
-    const { postId, status } = await request.json()
-
-    if (!postId || !status) {
-      return new NextResponse('Missing required fields', { status: 400 })
-    }
-
-    const [updatedPost] = await db`
-      UPDATE blog_posts
-      SET 
-        status = ${status},
-        published_at = CASE 
-          WHEN ${status} = 'published' AND published_at IS NULL THEN CURRENT_TIMESTAMP
-          ELSE published_at
-        END,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE post_id = ${postId}
-      RETURNING *
-    `
-
-    return NextResponse.json(updatedPost)
-  } catch (error) {
-    console.error('Error updating blog post:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
   }
 }

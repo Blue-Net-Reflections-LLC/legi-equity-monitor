@@ -46,6 +46,11 @@ export async function POST(request: Request) {
       validatedData.published_at = new Date(validatedData.published_at)
     }
 
+    // If status is published but no published_at date is set, use current timestamp
+    if (validatedData.status === 'published' && !validatedData.published_at) {
+      validatedData.published_at = new Date()
+    }
+
     // Handle nullable fields
     const insertData = {
       ...validatedData,
