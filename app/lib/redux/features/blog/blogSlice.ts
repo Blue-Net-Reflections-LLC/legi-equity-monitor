@@ -29,8 +29,9 @@ interface BlogState extends TableState<BlogPost, BlogFilters> {
     search: string
   }
   pagination: {
-    page: number
+    pageIndex: number
     pageSize: number
+    total: number
   }
 }
 
@@ -43,8 +44,7 @@ const initialState: BlogState = {
   pagination: {
     pageIndex: 0,
     pageSize: 10,
-    total: 0,
-    page: 1
+    total: 0
   },
   sorting: [],
   columnFilters: [],
@@ -57,19 +57,23 @@ const initialState: BlogState = {
 
 export const fetchBlogPosts = createAsyncThunk(
   'blog/fetchPosts',
-  async ({ page, pageSize, status, search }: { 
-    page: number; 
+  async ({ pageIndex, pageSize, status, search, sort, order }: { 
+    pageIndex: number; 
     pageSize: number; 
     status?: string;
     search?: string;
+    sort?: string;
+    order?: string;
   }) => {
     const params = new URLSearchParams({
-      page: page.toString(),
+      page: (pageIndex + 1).toString(),
       limit: pageSize.toString()
     });
 
     if (status) params.append('status', status);
     if (search) params.append('search', search);
+    if (sort) params.append('sort', sort);
+    if (order) params.append('order', order);
 
     const response = await fetch(`/admin/api/blog/posts?${params}`);
     if (!response.ok) throw new Error('Failed to fetch posts');

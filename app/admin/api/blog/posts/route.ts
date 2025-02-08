@@ -27,6 +27,8 @@ export async function GET(request: Request) {
     const limit = Math.max(1, parseInt(searchParams.get('limit') || '12'))
     const status = searchParams.get('status')
     const search = searchParams.get('search')
+    const sort = searchParams.get('sort') || 'created_at'
+    const order = searchParams.get('order') || 'desc'
 
     // Calculate offset
     const offset = (page - 1) * limit
@@ -67,7 +69,7 @@ export async function GET(request: Request) {
           is_curated
         FROM blog_posts
         ${whereClause}
-        ORDER BY created_at DESC
+        ORDER BY ${sort} ${order}
         LIMIT ${limit}
         OFFSET ${offset}
       `, values),

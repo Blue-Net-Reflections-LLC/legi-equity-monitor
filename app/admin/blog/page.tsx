@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { PlusCircle, Search, ArrowUpDown } from 'lucide-react';
@@ -28,15 +28,18 @@ import { fetchBlogPosts, setFilters, setPagination } from '@/app/lib/redux/featu
 export default function AdminBlogPage() {
   const dispatch = useAppDispatch();
   const { posts, loading, filters, pagination, total } = useAppSelector((state) => state.blog);
+  const [sort, setSort] = useState({ field: 'created_at', direction: 'desc' });
 
   useEffect(() => {
     dispatch(fetchBlogPosts({
-      page: pagination.page,
+      pageIndex: pagination.pageIndex,
       pageSize: pagination.pageSize,
       status: filters.status,
-      search: filters.search
+      search: filters.search,
+      sort: sort.field,
+      order: sort.direction
     }));
-  }, [dispatch, pagination.page, pagination.pageSize, filters.status, filters.search]);
+  }, [dispatch, pagination.pageIndex, pagination.pageSize, filters.status, filters.search, sort]);
 
   const handleStatusChange = async (postId: string | undefined, newStatus: string) => {
     if (!postId) return;
@@ -53,10 +56,12 @@ export default function AdminBlogPage() {
       
       // Refresh the posts list
       dispatch(fetchBlogPosts({
-        page: pagination.page,
+        pageIndex: pagination.pageIndex,
         pageSize: pagination.pageSize,
         status: filters.status,
-        search: filters.search
+        search: filters.search,
+        sort: sort.field,
+        order: sort.direction
       }));
     } catch (error) {
       console.error('Error updating post status:', error);
@@ -76,6 +81,13 @@ export default function AdminBlogPage() {
       default:
         return 'default';
     }
+  };
+
+  const handleSort = (field: string) => {
+    setSort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
   return (
@@ -126,11 +138,36 @@ export default function AdminBlogPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Author</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Published</TableHead>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => handleSort('title')}
+              >
+                Title <ArrowUpDown className="inline h-4 w-4 ml-1" />
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => handleSort('author')}
+              >
+                Author <ArrowUpDown className="inline h-4 w-4 ml-1" />
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => handleSort('status')}
+              >
+                Status <ArrowUpDown className="inline h-4 w-4 ml-1" />
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => handleSort('created_at')}
+              >
+                Created <ArrowUpDown className="inline h-4 w-4 ml-1" />
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => handleSort('published_at')}
+              >
+                Published <ArrowUpDown className="inline h-4 w-4 ml-1" />
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -180,18 +217,31 @@ export default function AdminBlogPage() {
         </Table>
       </div>
 
-      {/* Load More */}
-      {pagination.page * pagination.pageSize < total && (
-        <div className="flex justify-center mt-8">
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing {pagination.pageIndex * pagination.pageSize + 1} to{' '}
+          {Math.min((pagination.pageIndex + 1) * pagination.pageSize, total)} of {total} entries
+        </div>
+        <div className="space-x-2">
           <Button
             variant="outline"
-            onClick={() => dispatch(setPagination({ page: pagination.page + 1 }))}
-            disabled={loading}
+            size="sm"
+            onClick={() => dispatch(setPagination({ pageIndex: pagination.pageIndex - 1 }))}
+            disabled={pagination.pageIndex === 0 || loading}
           >
-            {loading ? 'Loading...' : 'Load More'}
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => dispatch(setPagination({ pageIndex: pagination.pageIndex + 1 }))}
+            disabled={pagination.pageIndex >= Math.ceil(total / pagination.pageSize) - 1 || loading}
+          >
+            Next
           </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 } 
