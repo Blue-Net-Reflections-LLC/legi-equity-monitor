@@ -1,13 +1,13 @@
 import { auth } from '@/app/(auth)/auth'
 import { ADMIN_ROLES } from '@/app/constants/user-roles'
-import { updateBlogPostSchema } from '@/app/lib/validations/blog'
+import { partialUpdateBlogPostSchema } from '@/app/lib/validations/blog'
 import db from '@/lib/db'
 import { NextResponse } from 'next/server'
 
 // GET - Fetch a single blog post
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { postId: string } }
 ) {
   const session = await auth()
   
@@ -22,16 +22,10 @@ export async function GET(
   }
 
   try {
-    const id = parseInt(params.id)
-    
-    if (isNaN(id)) {
-      return new NextResponse('Invalid ID', { status: 400 })
-    }
-
     // Fetch blog post
     const [post] = await db`
       SELECT * FROM blog_posts 
-      WHERE id = ${id}
+      WHERE post_id = ${params.postId}::uuid
     `
 
     if (!post) {
@@ -48,7 +42,7 @@ export async function GET(
 // PUT - Update a blog post
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { postId: string } }
 ) {
   const session = await auth()
   
@@ -63,16 +57,10 @@ export async function PUT(
   }
 
   try {
-    const id = parseInt(params.id)
-    
-    if (isNaN(id)) {
-      return new NextResponse('Invalid ID', { status: 400 })
-    }
-
     const body = await request.json()
     
     // Validate request body
-    const validationResult = updateBlogPostSchema.safeParse(body)
+    const validationResult = partialUpdateBlogPostSchema.safeParse(body)
     
     if (!validationResult.success) {
       return NextResponse.json(
@@ -82,28 +70,25 @@ export async function PUT(
     }
 
     const validatedData = validationResult.data
-    
+
     // Convert string date to Date object if needed
     if (validatedData.published_at && typeof validatedData.published_at === 'string') {
       validatedData.published_at = new Date(validatedData.published_at)
     }
 
+    // Handle published_at based on status
+    if (validatedData.status === 'published' && !validatedData.published_at) {
+      validatedData.published_at = new Date()
+    } else if (validatedData.status === 'archived') {
+      validatedData.published_at = null
+    }
+
     // Update blog post
     const [post] = await db`
       UPDATE blog_posts 
-      SET ${db(validatedData, [
-        'title',
-        'slug',
-        'content',
-        'status',
-        'published_at',
-        'author',
-        'is_curated',
-        'hero_image',
-        'main_image',
-        'thumb'
-      ])}
-      WHERE id = ${id}
+      SET ${db(validatedData)},
+      updated_at = CURRENT_TIMESTAMP
+      WHERE post_id = ${params.postId}::uuid
       RETURNING *
     `
 
@@ -130,7 +115,7 @@ export async function PUT(
 // DELETE - Delete a blog post
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { postId: string } }
 ) {
   const session = await auth()
   
@@ -145,16 +130,10 @@ export async function DELETE(
   }
 
   try {
-    const id = parseInt(params.id)
-    
-    if (isNaN(id)) {
-      return new NextResponse('Invalid ID', { status: 400 })
-    }
-
     // Delete blog post
     const [post] = await db`
       DELETE FROM blog_posts 
-      WHERE id = ${id}
+      WHERE post_id = ${params.postId}::uuid
       RETURNING *
     `
 

@@ -4,186 +4,104 @@ import { batchUpdateBlogPostSchema } from '@/app/lib/validations/blog'
 import db from '@/lib/db'
 import { NextResponse } from 'next/server'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 
-// GET - List blog posts with pagination and filters
+// GET - List all blog posts with filtering and pagination
 export async function GET(request: Request) {
-  const session = await auth()
-  
-  // Check authentication
-  if (!session) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Check admin role
-  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
-
   try {
+    const session = await auth()
+    
+    // Check authentication
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    // Check admin role
+    if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '12'))
     const status = searchParams.get('status')
     const search = searchParams.get('search')
-    
-    // Validate pagination params
-    if (isNaN(page) || page < 1) {
-      return NextResponse.json(
-        { errors: { page: ['Invalid page number'] } },
-        { status: 400 }
-      )
-    }
-    
-    if (isNaN(limit) || limit < 1 || limit > 100) {
-      return NextResponse.json(
-        { errors: { limit: ['Limit must be between 1 and 100'] } },
-        { status: 400 }
-      )
-    }
+    const sort = searchParams.get('sort') || 'created_at'
+    const order = searchParams.get('order') || 'desc'
 
+    // Calculate offset
     const offset = (page - 1) * limit
 
-    // Build query conditions
-    const conditions: string[] = []
-    const params: string[] = []
+    let query = db`
+      SELECT 
+        post_id,
+        title,
+        slug,
+        status,
+        author,
+        published_at,
+        created_at,
+        is_curated
+      FROM blog_posts
+    `
 
-
-    if (status) {
-      conditions.push('status = $1')
-      params.push(status)
+    const conditions = []
+    
+    // Add status filter if provided and not 'all'
+    if (status && status !== 'all') {
+      conditions.push(db`status = ${status}`)
     }
 
+    // Add search filter if provided
     if (search) {
-      const searchParam = `%${search}%`
-      conditions.push('(title ILIKE $${params.length + 1} OR content ILIKE $${params.length + 1})')
-      params.push(searchParam)
+      conditions.push(db`(title ILIKE ${'%' + search + '%'} OR content ILIKE ${'%' + search + '%'})`)
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    // Add WHERE clause if we have conditions
+    if (conditions.length > 0) {
+      const whereConditions = conditions.reduce((acc, condition, idx) => 
+        idx === 0 ? condition : db`${acc} AND ${condition}`
+      )
+      query = db`${query} WHERE ${whereConditions}`
+    }
 
-    // Get total count
-    const [{ total }] = await db`
-      SELECT COUNT(*) as total 
-      FROM blog_posts 
-      ${db(whereClause)}
-    `
+    // Add ORDER BY and LIMIT
+    query = db`${query} ORDER BY ${db.unsafe(sort)} ${db.unsafe(order)} LIMIT ${limit} OFFSET ${offset}`
 
-    // Get paginated posts
-    const posts = await db`
-      SELECT * 
-      FROM blog_posts 
-      ${db(whereClause)}
-      ORDER BY created_at DESC 
-      LIMIT ${limit} 
-      OFFSET ${offset}
-    `
+    // Count query
+    let countQuery = db`SELECT COUNT(*)::int as total FROM blog_posts`
+    if (conditions.length > 0) {
+      const whereConditions = conditions.reduce((acc, condition, idx) => 
+        idx === 0 ? condition : db`${acc} AND ${condition}`
+      )
+      countQuery = db`${countQuery} WHERE ${whereConditions}`
+    }
+
+    // Execute both queries
+    const [posts, [{ total }]] = await Promise.all([
+      query,
+      countQuery
+    ])
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit)
+    const hasNextPage = page < totalPages
+    const hasPrevPage = page > 1
 
     return NextResponse.json({
       posts,
       pagination: {
-        total: parseInt(total),
         page,
         limit,
-        totalPages: Math.ceil(parseInt(total) / limit)
+        total,
+        totalPages,
+        hasNextPage,
+        hasPrevPage
       }
     })
   } catch (error) {
     console.error('Error fetching blog posts:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
-  }
-}
-
-// POST - Create a new blog post
-export async function POST(request: Request) {
-  const session = await auth()
-  
-  // Check authentication
-  if (!session) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Check admin role
-  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
-
-  try {
-    const body = await request.json()
-    
-    // Insert new blog post
-    const [post] = await db`
-      INSERT INTO blog_posts ${db(body, [
-        'title',
-        'slug',
-        'content',
-        'status',
-        'published_at',
-        'author',
-        'is_curated',
-        'hero_image',
-        'main_image',
-        'thumb'
-      ])}
-      RETURNING *
-    `
-
-    return NextResponse.json({ post }, { status: 201 })
-  } catch (error) {
-    console.error('Error creating blog post:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
-  }
-}
-
-// PUT - Update a blog post
-export async function PUT(request: Request) {
-  const session = await auth()
-  
-  // Check authentication
-  if (!session) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Check admin role
-  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
-
-  try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-
-    if (!id) {
-      return new NextResponse('Post ID is required', { status: 400 })
-    }
-
-    const body = await request.json()
-
-    // Update post
-    const [post] = await db`
-      UPDATE blog_posts
-      SET ${db(body, [
-        'title',
-        'slug',
-        'content',
-        'status',
-        'published_at',
-        'author',
-        'is_curated',
-        'hero_image',
-        'main_image',
-        'thumb'
-      ])}
-      WHERE id = ${parseInt(id)}
-      RETURNING *
-    `
-
-    if (!post) {
-      return new NextResponse('Post not found', { status: 404 })
-    }
-
-    return NextResponse.json({ post })
-  } catch (error) {
-    console.error('Error updating blog post:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
   }
 }
