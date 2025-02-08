@@ -25,6 +25,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { GenerateBlogPost } from './components/GenerateBlogPost';
 
 ChartJS.register(
   CategoryScale,
@@ -255,16 +256,22 @@ export default function ClusterDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="dark:text-neutral-50 text-neutral-950 fcontainer mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">
           {cluster.cluster_name || `Cluster ${clusterId}`}
         </h1>
-        <Button variant="ghost" onClick={() => router.back()}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Clusters
-        </Button>
+        <div className="flex items-center gap-4">
+          <GenerateBlogPost 
+            clusterId={clusterId as string} 
+            isDisabled={!analysis || analysis.status !== 'completed'} 
+          />
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Clusters
+          </Button>
+        </div>
       </div>
 
       <Separator />

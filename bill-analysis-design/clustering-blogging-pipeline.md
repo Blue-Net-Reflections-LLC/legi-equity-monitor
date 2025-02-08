@@ -190,12 +190,14 @@ sequenceDiagram
     Backend->>Database: INSERT INTO blog_generation_responses
     Database-->>Backend: Return response_id
     
-    Backend->>Database: POST /blog/generate
+    Backend->>Database: POST /admin/api/blog/post
+    Database-->>Backend: Return blog post id
     
-    Backend->>Frontend: Complete signal with response_id
+    Backend->>Frontend: Complete signal with blog post id
     Frontend->>Frontend: Close dialog
     Frontend->>Frontend: Redirect to blog post page
     Frontend->>Frontend: Add "Regenerate" button
+
 ```
 
 **Key Notes:**
@@ -246,6 +248,45 @@ CREATE INDEX idx_blog_gen_cluster_version ON blog_generation_responses(cluster_i
 1. Each new generation for a cluster increments the version number
 2. Image prompts are stored in dedicated columns for easier querying and management
 3. Maintains history of all generations for comparison and analysis
+
+## Implementation Phases
+
+### Phase 1: Blog Post Generation
+- Setup database tables for generation responses
+- Implement cluster-to-blog generation endpoint
+- Progress tracking with SSE
+- Error handling and user feedback
+- Basic blog post creation flow
+
+### Phase 2: Image Generation (Future)
+- Implementation of image generation workflow
+- Integration with fal.ai
+- Image storage in Cloudflare
+- Image variant handling
+
+## Future Considerations
+
+### Version Management
+- Maximum version limits per cluster
+- Cleanup strategy for old versions
+- Version comparison interface
+
+### Performance Optimization
+- Caching strategies for generated content
+- Batch processing for multiple clusters
+- Response compression for large content
+
+### Error Recovery
+- Automatic retry mechanisms
+- Partial content recovery
+- Generation history tracking
+
+## Next Steps
+1. Create migration for blog_generation_responses table
+2. Implement /admin/api/blog/cluster/{cluster_id}/generate endpoint
+3. Add SSE progress tracking
+4. Setup error handling and user feedback
+5. Test generation flow with sample clusters
 
 
 
