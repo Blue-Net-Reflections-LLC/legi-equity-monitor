@@ -1,6 +1,6 @@
 import { auth } from '@/app/(auth)/auth'
 import { ADMIN_ROLES } from '@/app/constants/user-roles'
-import { updateBlogPostSchema } from '@/app/lib/validations/blog'
+import { updateBlogPostSchema, partialUpdateBlogPostSchema } from '@/app/lib/validations/blog'
 import db from '@/lib/db'
 import { NextResponse } from 'next/server'
 
@@ -60,7 +60,7 @@ export async function PUT(
     const body = await request.json()
     
     // Validate request body
-    const validationResult = updateBlogPostSchema.safeParse(body)
+    const validationResult = partialUpdateBlogPostSchema.safeParse(body)
     
     if (!validationResult.success) {
       return NextResponse.json(
@@ -70,25 +70,17 @@ export async function PUT(
     }
 
     const validatedData = validationResult.data
-    
-    // Convert string date to Date object if needed
-    if (validatedData.published_at && typeof validatedData.published_at === 'string') {
-      validatedData.published_at = new Date(validatedData.published_at)
+
+    // If status is being changed to archived, set published_at to null
+    if (validatedData.status === 'archived') {
+      validatedData.published_at = null
     }
 
     // Update blog post
     const [post] = await db`
       UPDATE blog_posts 
-      SET 
-        title = ${validatedData.title},
-        content = ${validatedData.content},
-        slug = ${validatedData.slug},
-        status = ${validatedData.status},
-        published_at = ${validatedData.published_at},
-        author = ${validatedData.author},
-        hero_image = ${validatedData.hero_image},
-        main_image = ${validatedData.main_image},
-        thumb = ${validatedData.thumb}
+      SET ${db(validatedData)},
+      updated_at = CURRENT_TIMESTAMP
       WHERE post_id = ${params.postId}::uuid
       RETURNING *
     `

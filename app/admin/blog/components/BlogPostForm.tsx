@@ -69,8 +69,10 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
     }
   });
 
-  const handleSubmit = async (data: BlogPost) => {
-    await onSubmit(data);
+  const submitForm = async (status: 'published' | 'draft') => {
+    const values = form.getValues();
+    values.status = status;
+    await onSubmit(values);
   };
 
   const isEditing = !!initialData?.post_id;
@@ -78,7 +80,7 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
   return (
     <div className="h-[calc(100vh-4rem)]">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <form>
           <div className="grid grid-cols-[1fr,300px] gap-6">
             {/* Main Content */}
             <div className="flex flex-col h-full">
@@ -300,8 +302,8 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
 
                   <div className="flex flex-col gap-2 pt-4">
                     <Button
-                      type="submit"
-                      onClick={() => form.setValue('status', 'published')}
+                      type="button"
+                      onClick={() => submitForm('published')}
                       className="w-full"
                       disabled={isSubmitting}
                     >
@@ -310,9 +312,9 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                         : (isEditing ? 'Update & Publish' : 'Publish')}
                     </Button>
                     <Button
-                      type="submit"
+                      type="button"
                       variant="outline"
-                      onClick={() => form.setValue('status', 'draft')}
+                      onClick={() => submitForm('draft')}
                       className="w-full"
                       disabled={isSubmitting}
                     >

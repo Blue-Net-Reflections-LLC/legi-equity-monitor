@@ -33,61 +33,49 @@ export async function GET(request: Request) {
 
     // Build query conditions
     const conditions = []
+    const values = []
     
     // Add status filter if provided and not 'all'
     if (status && status !== 'all') {
-      conditions.push(db`status = ${status}`)
+      conditions.push('status = $1')
+      values.push(status)
     }
 
     // Add search filter if provided
     if (search) {
-      conditions.push(db`(
-        title ILIKE ${'%' + search + '%'} OR 
-        content ILIKE ${'%' + search + '%'}
-      )`)
+      const searchPattern = `%${search}%`
+      conditions.push('(title ILIKE $2 OR content ILIKE $2)')
+      values.push(searchPattern)
     }
+
+    // Build the WHERE clause
+    const whereClause = conditions.length > 0 
+      ? `WHERE ${conditions.join(' AND ')}`
+      : ''
 
     // Execute queries with conditions
     const [posts, [{ total }]] = await Promise.all([
-      conditions.length > 0
-        ? db`
-            SELECT 
-              post_id,
-              title,
-              slug,
-              status,
-              author,
-              published_at,
-              created_at,
-              is_curated
-            FROM blog_posts
-            WHERE ${db.unsafe(conditions.map(c => `(${c})`).join(' AND '))}
-            ORDER BY created_at DESC
-            LIMIT ${limit}
-            OFFSET ${offset}
-          `
-        : db`
-            SELECT 
-              post_id,
-              title,
-              slug,
-              status,
-              author,
-              published_at,
-              created_at,
-              is_curated
-            FROM blog_posts
-            ORDER BY created_at DESC
-            LIMIT ${limit}
-            OFFSET ${offset}
-          `,
-      conditions.length > 0
-        ? db`
-            SELECT COUNT(*)::int as total 
-            FROM blog_posts
-            WHERE ${db.unsafe(conditions.map(c => `(${c})`).join(' AND '))}
-          `
-        : db`SELECT COUNT(*)::int as total FROM blog_posts`
+      db.unsafe(`
+        SELECT 
+          post_id,
+          title,
+          slug,
+          status,
+          author,
+          published_at,
+          created_at,
+          is_curated
+        FROM blog_posts
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `, values),
+      db.unsafe(`
+        SELECT COUNT(*)::int as total 
+        FROM blog_posts
+        ${whereClause}
+      `, values)
     ])
 
     // Calculate pagination metadata

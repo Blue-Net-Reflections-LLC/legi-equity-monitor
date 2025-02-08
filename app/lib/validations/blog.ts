@@ -92,6 +92,19 @@ export const batchUpdateBlogPostSchema = z.object({
   )
 })
 
+// Schema for partial blog post updates
+export const partialUpdateBlogPostSchema = z.object({
+  title: z.string().min(1, 'Title is required').optional(),
+  content: z.string().min(1, 'Content is required').optional(),
+  slug: z.string().min(1, 'Slug is required').optional(),
+  status: z.enum(['draft', 'review', 'published', 'archived']).optional(),
+  author: z.string().min(1, 'Author is required').optional(),
+  hero_image: z.string().nullable().optional(),
+  main_image: z.string().nullable().optional(),
+  thumb: z.string().nullable().optional(),
+  published_at: z.date().nullable().optional(),
+}).refine(data => Object.keys(data).length > 0, 'At least one field must be provided for update')
+
 // Types derived from schemas
 export type BlogPost = z.infer<typeof blogPostSchema>
 export type CreateBlogPost = z.infer<typeof createBlogPostSchema>
