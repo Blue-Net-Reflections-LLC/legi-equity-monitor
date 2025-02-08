@@ -31,86 +31,63 @@ export async function GET(request: Request) {
     // Calculate offset
     const offset = (page - 1) * limit
 
-    // Build the base query
-    let query = db`
-      SELECT 
-        post_id,
-        title,
-        slug,
-        status,
-        author,
-        published_at,
-        created_at,
-        is_curated
-      FROM blog_posts
-    `
-
-    let countQuery = db`SELECT COUNT(*)::int as total FROM blog_posts`
+    // Build query conditions
     const conditions = []
-    const countConditions = []
-
-
-    // Add status filter if provided
-    if (status) {
+    
+    // Add status filter if provided and not 'all'
+    if (status && status !== 'all') {
       conditions.push(db`status = ${status}`)
-      countConditions.push(db`status = ${status}`)
     }
 
     // Add search filter if provided
     if (search) {
-      const searchCondition = db`(
+      conditions.push(db`(
         title ILIKE ${'%' + search + '%'} OR 
         content ILIKE ${'%' + search + '%'}
-      )`
-      conditions.push(searchCondition)
-      countConditions.push(searchCondition)
+      )`)
     }
 
-    // Combine conditions if any exist
-    if (conditions.length > 0) {
-      query = db`
-        SELECT 
-          post_id,
-          title,
-          slug,
-          status,
-          author,
-          published_at,
-          created_at,
-          is_curated
-        FROM blog_posts
-        WHERE ${db.unsafe(conditions.map(c => `(${c})`).join(' AND '))}
-        ORDER BY created_at DESC
-        LIMIT ${limit}
-        OFFSET ${offset}
-      `
-      countQuery = db`
-        SELECT COUNT(*)::int as total 
-        FROM blog_posts
-        WHERE ${db.unsafe(countConditions.map(c => `(${c})`).join(' AND '))}
-      `
-    } else {
-      query = db`
-        SELECT 
-          post_id,
-          title,
-          slug,
-          status,
-          author,
-          published_at,
-          created_at,
-          is_curated
-        FROM blog_posts
-        ORDER BY created_at DESC
-        LIMIT ${limit}
-        OFFSET ${offset}
-      `
-    }
-
-    // Execute queries
+    // Execute queries with conditions
     const [posts, [{ total }]] = await Promise.all([
-      query,
-      countQuery
+      conditions.length > 0
+        ? db`
+            SELECT 
+              post_id,
+              title,
+              slug,
+              status,
+              author,
+              published_at,
+              created_at,
+              is_curated
+            FROM blog_posts
+            WHERE ${db.unsafe(conditions.map(c => `(${c})`).join(' AND '))}
+            ORDER BY created_at DESC
+            LIMIT ${limit}
+            OFFSET ${offset}
+          `
+        : db`
+            SELECT 
+              post_id,
+              title,
+              slug,
+              status,
+              author,
+              published_at,
+              created_at,
+              is_curated
+            FROM blog_posts
+            ORDER BY created_at DESC
+            LIMIT ${limit}
+            OFFSET ${offset}
+          `,
+      conditions.length > 0
+        ? db`
+            SELECT COUNT(*)::int as total 
+            FROM blog_posts
+            WHERE ${db.unsafe(conditions.map(c => `(${c})`).join(' AND '))}
+          `
+        : db`SELECT COUNT(*)::int as total FROM blog_posts`
     ])
 
     // Calculate pagination metadata

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { PlusCircle, Search, ArrowUpDown } from 'lucide-react';
@@ -22,75 +22,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-interface BlogPost {
-  post_id: string;
-  title: string;
-  slug: string;
-  status: 'draft' | 'review' | 'published' | 'archived';
-  author: string;
-  published_at: string | null;
-  created_at: string;
-  is_curated: boolean;
-}
-
-type SortField = 'title' | 'author' | 'status' | 'created_at' | 'published_at';
-type SortOrder = 'asc' | 'desc';
+import { useAppDispatch, useAppSelector } from '@/app/lib/redux/hooks';
+import { fetchBlogPosts, setFilters, setPagination } from '@/app/lib/redux/features/blog/blogSlice';
 
 export default function AdminBlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [status, setStatus] = useState<string>('');
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<{ field: SortField; order: SortOrder }>({
-    field: 'created_at',
-    order: 'desc'
-  });
+  const dispatch = useAppDispatch();
+  const { posts, loading, filters, pagination, total } = useAppSelector((state) => state.blog);
 
   useEffect(() => {
-    fetchPosts();
-  }, [page, status, search, sort]);
-
-  const fetchPosts = async () => {
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '12',
-        sort: sort.field,
-        order: sort.order
-      });
-
-      if (status && status !== 'all') params.append('status', status);
-      if (search) params.append('search', search);
-
-      const response = await fetch(`/admin/api/blog/posts?${params}`);
-      const data = await response.json();
-      
-      if (page === 1) {
-        setPosts(data.posts);
-      } else {
-        setPosts(prev => [...prev, ...data.posts]);
-      }
-      
-      setHasMore(data.pagination.page < data.pagination.totalPages);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      setLoading(false);
-    }
-  };
-
-  const handleSort = (field: SortField) => {
-    setSort(prev => ({
-      field,
-      order: prev.field === field && prev.order === 'asc' ? 'desc' : 'asc'
+    dispatch(fetchBlogPosts({
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      status: filters.status,
+      search: filters.search
     }));
-    setPage(1);
-  };
+  }, [dispatch, pagination.page, pagination.pageSize, filters.status, filters.search]);
 
-  const handleStatusChange = async (postId: string, newStatus: string) => {
+  const handleStatusChange = async (postId: string | undefined, newStatus: string) => {
+    if (!postId) return;
     try {
       const response = await fetch(`/admin/api/blog/post/${postId}`, {
         method: 'PUT',
@@ -103,8 +52,12 @@ export default function AdminBlogPage() {
       if (!response.ok) throw new Error('Failed to update post status');
       
       // Refresh the posts list
-      setPage(1);
-      fetchPosts();
+      dispatch(fetchBlogPosts({
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        status: filters.status,
+        search: filters.search
+      }));
     } catch (error) {
       console.error('Error updating post status:', error);
     }
@@ -145,13 +98,16 @@ export default function AdminBlogPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search posts..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={filters.search}
+              onChange={(e) => dispatch(setFilters({ search: e.target.value }))}
               className="pl-10"
             />
           </div>
         </div>
-        <Select value={status} onValueChange={setStatus}>
+        <Select 
+          value={filters.status} 
+          onValueChange={(value) => dispatch(setFilters({ status: value }))}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -170,41 +126,11 @@ export default function AdminBlogPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort('title')}
-              >
-                Title
-                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort('author')}
-              >
-                Author
-                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort('status')}
-              >
-                Status
-                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort('created_at')}
-              >
-                Created
-                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort('published_at')}
-              >
-                Published
-                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Author</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead>Published</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -218,7 +144,7 @@ export default function AdminBlogPage() {
                     {post.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{format(new Date(post.created_at), 'MMM d, yyyy')}</TableCell>
+                <TableCell>{post.created_at ? format(new Date(post.created_at), 'MMM d, yyyy') : '—'}</TableCell>
                 <TableCell>
                   {post.published_at ? format(new Date(post.published_at), 'MMM d, yyyy') : '—'}
                 </TableCell>
@@ -255,11 +181,11 @@ export default function AdminBlogPage() {
       </div>
 
       {/* Load More */}
-      {hasMore && (
+      {pagination.page * pagination.pageSize < total && (
         <div className="flex justify-center mt-8">
           <Button
             variant="outline"
-            onClick={() => setPage(p => p + 1)}
+            onClick={() => dispatch(setPagination({ page: pagination.page + 1 }))}
             disabled={loading}
           >
             {loading ? 'Loading...' : 'Load More'}

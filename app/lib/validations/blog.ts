@@ -24,6 +24,9 @@ export const blogPostSchema = z.object({
     .nullable()
     .optional(),
   
+  created_at: z.date()
+    .optional(),
+  
   author: z.string()
     .min(1, 'Author is required')
     .max(100, 'Author name must be less than 100 characters'),
