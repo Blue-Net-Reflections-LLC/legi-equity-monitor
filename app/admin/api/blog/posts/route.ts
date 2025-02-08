@@ -33,51 +33,55 @@ export async function GET(request: Request) {
     // Calculate offset
     const offset = (page - 1) * limit
 
-    // Build query conditions
-    const conditions = []
-    const values = []
+    let query = db`
+      SELECT 
+        post_id,
+        title,
+        slug,
+        status,
+        author,
+        published_at,
+        created_at,
+        is_curated
+      FROM blog_posts
+    `
+
+    let conditions = []
     
     // Add status filter if provided and not 'all'
     if (status && status !== 'all') {
-      conditions.push('status = $1')
-      values.push(status)
+      conditions.push(db`status = ${status}`)
     }
 
     // Add search filter if provided
     if (search) {
-      const searchPattern = `%${search}%`
-      conditions.push('(title ILIKE $2 OR content ILIKE $2)')
-      values.push(searchPattern)
+      conditions.push(db`(title ILIKE ${'%' + search + '%'} OR content ILIKE ${'%' + search + '%'})`)
     }
 
-    // Build the WHERE clause
-    const whereClause = conditions.length > 0 
-      ? `WHERE ${conditions.join(' AND ')}`
-      : ''
+    // Add WHERE clause if we have conditions
+    if (conditions.length > 0) {
+      const whereConditions = conditions.reduce((acc, condition, idx) => 
+        idx === 0 ? condition : db`${acc} AND ${condition}`
+      )
+      query = db`${query} WHERE ${whereConditions}`
+    }
 
-    // Execute queries with conditions
+    // Add ORDER BY and LIMIT
+    query = db`${query} ORDER BY ${db.unsafe(sort)} ${db.unsafe(order)} LIMIT ${limit} OFFSET ${offset}`
+
+    // Count query
+    let countQuery = db`SELECT COUNT(*)::int as total FROM blog_posts`
+    if (conditions.length > 0) {
+      const whereConditions = conditions.reduce((acc, condition, idx) => 
+        idx === 0 ? condition : db`${acc} AND ${condition}`
+      )
+      countQuery = db`${countQuery} WHERE ${whereConditions}`
+    }
+
+    // Execute both queries
     const [posts, [{ total }]] = await Promise.all([
-      db.unsafe(`
-        SELECT 
-          post_id,
-          title,
-          slug,
-          status,
-          author,
-          published_at,
-          created_at,
-          is_curated
-        FROM blog_posts
-        ${whereClause}
-        ORDER BY ${sort} ${order}
-        LIMIT ${limit}
-        OFFSET ${offset}
-      `, values),
-      db.unsafe(`
-        SELECT COUNT(*)::int as total 
-        FROM blog_posts
-        ${whereClause}
-      `, values)
+      query,
+      countQuery
     ])
 
     // Calculate pagination metadata
@@ -118,6 +122,11 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
+    
+    // Set published_at for published posts if not provided
+    if (body.status === 'published' && !body.published_at) {
+      body.published_at = new Date()
+    }
     
     // Insert new blog post
     const [post] = await db`
@@ -169,8 +178,8 @@ export async function PUT(request: Request) {
       SET 
         status = ${status},
         published_at = CASE 
-          WHEN ${status} = 'published' THEN CURRENT_TIMESTAMP
-          ELSE NULL
+          WHEN ${status} = 'published' AND published_at IS NULL THEN CURRENT_TIMESTAMP
+          ELSE published_at
         END,
         updated_at = CURRENT_TIMESTAMP
       WHERE post_id = ${postId}
