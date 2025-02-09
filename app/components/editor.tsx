@@ -3,11 +3,25 @@
 import dynamic from 'next/dynamic';
 import { useMemo, useRef } from 'react';
 
-// Dynamically import Jodit with no SSR
-const JoditEditor = dynamic(() => import('jodit-react'), {
-  ssr: false,
-  loading: () => <div className="h-[500px] w-full border rounded-md bg-muted/10" />
-});
+// Dynamically import Jodit with no SSR and proper error handling
+const JoditEditor = dynamic(
+  () => import('jodit-react').catch(err => {
+    console.error('Failed to load Jodit editor:', err);
+    return () => (
+      <div className="h-[500px] w-full border rounded-md bg-muted/10 flex items-center justify-center text-muted-foreground">
+        Failed to load editor
+      </div>
+    );
+  }),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[500px] w-full border rounded-md bg-muted/10 flex items-center justify-center">
+        <div className="animate-pulse">Loading editor...</div>
+      </div>
+    )
+  }
+);
 
 interface EditorProps {
   value: string;
@@ -42,8 +56,8 @@ export function Editor({ value, onChange }: EditorProps) {
     toolbarAdaptive: false,
     defaultMode: 1,
     style: {
-      backgroundColor: '#fff',
-      color: '#000'
+      backgroundColor: 'var(--background)',
+      color: 'var(--foreground)'
     },
     list: {
       style: {
@@ -52,6 +66,15 @@ export function Editor({ value, onChange }: EditorProps) {
     },
     iframe: true,
     iframeStyle: `
+      html {
+        background: var(--background);
+        color: var(--foreground);
+      }
+      body {
+        padding: 10px;
+        color: inherit;
+        background: inherit;
+      }
       ul { list-style-type: disc !important; padding-left: 2em !important; }
       ol { list-style-type: decimal !important; padding-left: 2em !important; }
       ul ul { list-style-type: circle !important; }

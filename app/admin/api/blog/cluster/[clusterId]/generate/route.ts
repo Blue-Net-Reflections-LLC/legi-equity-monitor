@@ -120,7 +120,7 @@ export async function GET(
         const bills = await billsResponse.json();
 
         // Sample bills if more than 70
-        const MAX_BILLS = 70;
+        const MAX_BILLS = 100;
         interface Bill {
           membership_confidence: number;
           [key: string]: any;
@@ -175,8 +175,10 @@ export async function GET(
           ...(process.env.BLOGGING_OPENAI_API_SUPPORTS_JSON_MODE === 'true' && {
             response_format: { type: "json_object" }
           }),
-          stream: true
+          stream: true,
+          max_tokens: 8000
         });
+
 
         let generatedContent;
         let accumulatedContent = '';
