@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +25,7 @@ type GenerationStatus = {
   step: 'idle' | 'confirming' | 'generating' | 'complete' | 'error';
   progress: number;
   message: string;
+  thoughts: string[];
 };
 
 export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProps) {
@@ -32,11 +33,27 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
   const [status, setStatus] = useState<GenerationStatus>({
     step: 'idle',
     progress: 0,
-    message: ''
+    message: '',
+    thoughts: []
   });
 
+  // Add ref for the scrollable container
+  const thoughtsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Add effect to auto-scroll
+  useEffect(() => {
+    if (thoughtsContainerRef.current) {
+      thoughtsContainerRef.current.scrollTop = thoughtsContainerRef.current.scrollHeight;
+    }
+  }, [status.thoughts]);
+
   const startGeneration = async () => {
-    setStatus({ step: 'generating', progress: 0, message: 'Starting generation...' });
+    setStatus({ 
+      step: 'generating', 
+      progress: 0, 
+      message: 'Starting generation...',
+      thoughts: []
+    });
 
     try {
       // Setup SSE connection
@@ -46,17 +63,23 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
         const data = JSON.parse(event.data);
         
         if (data.type === 'progress') {
-          setStatus({
-            step: 'generating',
+          setStatus(prev => ({
+            ...prev,
             progress: data.progress,
             message: data.message
-          });
+          }));
+        } else if (data.type === 'thinking') {
+          setStatus(prev => ({
+            ...prev,
+            thoughts: [...prev.thoughts, data.thought]
+          }));
         } else if (data.type === 'complete') {
           eventSource.close();
           setStatus({
             step: 'complete',
             progress: 100,
-            message: 'Generation complete!'
+            message: 'Generation complete!',
+            thoughts: []
           });
           
           // Redirect to the blog post edit page
@@ -66,7 +89,8 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
           setStatus({
             step: 'error',
             progress: 0,
-            message: data.message
+            message: data.message,
+            thoughts: []
           });
           toast.error(data.message);
         }
@@ -77,7 +101,8 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
         setStatus({
           step: 'error',
           progress: 0,
-          message: 'Connection lost. Please try again.'
+          message: 'Connection lost. Please try again.',
+          thoughts: []
         });
         toast.error('Connection lost. Please try again.');
       };
@@ -85,7 +110,8 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
       setStatus({
         step: 'error',
         progress: 0,
-        message: 'Failed to start generation'
+        message: 'Failed to start generation',
+        thoughts: []
       });
       toast.error('Failed to start generation');
     }
@@ -93,14 +119,14 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
 
   const closeDialog = () => {
     if (status.step !== 'generating') {
-      setStatus({ step: 'idle', progress: 0, message: '' });
+      setStatus({ step: 'idle', progress: 0, message: '', thoughts: [] });
     }
   };
 
   return (
     <>
       <Button
-        onClick={() => setStatus({ step: 'confirming', progress: 0, message: '' })}
+        onClick={() => setStatus({ step: 'confirming', progress: 0, message: '', thoughts: [] })}
         disabled={isDisabled || status.step === 'generating'}
       >
         <FileText className="w-4 h-4 mr-2" />
@@ -132,6 +158,25 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
                   {status.progress}%
                 </p>
               </div>
+
+              {status.thoughts.length > 0 && (
+                <div 
+                  ref={thoughtsContainerRef}
+                  className="h-[200px] overflow-y-auto space-y-2 border rounded-md p-4 bg-muted/50
+                    [&::-webkit-scrollbar]:w-2 
+                    [&::-webkit-scrollbar-track]:bg-transparent
+                    [&::-webkit-scrollbar-thumb]:bg-zinc-400
+                    [&::-webkit-scrollbar-thumb]:rounded-full
+                    dark:[&::-webkit-scrollbar-thumb]:bg-zinc-600
+                    hover:[&::-webkit-scrollbar-thumb]:bg-zinc-500
+                    dark:hover:[&::-webkit-scrollbar-thumb]:bg-zinc-500"
+                >
+                  <div className="font-mono text-sm whitespace-pre-wrap">
+                    {status.thoughts.join('')}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
