@@ -42,20 +42,17 @@ export const blogPostSchema = z.object({
   is_curated: z.boolean()
     .default(false),
   
-  hero_image: z.string()
-    .url('Hero image must be a valid URL')
-    .nullable()
-    .optional(),
+  hero_image: z.string().url('Hero image must be a valid URL').nullable().optional(),
+  hero_image_prompt: z.string().nullable().optional(),
+  hero_image_alt: z.string().nullable().optional(),
   
-  main_image: z.string()
-    .url('Main image must be a valid URL')
-    .nullable()
-    .optional(),
+  main_image: z.string().url('Main image must be a valid URL').nullable().optional(),
+  main_image_prompt: z.string().nullable().optional(),
+  main_image_alt: z.string().nullable().optional(),
   
-  thumb: z.string()
-    .url('Thumbnail must be a valid URL')
-    .nullable()
-    .optional(),
+  thumb: z.string().url('Thumbnail must be a valid URL').nullable().optional(),
+  thumb_prompt: z.string().nullable().optional(),
+  thumb_alt: z.string().nullable().optional(),
 
   cluster_id: z.string().uuid().optional(),
   

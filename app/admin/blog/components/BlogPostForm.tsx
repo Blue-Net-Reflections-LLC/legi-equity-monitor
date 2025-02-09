@@ -25,6 +25,7 @@ import { Editor } from '@/components/editor';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { blogPostSchema, type BlogPost } from '@/app/lib/validations/blog';
+import { UrlInput } from '@/components/image-generation';
 
 interface BlogPostFormProps {
   initialData?: Partial<BlogPost>;
@@ -65,6 +66,15 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
       status: 'draft',
       author: '',
       is_curated: false,
+      hero_image: '',
+      hero_image_prompt: '',
+      hero_image_alt: '',
+      main_image: '',
+      main_image_prompt: '',
+      main_image_alt: '',
+      thumb: '',
+      thumb_prompt: '',
+      thumb_alt: '',
       ...initialData
     }
   });
@@ -78,12 +88,12 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
   const isEditing = !!initialData?.post_id;
 
   return (
-    <div className="h-[calc(100vh-4rem)]">
+    <div className="h-[calc(100vh-4rem)] text-neutral-950 dark:text-neutral-50">
       <Form {...form}>
         <form>
-          <div className="grid grid-cols-[1fr,300px] gap-6">
+          <div className="grid grid-cols-[minmax(0,1fr),400px] gap-6">
             {/* Main Content */}
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full max-w-4xl mx-auto">
               <FormField
                 control={form.control}
                 name="title"
@@ -101,6 +111,8 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                         placeholder="Enter post title" 
                         className={cn(
                           "text-2xl h-auto py-3 px-4 border focus-visible:ring-0",
+                          "bg-white dark:bg-zinc-950",
+                          "text-neutral-950 dark:text-neutral-50",
                           form.formState.errors.title && "border-destructive"
                         )}
                         {...field} 
@@ -158,6 +170,8 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                         <Input 
                           placeholder="enter-post-slug" 
                           className={cn(
+                            "bg-white dark:bg-zinc-950",
+                            "text-neutral-950 dark:text-neutral-50",
                             form.formState.errors.slug && "border-destructive"
                           )}
                           {...field} 
@@ -167,62 +181,6 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                     </FormItem>
                   )}
                 />
-
-                <div className="grid grid-cols-3 gap-4 py-4">
-                  <FormField
-                    control={form.control}
-                    name="hero_image"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hero Image URL</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://..." 
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="main_image"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Main Image URL</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://..." 
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="thumb"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Thumbnail URL</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://..." 
-                            {...field}
-                            value={field.value ?? ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </div>
             </div>
 
@@ -266,6 +224,10 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                           <Input 
                             value={value ? format(value as Date, 'PPP') : 'Immediately'} 
                             readOnly
+                            className={cn(
+                              "bg-white dark:bg-zinc-950",
+                              "text-neutral-950 dark:text-neutral-50"
+                            )}
                             {...field}
                           />
                         </FormControl>
@@ -290,6 +252,8 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                           <Input 
                             placeholder="Enter author name" 
                             className={cn(
+                              "bg-white dark:bg-zinc-950",
+                              "text-neutral-950 dark:text-neutral-50",
                               form.formState.errors.author && "border-destructive"
                             )}
                             {...field} 
@@ -323,6 +287,44 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                         : (isEditing ? 'Save as Draft' : 'Save Draft')}
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Images Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Images</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <UrlInput
+                    name="hero_image"
+                    label="Hero Image"
+                    imageType="hero"
+                    form={form}
+                    promptFieldName="hero_image_prompt"
+                    altFieldName="hero_image_alt"
+                    disabled={isSubmitting}
+                  />
+
+                  <UrlInput
+                    name="main_image"
+                    label="Main Image"
+                    imageType="main"
+                    form={form}
+                    promptFieldName="main_image_prompt"
+                    altFieldName="main_image_alt"
+                    disabled={isSubmitting}
+                  />
+
+                  <UrlInput
+                    name="thumb"
+                    label="Thumbnail"
+                    imageType="thumbnail"
+                    form={form}
+                    promptFieldName="thumb_prompt"
+                    altFieldName="thumb_alt"
+                    disabled={isSubmitting}
+                  />
                 </CardContent>
               </Card>
             </div>
