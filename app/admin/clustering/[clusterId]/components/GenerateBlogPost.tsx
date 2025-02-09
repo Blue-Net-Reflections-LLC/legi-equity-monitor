@@ -155,31 +155,32 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
                   className="h-2 bg-secondary"
                 />
                 <p className="text-sm text-muted-foreground text-center">
-                  {status.progress}%
+                  {status.progress}% - {status.message}
                 </p>
+              </div>
+
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
 
               {status.thoughts.length > 0 && (
                 <div 
                   ref={thoughtsContainerRef}
-                  className="h-[200px] overflow-y-auto space-y-2 border rounded-md p-4 bg-muted/50
+                  className="h-[400px] overflow-y-auto space-y-2 border rounded-md p-4 bg-muted/50
                     [&::-webkit-scrollbar]:w-2 
                     [&::-webkit-scrollbar-track]:bg-transparent
                     [&::-webkit-scrollbar-thumb]:bg-zinc-400
                     [&::-webkit-scrollbar-thumb]:rounded-full
                     dark:[&::-webkit-scrollbar-thumb]:bg-zinc-600
                     hover:[&::-webkit-scrollbar-thumb]:bg-zinc-500
-                    dark:hover:[&::-webkit-scrollbar-thumb]:bg-zinc-500"
+                    dark:hover:[&::-webkit-scrollbar-thumb]:bg-zinc-500
+                    font-mono text-xs leading-relaxed"
                 >
-                  <div className="font-mono text-sm whitespace-pre-wrap">
+                  <pre className="whitespace-pre-wrap break-words">
                     {status.thoughts.join('')}
-                  </div>
+                  </pre>
                 </div>
               )}
-
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
             </div>
           )}
 

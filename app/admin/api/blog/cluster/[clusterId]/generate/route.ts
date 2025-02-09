@@ -2,11 +2,13 @@ import { auth } from '@/app/(auth)/auth';
 import { ADMIN_ROLES } from '@/app/constants/user-roles';
 import { BLOG_GENERATION_SYSTEM_PROMPT } from '@/app/lib/prompts/blog-generation-prompt';
 import OpenAI from 'openai';
+import { marked } from 'marked';
 import db from '@/lib/db';
 import { NextResponse } from 'next/server';
 
-// Force dynamic
+// Force dynamic and increase timeout
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // 5 minutes timeout
 
 // Helper to send SSE messages
 type SSEData = {
@@ -117,6 +119,19 @@ export async function GET(
         }
         const bills = await billsResponse.json();
 
+        // Sample bills if more than 70
+        const MAX_BILLS = 70;
+        interface Bill {
+          membership_confidence: number;
+          [key: string]: any;
+        }
+        const sampledBills = bills.length > MAX_BILLS 
+          ? bills
+              .sort(() => 0.5 - Math.random()) // Shuffle array
+              .slice(0, MAX_BILLS)
+              .sort((a: Bill, b: Bill) => b.membership_confidence - a.membership_confidence) // Sort by confidence
+          : bills;
+
         // Get next version number
         const [{ max_version }] = await db`
           SELECT COALESCE(MAX(version), 0) as max_version 
@@ -153,7 +168,7 @@ export async function GET(
               content: JSON.stringify({
                 cluster,
                 analysis,
-                bills
+                sampledBills
               }, null, 2)
             }
           ],
@@ -182,10 +197,14 @@ export async function GET(
             if (content.includes(thinkEndTag)) {
               isThinking = false;
               if (currentThought) {
-                sendSSEMessage(controller, {
-                  type: 'thinking',
-                  thought: currentThought.trim()
-                });
+                sendSSEMessage(
+                  controller,
+                  {
+                    type: 'thinking',
+                    thought: currentThought.trim()
+                  },
+                  'thinking'
+                );
               }
               currentThought = '';
               continue;
@@ -194,10 +213,14 @@ export async function GET(
             if (isThinking) {
               currentThought += content;
               // Send each character immediately for smoother streaming
-              sendSSEMessage(controller, {
-                type: 'thinking',
-                thought: content
-              });
+              sendSSEMessage(
+                controller,
+                {
+                  type: 'thinking',
+                  thought: content
+                },
+                'thinking'
+              );
             }
           }
         }
@@ -256,6 +279,7 @@ export async function GET(
             cluster_id: params.clusterId,
             analysis_id: analysis.analysis_id,
             ...generatedContent,
+            content: marked(generatedContent.content)
           })
         });
 
@@ -271,7 +295,8 @@ export async function GET(
           progress: 100,
           message: 'Generation complete!',
           blogPostId: blogPost.post.post_id
-        });
+        },
+        'complete');
 
       } catch (error) {
         console.error('Generation error:', error);
@@ -283,7 +308,7 @@ export async function GET(
           'error'
         );
       } finally {
-        controller.close();
+        // controller.close();  DO NOT CHANGE THIS LINE
       }
     }
   });
