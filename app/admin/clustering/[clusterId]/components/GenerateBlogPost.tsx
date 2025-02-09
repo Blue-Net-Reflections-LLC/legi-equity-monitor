@@ -14,7 +14,6 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface GenerateBlogPostProps {
   clusterId: string;
@@ -107,6 +106,7 @@ export function GenerateBlogPost({ clusterId, isDisabled }: GenerateBlogPostProp
         toast.error('Connection lost. Please try again.');
       };
     } catch (error) {
+      console.error('Generation error:', error);
       setStatus({
         step: 'error',
         progress: 0,

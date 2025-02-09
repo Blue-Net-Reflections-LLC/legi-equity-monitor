@@ -9,15 +9,24 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 // Helper to send SSE messages
+type SSEData = {
+  progress?: number;
+  message?: string;
+  thought?: string;
+  blogPostId?: string;
+  type?: 'progress' | 'complete' | 'error' | 'thinking';
+};
+
 function sendSSEMessage(
   controller: ReadableStreamDefaultController,
-  data: any,
-  type: 'progress' | 'complete' | 'error' = 'progress'
+  data: SSEData,
+  type: 'progress' | 'complete' | 'error' | 'thinking' = 'progress'
 ) {
   controller.enqueue(
-    `data: ${JSON.stringify({ type, ...data })}\n\n`
+    `data: ${JSON.stringify({ ...data, type })}\n\n`
   );
 }
+
 // Configure OpenAI client for this specific endpoint
 const openai = new OpenAI({
   apiKey: process.env.BLOGGING_OPENAI_API_KEY,
@@ -209,7 +218,7 @@ export async function GET(
           message: 'Saving generation response...'
         });
 
-        const [generationResponse] = await db`
+        await db`
           INSERT INTO blog_generation_responses (
             cluster_id,
             version,
@@ -229,7 +238,6 @@ export async function GET(
             ${generatedContent.metadata.main_image_prompt},
             ${generatedContent.metadata.thumbnail_image_prompt}
           )
-          RETURNING *
         `;
 
         // Create blog post
