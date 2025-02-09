@@ -3,25 +3,36 @@
 import dynamic from 'next/dynamic';
 import { useMemo, useRef } from 'react';
 
+// Create a named component for the fallback
+const EditorFallback = () => (
+  <div className="h-[500px] w-full border rounded-md bg-muted/10 flex items-center justify-center text-muted-foreground">
+    Failed to load editor
+  </div>
+);
+EditorFallback.displayName = 'EditorFallback';
+
+// Create a named component for the loading state
+const EditorLoading = () => (
+  <div className="h-[500px] w-full border rounded-md bg-muted/10 flex items-center justify-center">
+    <div className="animate-pulse">Loading editor...</div>
+  </div>
+);
+EditorLoading.displayName = 'EditorLoading';
+
 // Dynamically import Jodit with no SSR and proper error handling
 const JoditEditor = dynamic(
   () => import('jodit-react').catch(err => {
     console.error('Failed to load Jodit editor:', err);
-    return () => (
-      <div className="h-[500px] w-full border rounded-md bg-muted/10 flex items-center justify-center text-muted-foreground">
-        Failed to load editor
-      </div>
-    );
+    return EditorFallback;
   }),
   {
     ssr: false,
-    loading: () => (
-      <div className="h-[500px] w-full border rounded-md bg-muted/10 flex items-center justify-center">
-        <div className="animate-pulse">Loading editor...</div>
-      </div>
-    )
+    loading: EditorLoading
   }
 );
+
+// Add display name to the dynamic component
+JoditEditor.displayName = 'DynamicJoditEditor';
 
 interface EditorProps {
   value: string;
