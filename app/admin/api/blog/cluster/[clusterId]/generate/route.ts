@@ -123,7 +123,11 @@ export async function GET(
         const MAX_BILLS = 100;
         interface Bill {
           membership_confidence: number;
-          [key: string]: any;
+          bill_id: number;
+          bill_number: string;
+          title: string;
+          state_abbr: string;
+          state_name: string;
         }
         const sampledBills = bills.length > MAX_BILLS 
           ? bills
