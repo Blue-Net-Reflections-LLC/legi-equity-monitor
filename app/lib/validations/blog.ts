@@ -43,6 +43,8 @@ export const blogPostSchema = z.object({
     .url('Main image must be a valid URL')
     .nullable()
     .optional(),
+
+  cluster_id: z.string().uuid().optional(),
   
   thumb: z.string()
     .url('Thumbnail must be a valid URL')
@@ -71,8 +73,10 @@ export const updateBlogPostSchema = z.object({
   hero_image: z.string().nullable(),
   main_image: z.string().nullable(),
   thumb: z.string().nullable(),
+  cluster_id: z.string().uuid().optional(),
   published_at: z.date().nullable(),
 })
+
 
 // Schema for batch updating blog posts
 export const batchUpdateBlogPostSchema = z.object({
