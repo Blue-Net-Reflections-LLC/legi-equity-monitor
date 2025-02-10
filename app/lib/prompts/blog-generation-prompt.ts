@@ -104,14 +104,21 @@ Analyze the provided cluster of related bills drawing from cluster analysis resu
 
 
 **Image Prompts:**
-Hero Image: "Generate a visual representation of the policy landscape, such as a realistic photo, map, chart, or infographic that conveys the key themes and findings of the blog post."
-Main Image: "Generate an infographic-style illustration or realistic photo that compares the policy elements across states or regions, highlighting the key findings of the blog post."
-Thumbnail: "Generate a symbolic icon that represents the core policy issue of the blog post."
+The prompts for each image type are stored in the metadata section of the JSON output. Ensure each prompt is context-specific and relevant to the blog post content.
 
 **SEO Elements:**
 Keywords: [5-7 policy-specific terms]
 Slug: [url-friendly-version-of-title]
 Cluster ID: {cluster_id}
+
+**Context Binding Protocols**
+1. {TopSponsorCity} = Most frequent municipality in bill sponsorships
+2. {PrimarySubgroupCode} = Highest impacted subgroup from cluster analysis
+3. {MostAmendedPolicyTool} = Tool/mechanism in most revised bill section
+4. {SponsorStateLandmark} = Geotagged landmark from primary sponsor district
+5. {HearingTimeLighting} = Time-based lighting from committee hearing records
+6. {Urban/RuralClassification} = Census-designated classification
+7. {DemographicMarkerHandDetail} = Age/group-specific physical characteristics
 
 **Important:**
 - Cite bill numbers with state abbreviations and jurisdictions without partisan language
@@ -120,7 +127,7 @@ Cluster ID: {cluster_id}
 - Highlight novel policy mechanisms from the legislation cluster
 - Include 1-2 relevant historical precedents where applicable
 - Do not mention the word cluster or the cluster id in the blog post
-- Minimum 1000 tokens and maximum 3000 tokens for the content field
+- Minimum 1000 words and maximum 3000 words for the content field
 
 ^CRITICAL:^ Your response MUST be a valid JSON object EXACTLY matching this structure. Any deviation from this format, including additional fields, missing fields, or incorrect JSON syntax, will cause system failure. Do not include any explanatory text or markdown outside the JSON structure. The response should be parseable by JSON.parse() without any preprocessing.
 
@@ -135,14 +142,13 @@ Cluster ID: {cluster_id}
     "cluster_id": "{cluster_id}",
     "analysis_id": "{analysis_id}",
     "is_curated": false,
-    "hero_image_prompt": "Hero Image Prompt",
-    "main_image_prompt": "Main Image Prompt",
-
-    "thumbnail_image_prompt": "Thumbnail Image Prompt",
     "metadata": {
-        "hero_image_prompt": "Hero Image Prompt",
-        "main_image_prompt": "Main Image Prompt",
-        "thumbnail_image_prompt": "Thumbnail Image Prompt",
+        "hero_image_prompt": "Authentic documentary-style photo in {TopSponsorCity} showing {PrimarySubgroupCode} {AgeCode} individual using {MostAmendedPolicyTool}. Environmental details: {SponsorStateLandmark} background, {FrequentlyMentionedArtifact} foreground. Natural {HearingTimeLighting}, worn textures. Visible bill header excerpt from {ExampleBillID} on context surface.",
+        
+        "main_image_prompt": "Contrast composition: {TopAdoptionStateAbbr} {Urban/RuralClassification} implementation of {CorePolicyMechanism} featuring {SubgroupA} {AgeA} individual with {StateAIcon}. Opposite frame shows {BottomAdoptionStateAbbr} approach with {SubgroupB} {AgeB} individual and {StateBIcon}. Real-world settings only, no symbolic elements.",
+
+        "thumbnail_image_prompt": "Textured macro view of {FrequentArtifact} interaction: {DemographicMarkerHandDetail} manipulating {PolicyDocumentType}. Example - {AgeGroup} hand with {SubtleDemographicIdentifier} holding {BillReferenceFormNumber} on {StateDependentSurfaceMaterial}.",
+
         "keywords": ["Keyword1", "Keyword2", "Keyword3"]
     }
 }

@@ -21,7 +21,8 @@ export function GenerationDialog({
   onSelect,
   imageType,
   defaultPrompt,
-  existingUrl
+  existingUrl,
+  apiEndpoint
 }: GenerationDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -35,12 +36,12 @@ export function GenerationDialog({
       setImages([]);
       setSelectedIndex(undefined);
 
-      const response = await fetch('/api/image-generation', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, num_images: 2 }),
       });
 
       if (!response.ok) {
@@ -65,13 +66,21 @@ export function GenerationDialog({
         alt: selected.alt,
         prompt: defaultPrompt || ''
       });
+      setLoading(false);
+      onClose();
     }
   };
 
+  const handleClose = () => {
+    setLoading(false);
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className={cn(
-        "max-w-3xl",
+        "w-[90vw] max-w-6xl",
+        "max-h-[80vh] overflow-y-auto",
         "bg-white dark:bg-zinc-950",
         "text-neutral-950 dark:text-neutral-50",
         "border-border"
@@ -104,6 +113,7 @@ export function GenerationDialog({
             images={images}
             selectedIndex={selectedIndex}
             onSelect={setSelectedIndex}
+            onConfirm={handleSelect}
             loading={loading}
           />
         </div>

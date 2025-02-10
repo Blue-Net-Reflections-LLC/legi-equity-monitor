@@ -9,6 +9,7 @@ export function ImageGrid({
   images,
   selectedIndex,
   onSelect,
+  onConfirm,
   loading
 }: ImageGridProps) {
   if (loading) {
@@ -47,7 +48,7 @@ export function ImageGrid({
             <img
               src={image.url}
               alt={image.alt || `Generated image ${index + 1}`}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           </div>
         ))}
@@ -55,7 +56,7 @@ export function ImageGrid({
 
       {selectedIndex !== undefined && (
         <div className="flex justify-end">
-          <Button onClick={() => onSelect(selectedIndex)}>
+          <Button onClick={onConfirm}>
             Use Selected Image
           </Button>
         </div>

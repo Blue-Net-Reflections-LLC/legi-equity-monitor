@@ -76,6 +76,7 @@ export interface GenerationDialogProps {
   imageType: ImageType;
   defaultPrompt?: string;
   existingUrl?: string;
+  apiEndpoint: string;
 }
 
 export interface ImageGridProps {
@@ -85,6 +86,7 @@ export interface ImageGridProps {
   }>;
   selectedIndex?: number;
   onSelect: (index: number) => void;
+  onConfirm: () => void;
   loading?: boolean;
 }
 

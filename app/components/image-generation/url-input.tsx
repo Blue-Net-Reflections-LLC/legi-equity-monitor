@@ -19,19 +19,26 @@ export function UrlInput({
   disabled
 }: UrlInputProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const imageSize = IMAGE_SIZES[imageType];
   const currentUrl = form.watch(name);
   const currentPrompt = form.watch(promptFieldName);
+  
+  // Get the metadata field based on image type
+  const metadata = form.watch('metadata') as Record<string, any>;
+  const metadataPrompt = metadata?.[`${imageType}_image_prompt`] || '';
 
   const handleGenerate = () => {
     setDialogOpen(true);
+    setLoading(true);
   };
 
   const handleClear = () => {
     form.setValue(name, '');
     form.setValue(promptFieldName, '');
     form.setValue(altFieldName, '');
+    setLoading(false);
   };
 
   const handleCopy = async () => {
@@ -46,7 +53,10 @@ export function UrlInput({
     if (image.alt) {
       form.setValue(altFieldName, image.alt);
     }
+    // Update the metadata prompt when a new image is selected
+    form.setValue(`metadata.${imageType}_image_prompt`, image.prompt);
     setDialogOpen(false);
+    setLoading(false);
   };
 
   return (
@@ -66,7 +76,7 @@ export function UrlInput({
                 "border-input"
               )}
             />
-            {currentUrl && (
+            {loading && (
               <div className="absolute inset-y-0 right-3 flex items-center">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
@@ -132,8 +142,9 @@ export function UrlInput({
         onClose={() => setDialogOpen(false)}
         onSelect={handleSelect}
         imageType={imageType}
-        defaultPrompt={currentPrompt}
+        defaultPrompt={currentPrompt || metadataPrompt}
         existingUrl={currentUrl}
+        apiEndpoint="/admin/api/image-generation"
       />
     </div>
   );
