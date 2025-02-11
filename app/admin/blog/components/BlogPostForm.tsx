@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { blogPostSchema, type BlogPost } from '@/app/lib/validations/blog';
 import { UrlInput } from '@/components/image-generation';
 import { toast, Toaster } from 'sonner';
+import { Tabs, TabsList, TabsContent, TabsTrigger } from '@/components/ui/tabs';
 
 interface BlogPostFormProps {
   initialData?: Partial<BlogPost>;
@@ -322,36 +323,62 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                 <CardHeader>
                   <CardTitle>Images</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <UrlInput
-                    name="hero_image"
-                    label="Hero Image"
-                    imageType="hero"
-                    form={form}
-                    promptFieldName="hero_image_prompt"
-                    altFieldName="hero_image_alt"
-                    disabled={isSubmitting}
-                  />
-
-                  <UrlInput
-                    name="main_image"
-                    label="Main Image"
-                    imageType="main"
-                    form={form}
-                    promptFieldName="main_image_prompt"
-                    altFieldName="main_image_alt"
-                    disabled={isSubmitting}
-                  />
-
-                  <UrlInput
-                    name="thumb"
-                    label="Thumbnail"
-                    imageType="thumbnail"
-                    form={form}
-                    promptFieldName="thumb_prompt"
-                    altFieldName="thumb_alt"
-                    disabled={isSubmitting}
-                  />
+                <CardContent>
+                  <Tabs defaultValue="main">
+                    <TabsList className="grid w-full grid-cols-3 bg-muted/20 dark:bg-muted/5 p-1 rounded-lg">
+                      <TabsTrigger 
+                        value="main" 
+                        className="rounded-md data-[state=active]:bg-background dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm"
+                      >
+                        Main
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="hero"
+                        className="rounded-md data-[state=active]:bg-background dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm"
+                      >
+                        Hero
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="thumb"
+                        className="rounded-md data-[state=active]:bg-background dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm"
+                      >
+                        Thumbnail
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="main" className="mt-4">
+                      <UrlInput
+                        name="main_image"
+                        label="Main Image"
+                        imageType="main"
+                        form={form}
+                        promptFieldName="main_image_prompt"
+                        altFieldName="main_image_alt"
+                        disabled={isSubmitting}
+                      />
+                    </TabsContent>
+                    <TabsContent value="hero" className="mt-4">
+                      <UrlInput
+                        name="hero_image"
+                        label="Hero Image"
+                        imageType="hero"
+                        form={form}
+                        promptFieldName="hero_image_prompt"
+                        altFieldName="hero_image_alt"
+                        disabled={isSubmitting}
+                      />
+                    </TabsContent>
+                    <TabsContent value="thumb" className="mt-4">
+                      <UrlInput
+                        name="thumb"
+                        label="Thumbnail"
+                        imageType="thumbnail"
+                        form={form}
+                        promptFieldName="thumb_prompt"
+                        altFieldName="thumb_alt"
+                        disabled={isSubmitting}
+                      />
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             </div>
