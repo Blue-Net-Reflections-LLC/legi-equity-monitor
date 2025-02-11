@@ -1,4 +1,4 @@
-import { Newspaper, Sparkles, Scale, Users, Brain, ArrowRight } from 'lucide-react';
+import { Newspaper } from 'lucide-react';
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import { BlogList } from './components/BlogList';
 import { Metadata } from 'next';
