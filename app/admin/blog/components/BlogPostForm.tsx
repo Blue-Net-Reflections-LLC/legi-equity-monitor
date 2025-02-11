@@ -233,7 +233,7 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                 {/* <CardHeader>
                   <CardTitle>Publish</CardTitle>
                 </CardHeader> */}
-                <CardContent className="space-y-4 pt-8">
+                <CardContent className="space-y-4 pt-6">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Status:</span>
                     <Badge variant="outline" className="capitalize">
@@ -338,7 +338,7 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                 {/* <CardHeader>
                   <CardTitle>Images</CardTitle>
                 </CardHeader> */}
-                <CardContent className="pt-8">
+                <CardContent className="pt-6">
                   <Tabs defaultValue="main">
                     <TabsList className="grid w-full grid-cols-3 bg-muted/20 dark:bg-muted/5 p-1 rounded-lg">
                       <TabsTrigger 
