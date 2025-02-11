@@ -43,9 +43,11 @@ export async function GET(request: Request) {
           c.updated_at
         FROM legislation_clusters c
         JOIN cluster_analysis ca ON c.cluster_id = ca.cluster_id
+        LEFT JOIN blog_posts bp ON c.cluster_id = bp.cluster_id
         WHERE EXTRACT(YEAR FROM c.min_date) = ${year}
         ${week > 0 ? db`AND EXTRACT(WEEK FROM c.min_date) = ${week}` : db``}
         ${status ? db`AND ca.status = ${status}` : db``}
+        AND bp.post_id IS NULL
         ORDER BY ${sort ? db`${db(sort)} ${order === 'asc' ? db`ASC` : db`DESC`}` : db`c.created_at DESC`}
         LIMIT ${size}
         OFFSET ${offset}
@@ -54,9 +56,11 @@ export async function GET(request: Request) {
         SELECT COUNT(DISTINCT c.cluster_id)::int as total 
         FROM legislation_clusters c
         JOIN cluster_analysis ca ON c.cluster_id = ca.cluster_id
+        LEFT JOIN blog_posts bp ON c.cluster_id = bp.cluster_id
         WHERE EXTRACT(YEAR FROM c.min_date) = ${year}
         ${week > 0 ? db`AND EXTRACT(WEEK FROM c.min_date) = ${week}` : db``}
         ${status ? db`AND ca.status = ${status}` : db``}
+        AND bp.post_id IS NULL
       `
     ])
 
