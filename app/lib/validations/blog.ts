@@ -81,7 +81,7 @@ export const updateBlogPostSchema = z.object({
   main_image: z.string().nullable(),
   thumb: z.string().nullable(),
   cluster_id: z.string().uuid().optional(),
-  published_at: z.date().nullable(),
+  published_at: z.union([z.date(), z.string().datetime(), z.null()]),
   metadata: blogMetadataSchema
 })
 
@@ -114,7 +114,7 @@ export const partialUpdateBlogPostSchema = z.object({
   hero_image: z.string().nullable().optional(),
   main_image: z.string().nullable().optional(),
   thumb: z.string().nullable().optional(),
-  published_at: z.date().nullable().optional(),
+  published_at: z.union([z.date(), z.string().datetime(), z.null()]),
   metadata: blogMetadataSchema
 }).refine(data => Object.keys(data).length > 0, 'At least one field must be provided for update')
 

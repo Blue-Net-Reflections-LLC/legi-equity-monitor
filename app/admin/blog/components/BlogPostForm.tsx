@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertCircle, Loader2 } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { blogPostSchema, type BlogPost } from '@/app/lib/validations/blog';
 import { UrlInput } from '@/components/image-generation';
+import { toast, Toaster } from 'sonner';
 
 interface BlogPostFormProps {
   initialData?: Partial<BlogPost>;
@@ -80,17 +81,43 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
   });
 
   const submitForm = async (status: 'published' | 'draft') => {
-    const values = form.getValues();
-    values.status = status;
-    await onSubmit(values);
+    try {
+      const values = form.getValues();
+      values.status = status;
+      
+      // Convert the date to ISO string for API
+      const formData = {
+        ...values,
+        published_at: values.published_at ? new Date(values.published_at).toISOString() : null
+      };
+      
+      await onSubmit(formData as BlogPost);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save blog post");
+    }
   };
 
   const isEditing = !!initialData?.post_id;
 
+  const handlePreview = () => {
+    const formData = form.getValues();
+    const previewData = {
+      ...formData,
+      slug: formData.slug || (formData.title ? formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : 'untitled'),
+      status: 'draft',
+      content: formData.content ? String(formData.content).trim() : '',
+      published_at: formData.published_at ? new Date(formData.published_at).toISOString() : null
+    };
+    
+    const encodedData = Buffer.from(JSON.stringify(previewData)).toString('base64');
+    window.open(`/blog/${previewData.slug}?preview=${encodedData}`, '_blank');
+  };
+
   return (
     <div className="h-[calc(100vh-4rem)] text-neutral-950 dark:text-neutral-50">
+      <Toaster position="top-center" richColors />
       <Form {...form}>
-        <form>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid grid-cols-[minmax(0,1fr),400px] gap-6">
             {/* Main Content */}
             <div className="flex flex-col h-full max-w-4xl mx-auto">
@@ -328,6 +355,27 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                 </CardContent>
               </Card>
             </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePreview}
+              disabled={isSubmitting}
+            >
+              Preview
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save'
+              )}
+            </Button>
           </div>
         </form>
       </Form>

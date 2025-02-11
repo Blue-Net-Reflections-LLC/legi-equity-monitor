@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { PlusCircle, Search, ArrowUpDown } from 'lucide-react';
+import { PlusCircle, Search, ArrowUpDown, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table';
 import { useAppDispatch, useAppSelector } from '@/app/lib/redux/hooks';
 import { fetchBlogPosts, setFilters, setPagination } from '@/app/lib/redux/features/blog/blogSlice';
+import { BlogPost } from '@/app/lib/validations/blog';
 
 export default function AdminBlogPage() {
   const dispatch = useAppDispatch();
@@ -88,6 +89,16 @@ export default function AdminBlogPage() {
       field,
       direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
+  };
+
+  const handlePreview = (post: BlogPost) => {
+    const previewData = {
+      ...post,
+      status: 'draft'
+    };
+    
+    const encodedData = Buffer.from(JSON.stringify(previewData)).toString('base64');
+    window.open(`/blog/${post.slug}?preview=${encodedData}`, '_blank');
   };
 
   return (
@@ -207,9 +218,14 @@ export default function AdminBlogPage() {
                       Unpublish
                     </Button>
                   )}
-                  <Link href={`/blog/${post.slug}`} target="_blank">
-                    <Button variant="ghost" size="sm">View</Button>
-                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handlePreview(post)}
+                    title="Preview"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

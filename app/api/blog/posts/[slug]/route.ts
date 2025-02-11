@@ -21,7 +21,8 @@ export async function GET(
         hero_image,
         main_image,
         thumb,
-        created_at
+        created_at,
+        metadata
       FROM blog_posts
       WHERE slug = ${slug}
       AND status = 'published'

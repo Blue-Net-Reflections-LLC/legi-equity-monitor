@@ -1,5 +1,7 @@
-import { Metadata } from 'next'
-import { BlogList } from './components/BlogList'
+import { Newspaper } from 'lucide-react';
+import { AuroraBackground } from "@/app/components/ui/aurora-background";
+import { BlogList } from './components/BlogList';
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'LegiEquity Blog',
@@ -24,9 +26,28 @@ export const metadata: Metadata = {
 
 export default function BlogPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8">Blog</h1>
-      <BlogList />
+    <div className="min-h-screen bg-white dark:bg-zinc-900">
+      {/* Hero Section */}
+      <section className="h-[30vh] relative">
+        <AuroraBackground>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="flex items-center space-x-3 mb-4">
+              <Newspaper className="w-8 h-8" />
+              <h1 className="text-4xl md:text-6xl font-bold text-zinc-900 dark:text-white text-center">
+                Impact Blog
+              </h1>
+            </div>
+            <p className="text-lg md:text-xl text-zinc-700 dark:text-zinc-300 max-w-2xl text-center px-4">
+              Illuminating the profound effects of legislation on our society
+            </p>
+          </div>
+        </AuroraBackground>
+      </section>
+
+      {/* Blog List */}
+      <div className="container mx-auto px-4 py-8">
+        <BlogList />
+      </div>
     </div>
-  )
+  );
 } 

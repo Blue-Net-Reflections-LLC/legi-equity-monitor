@@ -1,92 +1,98 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { auth } from "@/app/(auth)/auth";
+import { ADMIN_ROLES } from "@/app/constants/user-roles";
 import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Session } from 'next-auth';
 
-interface BlogPost {
-  title: string;
-  content: string;
-  published_at: string;
-  author: string;
-  hero_image: string | null;
-  main_image: string | null;
+const isEditor = (session: Session | null) => {
+  return session?.user?.role && ADMIN_ROLES.includes(session.user.role as string);
+};
+
+async function getBlogPost(slug: string) {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/blog/posts/${slug}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch blog post');
+  }
+  const data = await response.json();
+  return data.post;
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const [post, setPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchPost();
-  }, []);
-
-  const fetchPost = async () => {
-    try {
-      const response = await fetch(`/api/blog/posts/${params.slug}`);
-      if (!response.ok) {
-        throw new Error('Post not found');
-      }
-      const data = await response.json();
-      setPost(data.post);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to load post');
-    } finally {
-      setLoading(false);
-    }
+interface BlogPostPageProps {
+  params: {
+    slug: string;
   };
+  searchParams: {
+    preview?: string;
+  };
+}
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Skeleton className="h-8 w-48 mb-8" />
-        <Skeleton className="h-64 w-full mb-8" />
-        <Skeleton className="h-12 w-3/4 mb-4" />
-        <div className="space-y-4">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3" />
-        </div>
-      </div>
-    );
+export async function generateMetadata({ params, searchParams }: BlogPostPageProps): Promise<Metadata> {
+  try {
+    let post;
+    if (searchParams.preview) {
+      const session = await auth();
+      if (session && isEditor(session)) {
+        const previewData = JSON.parse(Buffer.from(searchParams.preview, 'base64').toString());
+        post = previewData;
+      }
+    }
+    
+    if (!post) {
+      post = await getBlogPost(params.slug);
+    }
+
+    if (!post) return { title: 'Blog Post Not Found' };
+
+    return {
+      title: post.title,
+      description: post.excerpt || post.title,
+      openGraph: {
+        title: post.title,
+        description: post.excerpt || post.title,
+        images: post.metadata?.hero_image ? [{ url: post.metadata.hero_image }] : [],
+      },
+    };
+  } catch {
+    return { title: 'Blog Post' };
   }
+}
 
-  if (error || !post) {
+export default async function BlogPostPage({ params, searchParams }: BlogPostPageProps) {
+  try {
+    let post;
+    
+    // Check for preview mode
+    if (searchParams.preview) {
+      const session = await auth();
+      if (session && isEditor(session)) {
+        try {
+          const previewData = JSON.parse(Buffer.from(searchParams.preview, 'base64').toString());
+          post = previewData;
+        } catch (error) {
+          console.error('Failed to parse preview data:', error);
+        }
+      }
+    }
+    
+    // If not in preview mode or preview failed, get the actual post
+    if (!post) {
+      post = await getBlogPost(params.slug);
+    }
+
+    if (!post) {
+      notFound();
+    }
+
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Error</h1>
-          <p className="text-muted-foreground mb-4">{error || 'Post not found'}</p>
-          <Link href="/blog">
-            <Button variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Blog
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <article className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
-        <Link href="/blog">
-          <Button variant="ghost" className="mb-8">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Blog
-          </Button>
-        </Link>
-
+      <article className="text-neutral-900 dark:text-neutral-50 -mt-8">
         {/* Hero Image */}
-        {post.hero_image && (
-          <div className="relative h-[400px] mb-8 rounded-lg overflow-hidden">
+        {post.hero_image ? (
+          <div className="relative h-[80vh] w-full mb-8">
             <Image
               src={post.hero_image}
               alt={post.title}
@@ -94,37 +100,87 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               className="object-cover"
               priority
             />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60">
+              <div className="container mx-auto px-4 h-full flex items-end pb-12">
+                <div className="max-w-4xl mx-auto w-full">
+                  <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">{post.title}</h1>
+                  <div className="flex items-center text-white/80">
+                    <span>{post.author}</span>
+                    {post.published_at && (
+                      <>
+                        <span className="mx-2">•</span>
+                        <time>{format(new Date(post.published_at), 'MMMM d, yyyy')}</time>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="container mx-auto px-4 py-8">
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
+              <div className="flex items-center text-muted-foreground">
+                <span>{post.author}</span>
+                {post.published_at && (
+                  <>
+                    <span className="mx-2">•</span>
+                    <time>{format(new Date(post.published_at), 'MMMM d, yyyy')}</time>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Title and Meta */}
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-          <div className="flex items-center text-muted-foreground">
-            <span>{post.author}</span>
-            <span className="mx-2">•</span>
-            <time>{format(new Date(post.published_at), 'MMMM d, yyyy')}</time>
+        {/* Preview Banner */}
+        {searchParams.preview && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-8 -mt-8">
+            <p className="text-yellow-700">Preview Mode</p>
           </div>
-        </header>
+        )}
 
-        {/* Main Image */}
-        {post.main_image && (
-          <div className="relative h-[300px] mb-8 rounded-lg overflow-hidden">
-            <Image
-              src={post.main_image}
-              alt="Main image"
-              fill
-              className="object-cover"
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            {/* Back Button */}
+            <div className="flex justify-end mb-8">
+              <Link href="/blog">
+                <Button variant="ghost" className="-mr-2">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Blog
+                </Button>
+              </Link>
+            </div>
+
+            {/* Main Image */}
+            {post.main_image && (
+              <div className="relative h-[300px] mb-8 rounded-lg overflow-hidden">
+                <Image
+                  src={post.main_image}
+                  alt="Main image"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+
+            {/* Content */}
+            <div 
+              className="prose dark:prose-invert max-w-none [&>p]:mb-6 
+                [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-6 
+                [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-6
+                [&>ul>li]:mb-2 [&>ol>li]:mb-2
+                [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline 
+                [&_a:hover]:text-blue-800 dark:[&_a:hover]:text-blue-300"
+              dangerouslySetInnerHTML={{ __html: post.content }}
             />
           </div>
-        )}
-
-        {/* Content */}
-        <div 
-          className="prose dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
-      </div>
-    </article>
-  );
+        </div>
+      </article>
+    );
+  } catch (error) {
+    console.error('Error rendering blog post:', error);
+    notFound();
+  }
 } 
