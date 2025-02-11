@@ -158,11 +158,23 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                   render={({ field }) => (
                     <FormItem className="">
                       <FormLabel>
-                        <FormFieldWithError 
-                          label="Content"
-                          error={!!form.formState.errors.content}
-                          required={true}
-                        />
+                        <div className="flex items-center justify-between">
+                          <FormFieldWithError 
+                            label="Content"
+                            error={!!form.formState.errors.content}
+                            required={true}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePreview}
+                            disabled={isSubmitting}
+                            className="bg-blue-600 hover:bg-blue-700 text-white border-0"
+                          >
+                            Preview
+                          </Button>
+                        </div>
                       </FormLabel>
                       <FormControl>
                         <div className={cn(
@@ -296,7 +308,7 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                     <Button
                       type="button"
                       onClick={() => submitForm('published')}
-                      className="w-full"
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white"
                       disabled={isSubmitting}
                     >
                       {isSubmitting 
@@ -382,27 +394,6 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                 </CardContent>
               </Card>
             </div>
-          </div>
-
-          <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePreview}
-              disabled={isSubmitting}
-            >
-              Preview
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save'
-              )}
-            </Button>
           </div>
         </form>
       </Form>
