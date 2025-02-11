@@ -8,8 +8,9 @@ import { ImageIcon, Copy, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IMAGE_SIZES, type UrlInputProps } from './types';
 import { GenerationDialog } from './generation-dialog';
+import { FieldValues, Path, PathValue } from 'react-hook-form';
 
-export function UrlInput({
+export function UrlInput<T extends FieldValues>({
   name,
   label,
   imageType,
@@ -17,17 +18,17 @@ export function UrlInput({
   promptFieldName,
   altFieldName,
   disabled
-}: UrlInputProps) {
+}: UrlInputProps<T>) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const imageSize = IMAGE_SIZES[imageType];
-  const currentUrl = form.watch(name);
-  const currentPrompt = form.watch(promptFieldName);
+  const currentUrl = form.watch(name) as string || '';
+  const currentPrompt = form.watch(promptFieldName) as string || '';
   
   // Get the metadata field based on image type
-  const metadata = form.watch('metadata') as Record<string, any>;
-  const metadataPrompt = metadata?.[`${imageType}_image_prompt`] || '';
+  const metadata = form.watch('metadata' as Path<T>) as unknown as Record<string, unknown>;
+  const metadataPrompt = metadata?.[`${imageType}_image_prompt`] as string || '';
 
   const handleGenerate = () => {
     setDialogOpen(true);
@@ -35,9 +36,9 @@ export function UrlInput({
   };
 
   const handleClear = () => {
-    form.setValue(name, '');
-    form.setValue(promptFieldName, '');
-    form.setValue(altFieldName, '');
+    form.setValue(name, '' as PathValue<T, Path<T>>);
+    form.setValue(promptFieldName, '' as PathValue<T, Path<T>>);
+    form.setValue(altFieldName, '' as PathValue<T, Path<T>>);
     setLoading(false);
   };
 
@@ -48,13 +49,13 @@ export function UrlInput({
   };
 
   const handleSelect = (image: { url: string; alt?: string; prompt: string }) => {
-    form.setValue(name, image.url);
-    form.setValue(promptFieldName, image.prompt);
+    form.setValue(name, image.url as PathValue<T, Path<T>>);
+    form.setValue(promptFieldName, image.prompt as PathValue<T, Path<T>>);
     if (image.alt) {
-      form.setValue(altFieldName, image.alt);
+      form.setValue(altFieldName, image.alt as PathValue<T, Path<T>>);
     }
     // Update the metadata prompt when a new image is selected
-    form.setValue(`metadata.${imageType}_image_prompt`, image.prompt);
+    form.setValue(`metadata.${imageType}_image_prompt` as Path<T>, image.prompt as PathValue<T, Path<T>>);
     setDialogOpen(false);
     setLoading(false);
   };

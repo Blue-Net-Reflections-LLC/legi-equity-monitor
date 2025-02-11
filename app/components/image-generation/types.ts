@@ -1,4 +1,4 @@
-import { FieldValues, UseFormReturn, Path, PathValue } from 'react-hook-form';
+import { FieldValues, UseFormReturn, Path } from 'react-hook-form';
 
 export type ImageSize = {
   code: 'landscape_16_9' | 'landscape_3_2' | 'square';
@@ -59,7 +59,7 @@ export interface ImageFormFields {
   alt: string;
 }
 
-export interface UrlInputProps<T extends FieldValues = any> {
+export interface UrlInputProps<T extends FieldValues> {
   name: Path<T>;
   label: string;
   imageType: ImageType;
