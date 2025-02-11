@@ -7,10 +7,9 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Session } from 'next-auth';
 
-const isEditor = (session: Session | null) => {
-  return session?.user?.role && ADMIN_ROLES.includes(session.user.role as string);
+const isEditor = (session: any) => {
+  return session?.user?.role && ADMIN_ROLES.includes(session.user.role);
 };
 
 async function getBlogPost(slug: string) {
@@ -57,7 +56,7 @@ export async function generateMetadata({ params, searchParams }: BlogPostPagePro
         images: post.metadata?.hero_image ? [{ url: post.metadata.hero_image }] : [],
       },
     };
-  } catch {
+  } catch (error) {
     return { title: 'Blog Post' };
   }
 }

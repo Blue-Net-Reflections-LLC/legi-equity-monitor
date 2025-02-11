@@ -120,7 +120,7 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid grid-cols-[minmax(0,1fr),400px] gap-6">
             {/* Main Content */}
-            <div className="flex flex-col h-full max-w-4xl mx-auto">
+            <div className="flex flex-col max-w-4xl mx-auto">
               <FormField
                 control={form.control}
                 name="title"
@@ -150,12 +150,12 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                 )}
               />
 
-              <div className="flex-1 min-h-0 mt-6">
+              <div className="min-h-0 mt-6">
                 <FormField
                   control={form.control}
                   name="content"
                   render={({ field }) => (
-                    <FormItem className="h-full">
+                    <FormItem className="">
                       <FormLabel>
                         <FormFieldWithError 
                           label="Content"

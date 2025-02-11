@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface BlogPost {
   title: string;
