@@ -14,6 +14,7 @@
     "cluster:dry-run": "npx tsx analysis_service/src/cluster-analysis.ts --dry-run"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.2.3",
     "@hookform/resolvers": "^3.10.0",
     "@huggingface/transformers": "^3.3.2",
     "@next/third-parties": "^15.1.6",

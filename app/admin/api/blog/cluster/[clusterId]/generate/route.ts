@@ -235,6 +235,7 @@ export async function GET(
           const jsonStr = thinkingTags.length === 2 
             ? accumulatedContent.substring(accumulatedContent.lastIndexOf(thinkEndTag) + thinkEndTag.length).trim()
             : accumulatedContent.trim();
+          console.log('jsonStr', jsonStr);
           generatedContent = JSON.parse(jsonStr);
         } catch (error) {
           console.error('Failed to parse generated content:', error);

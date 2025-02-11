@@ -1,5 +1,13 @@
 import * as z from 'zod'
 
+// Metadata schema for blog posts
+const blogMetadataSchema = z.object({
+  hero_image_prompt: z.string().nullable().optional(),
+  main_image_prompt: z.string().nullable().optional(),
+  thumbnail_image_prompt: z.string().nullable().optional(),
+  keywords: z.array(z.string()).optional()
+}).nullable().optional()
+
 // Base schema for blog post fields
 export const blogPostSchema = z.object({
   post_id: z.string().uuid().optional(),
@@ -34,22 +42,21 @@ export const blogPostSchema = z.object({
   is_curated: z.boolean()
     .default(false),
   
-  hero_image: z.string()
-    .url('Hero image must be a valid URL')
-    .nullable()
-    .optional(),
+  hero_image: z.string().url('Hero image must be a valid URL').nullable().optional(),
+  hero_image_prompt: z.string().nullable().optional(),
+  hero_image_alt: z.string().nullable().optional(),
   
-  main_image: z.string()
-    .url('Main image must be a valid URL')
-    .nullable()
-    .optional(),
+  main_image: z.string().url('Main image must be a valid URL').nullable().optional(),
+  main_image_prompt: z.string().nullable().optional(),
+  main_image_alt: z.string().nullable().optional(),
+  
+  thumb: z.string().url('Thumbnail must be a valid URL').nullable().optional(),
+  thumb_prompt: z.string().nullable().optional(),
+  thumb_alt: z.string().nullable().optional(),
 
   cluster_id: z.string().uuid().optional(),
   
-  thumb: z.string()
-    .url('Thumbnail must be a valid URL')
-    .nullable()
-    .optional()
+  metadata: blogMetadataSchema
 })
 
 // Schema for creating a new blog post
@@ -75,8 +82,8 @@ export const updateBlogPostSchema = z.object({
   thumb: z.string().nullable(),
   cluster_id: z.string().uuid().optional(),
   published_at: z.date().nullable(),
+  metadata: blogMetadataSchema
 })
-
 
 // Schema for batch updating blog posts
 export const batchUpdateBlogPostSchema = z.object({
@@ -87,7 +94,8 @@ export const batchUpdateBlogPostSchema = z.object({
   
   data: z.object({
     status: z.enum(['draft', 'review', 'published', 'archived']).optional(),
-    is_curated: z.boolean().optional()
+    is_curated: z.boolean().optional(),
+    metadata: blogMetadataSchema
   }, {
     required_error: 'Update data is required'
   }).refine(data => 
@@ -107,10 +115,12 @@ export const partialUpdateBlogPostSchema = z.object({
   main_image: z.string().nullable().optional(),
   thumb: z.string().nullable().optional(),
   published_at: z.date().nullable().optional(),
+  metadata: blogMetadataSchema
 }).refine(data => Object.keys(data).length > 0, 'At least one field must be provided for update')
 
 // Types derived from schemas
 export type BlogPost = z.infer<typeof blogPostSchema>
 export type CreateBlogPost = z.infer<typeof createBlogPostSchema>
 export type UpdateBlogPost = z.infer<typeof updateBlogPostSchema>
-export type BatchUpdateBlogPost = z.infer<typeof batchUpdateBlogPostSchema> 
+export type BatchUpdateBlogPost = z.infer<typeof batchUpdateBlogPostSchema>
+export type BlogMetadata = z.infer<typeof blogMetadataSchema> 
