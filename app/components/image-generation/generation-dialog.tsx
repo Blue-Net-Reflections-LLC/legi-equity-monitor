@@ -28,6 +28,7 @@ export function GenerationDialog({
   const [error, setError] = useState<string>();
   const [images, setImages] = useState<Array<{ url: string; alt?: string }>>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>();
+  const [prompt, setPrompt] = useState<string>(defaultPrompt || '');
 
   const handleSubmit = async (data: ImageGenerationFormData) => {
     try {
@@ -51,6 +52,7 @@ export function GenerationDialog({
 
       const result = await response.json();
       setImages(result.images);
+      setPrompt(data.prompt);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate images');
     } finally {
@@ -64,7 +66,7 @@ export function GenerationDialog({
       onSelect({
         url: selected.url,
         alt: selected.alt,
-        prompt: defaultPrompt || ''
+        prompt: prompt || ''
       });
       setLoading(false);
       onClose();
@@ -96,7 +98,7 @@ export function GenerationDialog({
 
         <div className="space-y-4">
           <PromptForm
-            defaultPrompt={defaultPrompt}
+            defaultPrompt={prompt}
             imageType={imageType}
             onSubmit={handleSubmit}
             loading={loading}

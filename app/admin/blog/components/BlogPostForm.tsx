@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, AlertCircle, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
@@ -69,14 +69,17 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
       author: '',
       is_curated: false,
       hero_image: '',
-      hero_image_prompt: '',
-      hero_image_alt: '',
       main_image: '',
-      main_image_prompt: '',
-      main_image_alt: '',
       thumb: '',
-      thumb_prompt: '',
-      thumb_alt: '',
+      metadata: {
+        hero_image_prompt: '',
+        hero_image_alt: '',
+        main_image_prompt: '',
+        main_image_alt: '',
+        thumbnail_image_prompt: '',
+        thumbnail_image_alt: '',
+        keywords: []
+      },
       ...initialData
     }
   });
@@ -115,7 +118,7 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] text-neutral-950 dark:text-neutral-50">
+    <div className="text-neutral-950 dark:text-neutral-50">
       <Toaster position="top-center" richColors />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -227,10 +230,10 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
             {/* Sidebar */}
             <div className="space-y-6">
               <Card>
-                <CardHeader>
+                {/* <CardHeader>
                   <CardTitle>Publish</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                </CardHeader> */}
+                <CardContent className="space-y-4 pt-8">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Status:</span>
                     <Badge variant="outline" className="capitalize">
@@ -304,27 +307,27 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                     )}
                   />
 
-                  <div className="flex flex-col gap-2 pt-4">
+                  <div className="flex gap-2 pt-4">
                     <Button
                       type="button"
-                      onClick={() => submitForm('published')}
-                      className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting 
-                        ? (isEditing ? 'Updating...' : 'Publishing...') 
-                        : (isEditing ? 'Update & Publish' : 'Publish')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
                       onClick={() => submitForm('draft')}
-                      className="w-full"
+                      variant="outline"
+                      className="flex-1"
                       disabled={isSubmitting}
                     >
                       {isSubmitting 
                         ? 'Saving...' 
                         : (isEditing ? 'Save as Draft' : 'Save Draft')}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => submitForm('published')}
+                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting 
+                        ? (isEditing ? 'Updating...' : 'Publishing...') 
+                        : (isEditing ? 'Update & Publish' : 'Publish')}
                     </Button>
                   </div>
                 </CardContent>
@@ -332,10 +335,10 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
 
               {/* Images Section */}
               <Card>
-                <CardHeader>
+                {/* <CardHeader>
                   <CardTitle>Images</CardTitle>
-                </CardHeader>
-                <CardContent>
+                </CardHeader> */}
+                <CardContent className="pt-8">
                   <Tabs defaultValue="main">
                     <TabsList className="grid w-full grid-cols-3 bg-muted/20 dark:bg-muted/5 p-1 rounded-lg">
                       <TabsTrigger 
@@ -363,8 +366,8 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                         label="Main Image"
                         imageType="main"
                         form={form}
-                        promptFieldName="main_image_prompt"
-                        altFieldName="main_image_alt"
+                        promptFieldName="metadata.main_image_prompt"
+                        altFieldName="metadata.main_image_alt"
                         disabled={isSubmitting}
                       />
                     </TabsContent>
@@ -374,8 +377,8 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                         label="Hero Image"
                         imageType="hero"
                         form={form}
-                        promptFieldName="hero_image_prompt"
-                        altFieldName="hero_image_alt"
+                        promptFieldName="metadata.hero_image_prompt"
+                        altFieldName="metadata.hero_image_alt"
                         disabled={isSubmitting}
                       />
                     </TabsContent>
@@ -385,8 +388,8 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                         label="Thumbnail"
                         imageType="thumbnail"
                         form={form}
-                        promptFieldName="thumb_prompt"
-                        altFieldName="thumb_alt"
+                        promptFieldName="metadata.thumbnail_image_prompt"
+                        altFieldName="metadata.thumbnail_image_alt"
                         disabled={isSubmitting}
                       />
                     </TabsContent>
