@@ -143,12 +143,14 @@ export default async function BlogPostPage({ params, searchParams }: BlogPostPag
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             {/* Back Button */}
-            <Link href="/blog">
-              <Button variant="ghost" className="mb-8 -ml-2">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Blog
-              </Button>
-            </Link>
+            <div className="flex justify-end mb-8">
+              <Link href="/blog">
+                <Button variant="ghost" className="-mr-2">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Blog
+                </Button>
+              </Link>
+            </div>
 
             {/* Main Image */}
             {post.main_image && (
