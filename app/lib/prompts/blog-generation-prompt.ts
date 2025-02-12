@@ -126,8 +126,9 @@ Cluster ID: {cluster_id}
 - Balance sponsored and non-sponsored perspectives using cluster statistics
 - Highlight novel policy mechanisms from the legislation cluster
 - Include 1-2 relevant historical precedents where applicable
-- Do not mention the word cluster or the cluster id in the blog post
+- DO NOT MENTION THE WORD CLUSTER OR THE CLUSTER ID IN THE BLOG POST
 - Minimum 1000 words and maximum 3000 words for the content field
+- Avoid using subgroup codes in the blog post. Use the subgroup names instead.
 
 ^CRITICAL:^ Your response MUST be a valid JSON object EXACTLY matching this structure. Any deviation from this format, including additional fields, missing fields, or incorrect JSON syntax, will cause system failure. Do not include any explanatory text or markdown outside the JSON structure. The response should be parseable by JSON.parse() without any preprocessing.
 
@@ -143,11 +144,11 @@ Cluster ID: {cluster_id}
     "analysis_id": "{analysis_id}",
     "is_curated": false,
     "metadata": {
-        "hero_image_prompt": "Authentic documentary-style photo in {TopSponsorCity} showing {PrimarySubgroupCode} {AgeCode} individual using {MostAmendedPolicyTool}. Environmental details: {SponsorStateLandmark} background, {FrequentlyMentionedArtifact} foreground. Natural {HearingTimeLighting}, worn textures. Visible bill header excerpt from {ExampleBillID} on context surface.",
+        "hero_image_prompt": "Authentic documentary-style photo in {TopSponsorCity} showing {PrimarySubgroupCode} {AgeCode} individual using {MostAmendedPolicyTool}. Environmental details: {SponsorStateLandmark} background, {FrequentlyMentionedArtifact} foreground. Natural {HearingTimeLighting}, worn textures. Visible bill header excerpt from {ExampleBillID} on context surface. Avoid using words.  Be diverse and inclusive.",
         
-        "main_image_prompt": "Contrast composition: {TopAdoptionStateAbbr} {Urban/RuralClassification} implementation of {CorePolicyMechanism} featuring {SubgroupA} {AgeA} individual with {StateAIcon}. Opposite frame shows {BottomAdoptionStateAbbr} approach with {SubgroupB} {AgeB} individual and {StateBIcon}. Real-world settings only, no symbolic elements.",
+        "main_image_prompt": "Ground-level scene in {TopAdoptionStateAbbr}'s {Urban/RuralClassification} setting, highlighting {CorePolicyMechanism} in action. Depict both a {SubgroupA} {AgeA} individual and a {SubgroupB} {AgeB} individual collaborating in a real environment. Subtle references to {StateAIcon} and {StateBIcon} are visible, ensuring inclusivity and authenticity. Avoid text or overt symbolism.",
 
-        "thumbnail_image_prompt": "Textured macro view of {FrequentArtifact} interaction: {DemographicMarkerHandDetail} manipulating {PolicyDocumentType}. Example - {AgeGroup} hand with {SubtleDemographicIdentifier} holding {BillReferenceFormNumber} on {StateDependentSurfaceMaterial}.",
+        "thumbnail_image_prompt": "Textured macro view of {FrequentArtifact} interaction: {DemographicMarkerHandDetail} manipulating {PolicyDocumentType}. ",
 
         "keywords": ["Keyword1", "Keyword2", "Keyword3"]
     }
