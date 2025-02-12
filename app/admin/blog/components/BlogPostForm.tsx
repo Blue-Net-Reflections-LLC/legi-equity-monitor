@@ -113,8 +113,15 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
       published_at: formData.published_at ? new Date(formData.published_at).toISOString() : null
     };
     
-    const encodedData = Buffer.from(JSON.stringify(previewData)).toString('base64');
-    window.open(`/blog/${previewData.slug}?preview=${encodedData}`, '_blank');
+    // Store preview data in localStorage
+    localStorage.setItem('blog-preview', JSON.stringify(previewData));
+    
+    // Open preview in new window
+    const previewWindow = window.open(`/blog/${previewData.slug}/preview`, '_blank');
+    if (!previewWindow) {
+      toast.error('Please allow popups for preview functionality');
+      return;
+    }
   };
 
   return (
