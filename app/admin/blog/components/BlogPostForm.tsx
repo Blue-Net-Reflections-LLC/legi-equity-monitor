@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, AlertCircle, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
@@ -22,11 +22,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Editor } from '@/components/editor';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { blogPostSchema, type BlogPost } from '@/app/lib/validations/blog';
 import { UrlInput } from '@/components/image-generation';
 import { toast, Toaster } from 'sonner';
+import { Tabs, TabsList, TabsContent, TabsTrigger } from '@/components/ui/tabs';
 
 interface BlogPostFormProps {
   initialData?: Partial<BlogPost>;
@@ -68,14 +69,17 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
       author: '',
       is_curated: false,
       hero_image: '',
-      hero_image_prompt: '',
-      hero_image_alt: '',
       main_image: '',
-      main_image_prompt: '',
-      main_image_alt: '',
       thumb: '',
-      thumb_prompt: '',
-      thumb_alt: '',
+      metadata: {
+        hero_image_prompt: '',
+        hero_image_alt: '',
+        main_image_prompt: '',
+        main_image_alt: '',
+        thumbnail_image_prompt: '',
+        thumbnail_image_alt: '',
+        keywords: []
+      },
       ...initialData
     }
   });
@@ -109,18 +113,25 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
       published_at: formData.published_at ? new Date(formData.published_at).toISOString() : null
     };
     
-    const encodedData = Buffer.from(JSON.stringify(previewData)).toString('base64');
-    window.open(`/blog/${previewData.slug}?preview=${encodedData}`, '_blank');
+    // Store preview data in localStorage
+    localStorage.setItem('blog-preview', JSON.stringify(previewData));
+    
+    // Open preview in new window
+    const previewWindow = window.open(`/blog/${previewData.slug}/preview`, '_blank');
+    if (!previewWindow) {
+      toast.error('Please allow popups for preview functionality');
+      return;
+    }
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] text-neutral-950 dark:text-neutral-50">
+    <div className="text-neutral-950 dark:text-neutral-50">
       <Toaster position="top-center" richColors />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid grid-cols-[minmax(0,1fr),400px] gap-6">
             {/* Main Content */}
-            <div className="flex flex-col h-full max-w-4xl mx-auto">
+            <div className="flex flex-col max-w-4xl mx-auto">
               <FormField
                 control={form.control}
                 name="title"
@@ -150,18 +161,30 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                 )}
               />
 
-              <div className="flex-1 min-h-0 mt-6">
+              <div className="min-h-0 mt-6">
                 <FormField
                   control={form.control}
                   name="content"
                   render={({ field }) => (
-                    <FormItem className="h-full">
+                    <FormItem className="">
                       <FormLabel>
-                        <FormFieldWithError 
-                          label="Content"
-                          error={!!form.formState.errors.content}
-                          required={true}
-                        />
+                        <div className="flex items-center justify-between">
+                          <FormFieldWithError 
+                            label="Content"
+                            error={!!form.formState.errors.content}
+                            required={true}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePreview}
+                            disabled={isSubmitting}
+                            className="bg-blue-600 hover:bg-blue-700 text-white border-0"
+                          >
+                            Preview
+                          </Button>
+                        </div>
                       </FormLabel>
                       <FormControl>
                         <div className={cn(
@@ -214,10 +237,10 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
             {/* Sidebar */}
             <div className="space-y-6">
               <Card>
-                <CardHeader>
+                {/* <CardHeader>
                   <CardTitle>Publish</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                </CardHeader> */}
+                <CardContent className="space-y-4 pt-6">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Status:</span>
                     <Badge variant="outline" className="capitalize">
@@ -291,27 +314,27 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                     )}
                   />
 
-                  <div className="flex flex-col gap-2 pt-4">
+                  <div className="flex gap-2 pt-4">
                     <Button
                       type="button"
-                      onClick={() => submitForm('published')}
-                      className="w-full"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting 
-                        ? (isEditing ? 'Updating...' : 'Publishing...') 
-                        : (isEditing ? 'Update & Publish' : 'Publish')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
                       onClick={() => submitForm('draft')}
-                      className="w-full"
+                      variant="outline"
+                      className="flex-1"
                       disabled={isSubmitting}
                     >
                       {isSubmitting 
                         ? 'Saving...' 
                         : (isEditing ? 'Save as Draft' : 'Save Draft')}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => submitForm('published')}
+                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting 
+                        ? (isEditing ? 'Updating...' : 'Publishing...') 
+                        : (isEditing ? 'Update & Publish' : 'Publish')}
                     </Button>
                   </div>
                 </CardContent>
@@ -319,63 +342,68 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
 
               {/* Images Section */}
               <Card>
-                <CardHeader>
+                {/* <CardHeader>
                   <CardTitle>Images</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <UrlInput
-                    name="hero_image"
-                    label="Hero Image"
-                    imageType="hero"
-                    form={form}
-                    promptFieldName="hero_image_prompt"
-                    altFieldName="hero_image_alt"
-                    disabled={isSubmitting}
-                  />
-
-                  <UrlInput
-                    name="main_image"
-                    label="Main Image"
-                    imageType="main"
-                    form={form}
-                    promptFieldName="main_image_prompt"
-                    altFieldName="main_image_alt"
-                    disabled={isSubmitting}
-                  />
-
-                  <UrlInput
-                    name="thumb"
-                    label="Thumbnail"
-                    imageType="thumbnail"
-                    form={form}
-                    promptFieldName="thumb_prompt"
-                    altFieldName="thumb_alt"
-                    disabled={isSubmitting}
-                  />
+                </CardHeader> */}
+                <CardContent className="pt-6">
+                  <Tabs defaultValue="main">
+                    <TabsList className="grid w-full grid-cols-3 bg-muted/20 dark:bg-muted/5 p-1 rounded-lg">
+                      <TabsTrigger 
+                        value="main" 
+                        className="rounded-md data-[state=active]:bg-background dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm"
+                      >
+                        Main
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="hero"
+                        className="rounded-md data-[state=active]:bg-background dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm"
+                      >
+                        Hero
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="thumb"
+                        className="rounded-md data-[state=active]:bg-background dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm"
+                      >
+                        Thumbnail
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="main" className="mt-4">
+                      <UrlInput
+                        name="main_image"
+                        label="Main Image"
+                        imageType="main"
+                        form={form}
+                        promptFieldName="metadata.main_image_prompt"
+                        altFieldName="metadata.main_image_alt"
+                        disabled={isSubmitting}
+                      />
+                    </TabsContent>
+                    <TabsContent value="hero" className="mt-4">
+                      <UrlInput
+                        name="hero_image"
+                        label="Hero Image"
+                        imageType="hero"
+                        form={form}
+                        promptFieldName="metadata.hero_image_prompt"
+                        altFieldName="metadata.hero_image_alt"
+                        disabled={isSubmitting}
+                      />
+                    </TabsContent>
+                    <TabsContent value="thumb" className="mt-4">
+                      <UrlInput
+                        name="thumb"
+                        label="Thumbnail"
+                        imageType="thumbnail"
+                        form={form}
+                        promptFieldName="metadata.thumbnail_image_prompt"
+                        altFieldName="metadata.thumbnail_image_alt"
+                        disabled={isSubmitting}
+                      />
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             </div>
-          </div>
-
-          <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePreview}
-              disabled={isSubmitting}
-            >
-              Preview
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save'
-              )}
-            </Button>
           </div>
         </form>
       </Form>

@@ -5,7 +5,7 @@ import { useMemo, useRef } from 'react';
 
 // Create a named component for the fallback
 const EditorFallback = () => (
-  <div className="h-[500px] w-full border rounded-md bg-muted/10 flex items-center justify-center text-muted-foreground">
+  <div className="h-[700px] w-full border rounded-md bg-muted/10 flex items-center justify-center text-muted-foreground">
     Failed to load editor
   </div>
 );
@@ -13,7 +13,7 @@ EditorFallback.displayName = 'EditorFallback';
 
 // Create a named component for the loading state
 const EditorLoading = () => (
-  <div className="h-[500px] w-full border rounded-md bg-muted/10 flex items-center justify-center">
+  <div className="h-[700px] w-full border rounded-md bg-muted/10 flex items-center justify-center">
     <div className="animate-pulse">Loading editor...</div>
   </div>
 );
@@ -44,7 +44,7 @@ export function Editor({ value, onChange }: EditorProps) {
 
   const config = useMemo(() => ({
     readonly: false,
-    height: '500px',
+    height: '700px',
     buttons: [
       'source', '|',
       'bold', 'strikethrough', 'underline', 'italic', '|',

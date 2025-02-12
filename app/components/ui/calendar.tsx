@@ -26,7 +26,11 @@ export function Calendar({
       onSelect={onSelect}
       modifiers={{ disabled: disabled }}
       className={cn(
-        'p-3 bg-popover text-popover-foreground',
+        'p-3 bg-white dark:bg-zinc-950 text-neutral-950 dark:text-neutral-50',
+        '[&_.rdp-nav_button>svg]:fill-neutral-950 [&_.rdp-nav_button>svg]:dark:fill-white',
+        '[&_.rdp-nav_button>svg]:w-4 [&_.rdp-nav_button>svg]:h-4',
+        '[&_.rdp-nav_button]:h-8 [&_.rdp-nav_button]:w-8 [&_.rdp-nav_button]:p-0',
+        '[&_.rdp-nav_button]:hover:bg-zinc-100 [&_.rdp-nav_button]:dark:hover:bg-zinc-800',
         className
       )}
       required={false}

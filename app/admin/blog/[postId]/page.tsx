@@ -66,7 +66,7 @@ export default function EditBlogPost({ params }: { params: { postId: string } })
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -74,7 +74,7 @@ export default function EditBlogPost({ params }: { params: { postId: string } })
 
   if (!post) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
         <p>Post not found</p>
       </div>
     );
