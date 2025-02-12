@@ -9,12 +9,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-    const size = Math.max(1, parseInt(searchParams.get('size') || '10'))
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '21'))
     const sort = searchParams.get('sort') || 'published_at'
     const order = searchParams.get('order') || 'desc'
 
     // Calculate offset
-    const offset = (page - 1) * size
+    const offset = (page - 1) * (page === 1 ? 21 : 20)
 
     // Get published posts with pagination
     const [posts, [{ total }]] = await Promise.all([
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
         WHERE status = 'published'
         AND published_at <= NOW()
         ORDER BY ${sort ? db`${db(sort)} ${order === 'asc' ? db`ASC` : db`DESC`}` : db`published_at DESC`}
-        LIMIT ${size}
+        LIMIT ${limit}
         OFFSET ${offset}
       `,
       db`
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       data: posts,
       total,
       page,
-      pageSize: size
+      pageSize: limit
     })
   } catch (error) {
     console.error('Error fetching blog posts:', error)
