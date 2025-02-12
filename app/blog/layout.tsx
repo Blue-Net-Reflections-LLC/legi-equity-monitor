@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
@@ -8,14 +7,10 @@ export const metadata: Metadata = {
   description: 'Explore our latest articles and insights about bills and their impact.',
 };
 
-interface BlogLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function BlogLayout({ children }: BlogLayoutProps) {
+export default function BlogLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950">
-          {/* Main Content */}
+      {/* Main Content */}
       <main className=''>
         {children}
       </main>

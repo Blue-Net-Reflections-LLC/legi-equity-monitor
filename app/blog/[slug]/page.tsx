@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { BlogPostView } from '@/app/blog/components/BlogPostView';
-import { BlogPost } from '@/app/lib/validations/blog';
+import { BlogPostView } from '../components/BlogPostView';
 
 async function getBlogPost(slug: string) {
   const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/blog/posts/${slug}`);
@@ -33,28 +32,19 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       },
     };
   } catch (error) {
+    console.error('Error fetching blog post:', error);
     return { title: 'Blog Post' };
   }
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  try {
-    const post = await getBlogPost(params.slug);
-
-    if (!post) {
-      notFound();
-    }
-
-    return (
-      <BlogPostView 
-        post={post} 
-        isPreview={false}
-        backUrl="/blog"
-        backLabel="Back to Blog"
-      />
-    );
-  } catch (error) {
-    console.error('Error fetching blog post:', error);
+  const post = await getBlogPost(params.slug);
+  
+  if (!post) {
     notFound();
   }
+
+  return (
+    <BlogPostView post={post} />
+  );
 } 

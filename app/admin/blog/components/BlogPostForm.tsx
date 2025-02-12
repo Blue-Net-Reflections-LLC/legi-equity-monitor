@@ -22,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Editor } from '@/components/editor';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { blogPostSchema, type BlogPost } from '@/app/lib/validations/blog';
 import { UrlInput } from '@/components/image-generation';

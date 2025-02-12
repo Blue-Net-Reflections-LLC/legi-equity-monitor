@@ -1,7 +1,7 @@
-import { Newspaper, Sparkles, Scale, Users, Brain, ArrowRight } from 'lucide-react';
-import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import { BlogList } from './components/BlogList';
 import { Metadata } from 'next';
+import { AuroraBackground } from '../components/ui/aurora-background';
+import { Newspaper } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'LegiEquity Blog',
