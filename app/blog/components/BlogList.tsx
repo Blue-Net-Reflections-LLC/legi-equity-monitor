@@ -172,7 +172,7 @@ export function BlogList() {
             className={cn(
               "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              "border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+              "border border-input bg-white dark:bg-black text-neutral-900 dark:text-neutral-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
               currentPage === 1 && "pointer-events-none opacity-50"
             )}
           >
@@ -186,7 +186,7 @@ export function BlogList() {
             className={cn(
               "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              "border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+              "border border-input bg-white dark:bg-black text-neutral-900 dark:text-neutral-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
               currentPage === totalPages && "pointer-events-none opacity-50"
             )}
           >
