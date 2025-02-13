@@ -24,7 +24,8 @@ const requestSchema = z.object({
     .min(10, 'Prompt must be at least 10 characters')
     .max(500, 'Prompt must be less than 500 characters'),
   size: z.enum(['landscape_16_9', 'landscape_3_2', 'square']),
-  model: z.enum(Object.keys(IMAGE_MODELS) as [string, ...string[]]).default('flux-pro/v1.1')
+  model: z.enum(Object.keys(IMAGE_MODELS) as [string, ...string[]]).default('flux-pro/v1.1'),
+  count: z.number().min(1).max(6).default(1)
 });
 
 // Map size codes to dimensions
@@ -34,8 +35,6 @@ const DIMENSIONS = {
   square: { width: 300, height: 300 }
 } as const;
 
-// Number of images to generate per request
-const IMAGES_PER_REQUEST = 2;
 
 export async function POST(request: Request) {
   try {
@@ -67,7 +66,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { prompt, size, model } = validationResult.data;
+    const { prompt, size, model, count } = validationResult.data;
     const dimensions = DIMENSIONS[size];
 
     // Generate images using selected model
@@ -78,7 +77,7 @@ export async function POST(request: Request) {
           width: dimensions.width,
           height: dimensions.height
         },
-        num_images: IMAGES_PER_REQUEST,
+        num_images: count,
         num_inference_steps: 28,
         guidance_scale: 3.5,
         enable_safety_checker: true,

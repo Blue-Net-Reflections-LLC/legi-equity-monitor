@@ -16,13 +16,15 @@ import {
 } from '@/components/ui/form';
 import { IMAGE_MODELS, IMAGE_SIZES, type PromptFormProps, type ImageGenerationFormData } from './types';
 import { Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const formSchema = z.object({
   prompt: z.string()
     .min(10, 'Prompt must be at least 10 characters')
     .max(500, 'Prompt must be less than 500 characters'),
   size: z.enum(['landscape_16_9', 'landscape_3_2', 'square']),
-  model: z.enum(Object.keys(IMAGE_MODELS) as [string, ...string[]])
+  model: z.enum(Object.keys(IMAGE_MODELS) as [string, ...string[]]),
+  count: z.number().min(1).max(6)
 });
 
 export function PromptForm({
@@ -36,7 +38,8 @@ export function PromptForm({
     defaultValues: {
       prompt: defaultPrompt || '',
       size: IMAGE_SIZES[imageType].code,
-      model: 'flux-pro/v1.1'
+      model: 'flux-pro/v1.1',
+      count: 1
     }
   });
 
@@ -62,34 +65,57 @@ export function PromptForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="model"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Model</FormLabel>
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-                disabled={loading}
-              >
+        <div className="flex gap-4">
+          <FormField
+            control={form.control}
+            name="model"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>Model</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={loading}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a model" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.entries(IMAGE_MODELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="count"
+            render={({ field }) => (
+              <FormItem className="flex-none w-32">
+                <FormLabel>Count</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a model" />
-                  </SelectTrigger>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={6}
+                    disabled={loading}
+                    {...field}
+                    onChange={e => field.onChange(parseInt(e.target.value))}
+                  />
                 </FormControl>
-                <SelectContent>
-                  {Object.entries(IMAGE_MODELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={loading}>

@@ -54,6 +54,7 @@ export interface ImageGenerationFormData {
   prompt: string;
   size: ImageSize['code'];
   model: ImageModel;
+  count: number;
 }
 
 export interface ImageGenerationResponse {
