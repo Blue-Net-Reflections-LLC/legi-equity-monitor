@@ -1,6 +1,7 @@
 import { auth } from '@/app/(auth)/auth'
 import { ADMIN_ROLES } from '@/app/constants/user-roles'
 import { partialUpdateBlogPostSchema } from '@/app/lib/validations/blog'
+import { uploadBlogImages } from '@/app/lib/cloudflare'
 import db from '@/lib/db'
 import { NextResponse } from 'next/server'
 
@@ -44,19 +45,19 @@ export async function PUT(
   request: Request,
   { params }: { params: { postId: string } }
 ) {
-  const session = await auth()
-  
-  // Check authentication
-  if (!session) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Check admin role
-  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
-
   try {
+    const session = await auth()
+    
+    // Check authentication
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    // Check admin role
+    if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+
     const body = await request.json()
     
     // Validate request body
@@ -83,10 +84,13 @@ export async function PUT(
       validatedData.published_at = null
     }
 
+    // Upload any generated images to Cloudflare
+    const postDataWithCdnUrls = await uploadBlogImages(validatedData)
+
     // Update blog post
     const [post] = await db`
-      UPDATE blog_posts 
-      SET ${db(validatedData)},
+      UPDATE blog_posts
+      SET ${db(postDataWithCdnUrls)},
       updated_at = CURRENT_TIMESTAMP
       WHERE post_id = ${params.postId}::uuid
       RETURNING *

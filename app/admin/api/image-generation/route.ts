@@ -3,10 +3,19 @@ import { ADMIN_ROLES } from '@/app/constants/user-roles';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { fal } from "@fal-ai/client";
+import { IMAGE_MODELS } from '@/components/image-generation/types';
 
+const falModels = {
+  'flux/dev': 'fal-ai/flux/dev',
+  'flux-pro/v1.1': 'fal-ai/flux-pro/v1.1',
+  'recraft-v3': 'fal-ai/recraft-v3',
+  'ideogram/v2': 'fal-ai/ideogram/v2',
+  'flux-pro/v1.1-ultra': 'fal-ai/flux-pro/v1.1-ultra'
+} as const;
+  
 // Initialize fal client
 fal.config({
-  credentials: process.env.BLOGGING_IMAGES_GENERATION_API_KEY
+  credentials: process.env.FAL_AI_API_KEY
 });
 
 // Validate request body
@@ -14,7 +23,9 @@ const requestSchema = z.object({
   prompt: z.string()
     .min(10, 'Prompt must be at least 10 characters')
     .max(500, 'Prompt must be less than 500 characters'),
-  size: z.enum(['landscape_16_9', 'landscape_3_2', 'square'])
+  size: z.enum(['landscape_16_9', 'landscape_3_2', 'square']),
+  model: z.enum(Object.keys(IMAGE_MODELS) as [string, ...string[]]).default('flux-pro/v1.1'),
+  count: z.number().min(1).max(6).default(1)
 });
 
 // Map size codes to dimensions
@@ -24,8 +35,6 @@ const DIMENSIONS = {
   square: { width: 300, height: 300 }
 } as const;
 
-// Number of images to generate per request
-const IMAGES_PER_REQUEST = 2;
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +51,7 @@ export async function POST(request: Request) {
     }
 
     // Check if Fal.ai configuration is available
-    if (!process.env.BLOGGING_IMAGES_GENERATION_API_KEY) {
+    if (!process.env.FAL_AI_API_KEY) {
       return new NextResponse('Image generation not configured', { status: 500 });
     }
 
@@ -57,35 +66,34 @@ export async function POST(request: Request) {
       );
     }
 
-    const { prompt, size } = validationResult.data;
+    const { prompt, size, model, count } = validationResult.data;
     const dimensions = DIMENSIONS[size];
 
-    // Generate images using fal client with flux/dev model
-    const { data } = await fal.subscribe('fal-ai/flux/dev', {
+    // Generate images using selected model
+    const { data } = await fal.subscribe(falModels[model as keyof typeof falModels], {
       input: {
         prompt,
         image_size: {
           width: dimensions.width,
           height: dimensions.height
         },
-        num_images: IMAGES_PER_REQUEST,
-        num_inference_steps: 28, // Default value from API docs
-        guidance_scale: 3.5,     // Default value from API docs
+        num_images: count,
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
         enable_safety_checker: true,
-        sync_mode: false // Use async mode for better performance
+        sync_mode: false
       },
-      pollInterval: 1000, // Poll every second
-      logs: true, // Enable logs for debugging
+      pollInterval: 1000,
+      logs: true,
       onQueueUpdate: (update) => {
         if (update.status === "IN_PROGRESS") {
-          // Log progress for debugging
           console.log(update.logs.map(log => log.message));
         }
       }
     });
 
     // Transform response to our format
-    const images = data.images.map((image) => ({
+    const images = data.images.map((image: { url: string; width?: number; height?: number }) => ({
       url: image.url,
       alt: `AI generated image for: ${prompt.slice(0, 100)}...`,
       width: image.width ?? dimensions.width,
@@ -93,9 +101,7 @@ export async function POST(request: Request) {
     }));
 
     return NextResponse.json({ 
-      images,
-      seed: data.seed, // Include seed for reproducibility
-      prompt: data.prompt // Include final prompt used
+      images
     });
   } catch (error) {
     console.error('Image generation error:', error);
