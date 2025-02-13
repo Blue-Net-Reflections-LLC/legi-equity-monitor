@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { BlogSkeleton, RegularGridSkeleton } from './skeletons';
+import { cn } from '@/lib/utils';
 
 interface BlogPost {
   title: string;
@@ -87,30 +89,18 @@ export function BlogList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const initialPage = parseInt(searchParams.get('page') || '1');
+  const currentPage = parseInt(searchParams.get('page') || '1');
   
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPosts, setTotalPosts] = useState(0);
   
   const postsPerPage = currentPage === 1 ? 21 : 20;
 
-  // Reset to page 1 when navigating directly to /blog
-  useEffect(() => {
-    if (pathname === '/blog' && !searchParams.get('page')) {
-      setCurrentPage(1);
-    }
-  }, [pathname, searchParams]);
-
-  const handlePageChange = (newPage: number) => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setCurrentPage(newPage);
-  };
-
   useEffect(() => {
     async function fetchPosts() {
       try {
+        setLoading(true);
         const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/blog/posts?page=${currentPage}&limit=${postsPerPage}`);
         if (!response.ok) throw new Error('Failed to fetch posts');
         const data = await response.json();
@@ -124,22 +114,11 @@ export function BlogList() {
     }
 
     fetchPosts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage, postsPerPage]);
 
-  // Update URL when page changes
-  useEffect(() => {
-    const newUrl = currentPage === 1 
-      ? '/blog' 
-      : `/blog?page=${currentPage}`;
-    router.push(newUrl, { scroll: false });
-  }, [currentPage, router]);
-
   if (loading) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Loading posts...</p>
-      </div>
-    );
+    return currentPage === 1 ? <BlogSkeleton /> : <RegularGridSkeleton />;
   }
 
   if (!posts?.length) {
@@ -191,23 +170,31 @@ export function BlogList() {
 
         {/* Pagination */}
         <div className="flex justify-between items-center pt-8 border-t border-border">
-          <Button
-            variant="outline"
-            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
+          <Link
+            href={currentPage > 1 ? `/blog?page=${currentPage - 1}` : '/blog'}
+            className={cn(
+              "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+              currentPage === 1 && "pointer-events-none opacity-50"
+            )}
           >
             Previous
-          </Button>
+          </Link>
           <span className="text-sm text-muted-foreground">
             Page {currentPage} of {totalPages}
           </span>
-          <Button
-            variant="outline"
-            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
+          <Link
+            href={`/blog?page=${currentPage + 1}`}
+            className={cn(
+              "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+              currentPage === totalPages && "pointer-events-none opacity-50"
+            )}
           >
             Next
-          </Button>
+          </Link>
         </div>
       </div>
     );
@@ -225,23 +212,31 @@ export function BlogList() {
 
       {/* Pagination */}
       <div className="flex justify-between items-center pt-8 border-t border-border">
-        <Button
-          variant="outline"
-          onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
+        <Link
+          href={currentPage > 2 ? `/blog?page=${currentPage - 1}` : '/blog'}
+          className={cn(
+            "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+            currentPage === 1 && "pointer-events-none opacity-50"
+          )}
         >
           Previous
-        </Button>
+        </Link>
         <span className="text-sm text-muted-foreground">
           Page {currentPage} of {totalPages}
         </span>
-        <Button
-          variant="outline"
-          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
+        <Link
+          href={`/blog?page=${currentPage + 1}`}
+          className={cn(
+            "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2",
+            currentPage === totalPages && "pointer-events-none opacity-50"
+          )}
         >
           Next
-        </Button>
+        </Link>
       </div>
     </div>
   );
