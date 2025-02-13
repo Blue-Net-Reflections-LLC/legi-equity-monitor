@@ -1,5 +1,15 @@
 import { FieldValues, UseFormReturn, Path } from 'react-hook-form';
 
+export const IMAGE_MODELS = {
+  'flux/dev': 'Basic',
+  'flux-pro/v1.1': 'Professional',
+  'recraft-v3': 'Artistic',
+  'ideogram/v2': 'Ideogram',
+  'flux-pro/v1.1-ultra': 'Ultra HD'
+} as const;
+
+export type ImageModel = keyof typeof IMAGE_MODELS;
+
 export type ImageSize = {
   code: 'landscape_16_9' | 'landscape_3_2' | 'square';
   name: string;
@@ -43,6 +53,7 @@ export interface GeneratedImage {
 export interface ImageGenerationFormData {
   prompt: string;
   size: ImageSize['code'];
+  model: ImageModel;
 }
 
 export interface ImageGenerationResponse {
