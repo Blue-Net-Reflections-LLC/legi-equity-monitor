@@ -24,11 +24,11 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 
     return {
       title: post.title,
-      description: post.excerpt || post.title,
+      description: post.excerpt || post.content?.replace(/<[^>]*>/g, '').slice(0, 200) || post.title,
       openGraph: {
         title: post.title,
         description: post.excerpt || post.title,
-        images: post.metadata?.hero_image ? [{ url: post.metadata.hero_image }] : [],
+        images: post.main_image ? [{ url: post.main_image }] : [],
       },
     };
   } catch (error) {

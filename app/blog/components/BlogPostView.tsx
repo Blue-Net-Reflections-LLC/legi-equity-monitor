@@ -85,7 +85,7 @@ export function BlogPostView({
 
           {/* Main Image */}
           {post.main_image && (
-            <div className="relative h-[300px] mb-8 rounded-lg overflow-hidden">
+            <div className="relative h-[400px] mb-8 rounded-lg overflow-hidden">
               <Image
                 src={post.main_image}
                 alt="Main image"
