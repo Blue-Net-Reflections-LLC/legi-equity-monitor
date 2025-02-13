@@ -1,6 +1,6 @@
 import { auth } from '@/app/(auth)/auth'
 import { ADMIN_ROLES } from '@/app/constants/user-roles'
-import { partialUpdateBlogPostSchema, updateBlogPostSchema } from '@/app/lib/validations/blog'
+import { partialUpdateBlogPostSchema } from '@/app/lib/validations/blog'
 import { uploadBlogImages } from '@/app/lib/cloudflare'
 import db from '@/lib/db'
 import { NextResponse } from 'next/server'

@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     });
 
     // Transform response to our format
-    const images = data.images.map((image) => ({
+    const images = data.images.map((image: { url: string; width?: number; height?: number }) => ({
       url: image.url,
       alt: `AI generated image for: ${prompt.slice(0, 100)}...`,
       width: image.width ?? dimensions.width,
@@ -102,9 +102,7 @@ export async function POST(request: Request) {
     }));
 
     return NextResponse.json({ 
-      images,
-      seed: data.seed, // Include seed for reproducibility
-      prompt: data.prompt // Include final prompt used
+      images
     });
   } catch (error) {
     console.error('Image generation error:', error);
