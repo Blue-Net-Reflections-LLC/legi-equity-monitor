@@ -1,6 +1,7 @@
 import { auth } from '@/app/(auth)/auth'
 import { ADMIN_ROLES } from '@/app/constants/user-roles'
 import { createBlogPostSchema } from '@/app/lib/validations/blog'
+import { uploadBlogImages } from '@/app/lib/cloudflare'
 import db from '@/lib/db'
 import { NextResponse } from 'next/server'
 
@@ -14,22 +15,20 @@ const NULLABLE_COLUMNS = [
 
 // POST - Create a new blog post
 export async function POST(request: Request) {
-  const session = await auth()
-  
-  // Check authentication
-  if (!session) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
-  // Check admin role
-  if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
-    return new NextResponse('Forbidden', { status: 403 })
-  }
-
   try {
-    const body = await request.json()
+    const session = await auth()
     
-    // Validate request body
+    // Check authentication
+    if (!session) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    // Check admin role
+    if (!session.user?.role || !ADMIN_ROLES.includes(session.user.role)) {
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+
+    const body = await request.json()
     const validationResult = createBlogPostSchema.safeParse(body)
     
     if (!validationResult.success) {
@@ -51,12 +50,15 @@ export async function POST(request: Request) {
       validatedData.published_at = new Date()
     }
 
+    // Upload any generated images to Cloudflare
+    const postDataWithCdnUrls = await uploadBlogImages(validatedData)
+
     // Handle nullable fields
     const insertData = {
-      ...validatedData,
-      is_curated: validatedData.is_curated ?? false,
+      ...postDataWithCdnUrls,
+      is_curated: postDataWithCdnUrls.is_curated ?? false,
       ...Object.fromEntries(
-        NULLABLE_COLUMNS.map(col => [col, validatedData[col] ?? null])
+        NULLABLE_COLUMNS.map(col => [col, postDataWithCdnUrls[col] ?? null])
       )
     }
     
