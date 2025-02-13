@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 interface BlogPost {
   title: string;
@@ -86,6 +86,7 @@ function FeaturedBlogCard({ post }: { post: BlogPost }) {
 export function BlogList() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const initialPage = parseInt(searchParams.get('page') || '1');
   
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -94,6 +95,13 @@ export function BlogList() {
   const [totalPosts, setTotalPosts] = useState(0);
   
   const postsPerPage = currentPage === 1 ? 21 : 20;
+
+  // Reset to page 1 when navigating directly to /blog
+  useEffect(() => {
+    if (pathname === '/blog' && !searchParams.get('page')) {
+      setCurrentPage(1);
+    }
+  }, [pathname, searchParams]);
 
   const handlePageChange = (newPage: number) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
