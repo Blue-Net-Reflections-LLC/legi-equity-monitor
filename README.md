@@ -123,6 +123,11 @@ Our analysis system evaluates bills across two main dimensions:
    cd indexing_service
    python indexer.py
    ```
+6. Run the cluster analysis service (in a separate terminal):
+   ```bash
+   python -m indexing_service.clustering -week 3 -year 2025
+   npm run cluster:analyze
+   ```
 
 ### Environment Variables
 Required environment variables:
