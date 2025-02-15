@@ -80,7 +80,7 @@ export const SearchResults = memo(function SearchResults({
                 const sponsor = result.item as Sponsor
                 return (
                   <SponsorResult 
-                    key={sponsor.people_id}
+                    key={`sponsor-${sponsor.people_id}-${index}`}
                     sponsor={sponsor}
                     onClick={() => handleItemClick(result)}
                     data-result-index={index}
@@ -101,7 +101,7 @@ export const SearchResults = memo(function SearchResults({
                 const offset = sponsors.length
                 return (
                   <BlogPostResult 
-                    key={(result.item as BlogPost).post_id}
+                    key={`blog-${(result.item as BlogPost).post_id}-${index}`}
                     blogPost={result.item as BlogPost}
                     onClick={() => handleItemClick(result)}
                     data-result-index={offset + index}
@@ -123,7 +123,7 @@ export const SearchResults = memo(function SearchResults({
                 const bill = result.item as Bill
                 return (
                   <BillResult 
-                    key={bill.bill_id}
+                    key={`bill-${bill.bill_id}-${index}`}
                     bill={bill}
                     onClick={() => handleItemClick(result)}
                     data-result-index={offset + index}

@@ -77,7 +77,13 @@ export function SearchDialog() {
 
         const data = await response.json()
         if (!signal.aborted) {
-          setResults(prev => pageNum === 1 ? data.results : [...prev, ...data.results])
+          // Always set results directly for page 1 or new queries
+          if (pageNum === 1 || previousQueryRef.current !== searchQuery) {
+            setResults(data.results)
+          } else {
+            // Only append for subsequent pages of the same query
+            setResults(prev => [...prev, ...data.results])
+          }
           setHasMore(data.has_more)
           setPage(data.page)
           hasInitialized.current = true
@@ -131,7 +137,6 @@ export function SearchDialog() {
   const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
     setPage(1)
-    setResults([])
     handleSearch(e.target.value, 1, [])
   }, [handleSearch])
 
