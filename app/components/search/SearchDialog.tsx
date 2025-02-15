@@ -17,6 +17,7 @@ export interface SearchResult {
   href?: string
 }
 
+const defaultQuery = 'congress'
 export function SearchDialog() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -99,8 +100,6 @@ export function SearchDialog() {
                 el => parseInt(el.getAttribute('data-result-index') || '') === previousResultsLengthRef.current
               )
 
-              console.log("Horace firstNewResult", previousResultsLengthRef.current, firstNewResult)
-              
               if (firstNewResult) {
                 firstNewResult.scrollIntoView({ behavior: 'smooth', block: 'start' })
               }
@@ -130,7 +129,7 @@ export function SearchDialog() {
 
   const handleLoadMore = useCallback(() => {
     if (!isLoading && hasMore) {
-      handleSearch(query, page + 1, results)
+      handleSearch(query || defaultQuery, page + 1, results)
     }
   }, [query, page, isLoading, hasMore, handleSearch, results])
 
@@ -168,7 +167,7 @@ export function SearchDialog() {
 
   useEffect(() => {
     if (open && query === '' && previousQueryRef.current !== query) {
-      handleSearch('congress')
+      handleSearch(defaultQuery, 1, [])      // handleSearch('congress')
     }
   }, [open, query, handleSearch])
 
@@ -235,7 +234,7 @@ export function SearchDialog() {
                 <button
                   onClick={handleLoadMore}
                   disabled={isLoading}
-                  className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-orange-500"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center gap-2">
