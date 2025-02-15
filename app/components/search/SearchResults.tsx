@@ -219,9 +219,6 @@ const SponsorResult = memo(function SponsorResult({
       <div className="min-w-0 flex-1">
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
           {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.body_name}
-          <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-800">
-            {result.source}
-          </span>
         </div>
         <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
           {sponsor.name}
@@ -289,9 +286,6 @@ const BlogPostResult = memo(function BlogPostResult({
               <time>{format(new Date(blogPost.published_at), 'MMM d, yyyy')}</time>
             </>
           )}
-          <span className="text-xs px-1.5 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-800">
-            {result.source}
-          </span>
         </div>
         <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
           {blogPost.title}

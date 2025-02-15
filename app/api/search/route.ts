@@ -153,6 +153,7 @@ export async function POST(request: Request) {
           WHERE vi.embedding IS NOT NULL
           AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
           AND vi.entity_id NOT IN (${existingIds.length ? existingIds.join(',') : 0})
+          AND (1 - (vi.embedding <=> '${vectorString}'::vector)) > 0.30
           ORDER BY vi.embedding <=> '${vectorString}'::vector
           OFFSET ${offset}
           LIMIT ${defaultLimit + 1}
