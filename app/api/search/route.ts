@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import db from '@/lib/db'
 import { removeStopwords } from 'stopword'
 
+const defaultLimit = 25
 export async function POST(request: Request) {
   try {
     const { keyword, embedding } = await request.json()
@@ -19,7 +20,6 @@ export async function POST(request: Request) {
     
     // Common entity data selection
     const entityDataCTE = `
-
       entity_data AS (
         SELECT 
           e.entity_type,
@@ -52,6 +52,16 @@ export async function POST(request: Request) {
                 'state_name', e.state_name,
                 'votesmart_id', p.votesmart_id
               )
+            WHEN e.entity_type = 'blog_post' THEN
+              json_build_object(
+                'post_id', bp.post_id,
+                'title', bp.title,
+                'slug', bp.slug,
+                'main_image', bp.main_image,
+                'published_at', bp.published_at,
+                'state_abbr', e.state_abbr,
+                'state_name', e.state_name
+              )
           END as item_data
         FROM ranked e
         LEFT JOIN lsv_bill bill ON e.entity_type = 'bill' AND e.entity_id = bill.bill_id AND bill.bill_type_id = 1
@@ -61,6 +71,7 @@ export async function POST(request: Request) {
         LEFT JOIN ls_people p ON e.entity_type = 'sponsor' AND e.entity_id = p.people_id
         LEFT JOIN ls_party pa ON p.party_id = pa.party_id
         LEFT JOIN ls_role ro ON p.role_id = ro.role_id
+        LEFT JOIN blog_posts bp ON e.entity_type = 'blog_post' AND e.entity_uuid = bp.post_id
       )
     `
 
@@ -73,10 +84,10 @@ export async function POST(request: Request) {
     // Try trigram search first with pre-filtering
     const trigramQuery = `
       WITH pre_filtered AS (
-        -- Step 1: Tokenize the phrase and apply ILIKE for flexible matching
         SELECT 
           vi.entity_type,
           vi.entity_id,
+          vi.entity_uuid,
           vi.search_text,
           vi.state_abbr,
           vi.state_name
@@ -84,32 +95,36 @@ export async function POST(request: Request) {
         LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
         WHERE ${tokens}
         AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
-        ORDER BY LENGTH(vi.search_text) ASC  -- Prefer shorter, more relevant matches
-        LIMIT 1000  -- Reduce processing load
+        ORDER BY LENGTH(vi.search_text) ASC
+        LIMIT 1000
       ),
       ranked AS (
-        -- Step 2: Compute word similarity only on pre-filtered matches
         SELECT 
           entity_type,
           entity_id,
+          entity_uuid,
           search_text,
           state_abbr,
           state_name,
           word_similarity($1, search_text) AS similarity
         FROM pre_filtered
-        WHERE word_similarity($1, search_text) > 0.1  -- Apply similarity threshold
+        WHERE word_similarity($1, search_text) > 0.1
       ),
       ${entityDataCTE}
       SELECT * FROM entity_data
       ORDER BY similarity DESC
-      LIMIT 25;
+      LIMIT ${defaultLimit};
     `
 
-    let results = await db.unsafe(trigramQuery, [keyword])
+    let results = Array.from(await db.unsafe(trigramQuery, [keyword]))
 
-    // If no results, fall back to embeddings
-    if (results.length === 0 && embedding) {
+    // If trigram results are less than defaultLimit and we have an embedding, get remaining results
+    if (results.length < defaultLimit && embedding) {
+      const remainingLimit = defaultLimit - results.length
       const vectorString = `[${embedding.join(',')}]`
+      
+      const existingIds = results.map(r => r.entity_id);
+
       const embeddingQuery = `
         WITH ranked AS (
           SELECT 
@@ -118,20 +133,26 @@ export async function POST(request: Request) {
             vi.search_text,
             vi.state_abbr,
             vi.state_name,
+            vi.entity_uuid,
             1 - (vi.embedding <=> '${vectorString}'::vector) as similarity
           FROM vector_index vi
           LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
           WHERE vi.embedding IS NOT NULL
           AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
+          AND vi.entity_id NOT IN (${existingIds.length ? existingIds.join(',') : 0})
           ORDER BY vi.embedding <=> '${vectorString}'::vector
-          LIMIT 25
+          LIMIT ${remainingLimit}
         ),
         ${entityDataCTE}
         SELECT * FROM entity_data
         ORDER BY similarity DESC;
       `
-      results = await db.unsafe(embeddingQuery)
-      searchType = results.length > 0 ? 'embedding' : 'no_results'
+      const embeddingResults = Array.from(await db.unsafe(embeddingQuery))
+      
+      if (embeddingResults.length > 0) {
+        searchType = 'hybrid'
+        results = [...results, ...embeddingResults]
+      } 
     }
 
     return NextResponse.json({ 

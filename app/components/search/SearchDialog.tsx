@@ -4,16 +4,16 @@ import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef, useCallback } 
 import { Dialog, DialogContent, DialogTrigger } from "@/app/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Search, Sparkles } from "lucide-react"
-import { Bill, Sponsor } from '@/app/types'
+import { Bill, Sponsor, BlogPost } from '@/app/types'
 import { SearchResults } from './SearchResults'
 import { embeddingService } from '@/app/services/embedding.service'
 import { debounce } from 'lodash'
 import { useRouter } from 'next/navigation'
 
 export interface SearchResult {
-  type: 'bill' | 'sponsor'
+  type: 'bill' | 'sponsor' | 'blog_post'
   similarity: number
-  item: Bill | Sponsor
+  item: Bill | Sponsor | BlogPost
   href?: string
 }
 
@@ -121,7 +121,7 @@ export function SearchDialog() {
 
   useEffect(() => {
     if (open && query === '' && previousQueryRef.current !== query) {
-      handleSearch('')
+      handleSearch('congress')
     }
   }, [open, query, handleSearch])
 

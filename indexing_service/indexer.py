@@ -271,7 +271,7 @@ class VectorIndexer:
             }
 
 #            for key, value in params.items():
-#                print(f"Parameter {key}: {value} (type: {type(value)})")
+#                print(f"gitrParameter {key}: {value} (type: {type(value)})")
             
             # Execute the upsert
             await session.execute(

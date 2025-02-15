@@ -3,11 +3,12 @@
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { SearchResult } from './SearchDialog'
-import { Bill, Sponsor } from '@/app/types'
+import { Bill, Sponsor, BlogPost } from '@/app/types'
 import { StateIcon } from './StateIcon'
 import { Star as StarIcon } from 'lucide-react'
 import { memo } from 'react'
-import { Search } from 'lucide-react'
+import { Search, FileText } from 'lucide-react'
+import { format } from 'date-fns'
 
 interface SearchResultsProps {
   results: SearchResult[]
@@ -23,12 +24,23 @@ export const SearchResults = memo(function SearchResults({
 
   const bills = results.filter(r => r.type === 'bill').slice(0, 50)
   const sponsors = results.filter(r => r.type === 'sponsor').slice(0, 50)
+  const blogPosts = results.filter(r => r.type === 'blog_post').slice(0, 50)
 
   const handleItemClick = (item: SearchResult) => {
-    const href = item.type === 'bill' 
-      ? `/${(item.item as Bill).state_abbr.toLowerCase()}/bill/${(item.item as Bill).bill_id}`
-      : `/sponsor/${(item.item as Sponsor).people_id}`
-      
+    let href: string
+    switch (item.type) {
+      case 'bill':
+        href = `/${(item.item as Bill).state_abbr.toLowerCase()}/bill/${(item.item as Bill).bill_id}`
+        break
+      case 'sponsor':
+        href = `/sponsor/${(item.item as Sponsor).people_id}`
+        break
+      case 'blog_post':
+        href = `/blog/${(item.item as BlogPost).slug}`
+        break
+      default:
+        href = '/unknown'
+    }
     if (onItemClick) onItemClick({ ...item, href })
     router.push(href)
   }
@@ -73,6 +85,23 @@ export const SearchResults = memo(function SearchResults({
                   />
                 )
               })}
+            </div>
+          </div>
+        )}
+
+        {blogPosts.length > 0 && (
+          <div className="mt-4">
+            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+              Articles ({blogPosts.length})
+            </h3>
+            <div className="space-y-2">
+              {blogPosts.map(result => (
+                <BlogPostResult 
+                  key={(result.item as BlogPost).post_id}
+                  blogPost={result.item as BlogPost}
+                  onClick={() => handleItemClick(result)}
+                />
+              ))}
             </div>
           </div>
         )}
@@ -207,4 +236,49 @@ function AvatarPlaceholder() {
       </svg>
     </div>
   );
-} 
+}
+
+const BlogPostResult = memo(function BlogPostResult({ 
+  blogPost, 
+  onClick 
+}: { 
+  blogPost: BlogPost, 
+  onClick: () => void 
+}) {
+  return (
+    <div 
+      className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
+      onClick={onClick}
+    >
+      <div className="relative w-9 h-9">
+        {blogPost.main_image ? (
+          <Image
+            src={blogPost.main_image}
+            alt={blogPost.title}
+            fill
+            className="object-cover rounded"
+            sizes="36px"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded">
+            <FileText className="w-5 h-5 text-zinc-400" />
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+          <span>Article</span>
+          {blogPost.published_at && (
+            <>
+              <span>•</span>
+              <time>{format(new Date(blogPost.published_at), 'MMM d, yyyy')}</time>
+            </>
+          )}
+        </div>
+        <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
+          {blogPost.title}
+        </div>
+      </div>
+    </div>
+  )
+}) 
