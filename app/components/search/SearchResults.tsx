@@ -12,14 +12,12 @@ import { format } from 'date-fns'
 
 interface SearchResultsProps {
   results: SearchResult[]
-  isLoading: boolean
   onItemClick?: (item: SearchResult) => void
 }
 
 export const SearchResults = memo(function SearchResults({ 
   results, 
   onItemClick,
-  isLoading
 }: SearchResultsProps) {
   const router = useRouter()
 
@@ -131,7 +129,11 @@ export const SearchResults = memo(function SearchResults({
   )
 })
 
-const BillResult = memo(function BillResult({ bill, onClick, ...props }: { bill: Bill, onClick: () => void, [key: string]: any }) {
+interface ResultProps extends React.HTMLAttributes<HTMLDivElement> {
+  onClick: () => void
+}
+
+const BillResult = memo(function BillResult({ bill, onClick, ...props }: { bill: Bill, onClick: () => void } & ResultProps) {
   return (
     <div 
       {...props}
@@ -173,9 +175,8 @@ const SponsorResult = memo(function SponsorResult({
   ...props
 }: { 
   sponsor: Sponsor, 
-  onClick: () => void,
-  [key: string]: any
-}) {
+  onClick: () => void 
+} & ResultProps) {
   return (
     <div 
       {...props}
@@ -255,9 +256,8 @@ const BlogPostResult = memo(function BlogPostResult({
   ...props
 }: { 
   blogPost: BlogPost, 
-  onClick: () => void,
-  [key: string]: any
-}) {
+  onClick: () => void 
+} & ResultProps) {
   return (
     <div 
       {...props}

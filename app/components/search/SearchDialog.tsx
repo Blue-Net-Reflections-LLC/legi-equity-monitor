@@ -29,7 +29,6 @@ export function SearchDialog() {
   const abortControllerRef = useRef<AbortController>()
   const previousQueryRef = useRef<string | null>(null)
   const resultsContainerRef = useRef<HTMLDivElement>(null)
-  const mainContentRef = useRef<HTMLDivElement>(null)
   const previousResultsLengthRef = useRef<number>(0)
   const router = useRouter()
 
@@ -221,7 +220,10 @@ export function SearchDialog() {
                   autoFocus
                 />
               </div>
-              <kbd className="hidden sm:block text-sm font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-900 px-3 flex content-center h-10 rounded">
+              <kbd 
+                className="hidden sm:block text-sm font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-900 px-3 flex content-center h-10 rounded cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+                onClick={() => setOpen(false)}
+              >
                 ESC
               </kbd>
             </div>
@@ -234,7 +236,6 @@ export function SearchDialog() {
             >
               <SearchResults 
                 results={results} 
-                isLoading={isLoading}
                 onItemClick={onSelect}
               />
               {hasMore && (
