@@ -5,16 +5,18 @@ import { removeStopwords } from 'stopword'
 const defaultLimit = 25
 export async function POST(request: Request) {
   try {
-    const { keyword, embedding } = await request.json()
+    const { keyword, embedding, page = 1 } = await request.json()
+    const offset = (page - 1) * defaultLimit
     
     // Remove stopwords and get meaningful tokens
     const meaningfulWords = removeStopwords(keyword.toLowerCase().split(' '))
 
     if (keyword.length > 0 && meaningfulWords.length === 0) {
-      //
       return NextResponse.json({
         results: [],
-        search_type: 'no_results'
+        search_type: 'no_results',
+        has_more: false,
+        page
       })
     }
     
@@ -106,27 +108,31 @@ export async function POST(request: Request) {
           search_text,
           state_abbr,
           state_name,
-          word_similarity($1, search_text) AS similarity
+          word_similarity($1, search_text) AS similarity,
+          'trigram' as source
         FROM pre_filtered
         WHERE word_similarity($1, search_text) > 0.1
       ),
       ${entityDataCTE}
-      SELECT * FROM entity_data
+      SELECT e.*, r.source FROM entity_data e
+      JOIN ranked r ON r.entity_type = e.entity_type AND r.entity_id = e.entity_id
       ORDER BY 
-        CASE entity_type 
+        CASE e.entity_type 
           WHEN 'sponsor' THEN 1
           WHEN 'blog_post' THEN 2
           WHEN 'bill' THEN 3
         END,
-        similarity DESC
-      LIMIT ${defaultLimit};
+        e.similarity DESC
+      OFFSET ${offset}
+      LIMIT ${defaultLimit + 1};
     `
 
     let results = Array.from(await db.unsafe(trigramQuery, [keyword]))
+    let has_more = results.length > defaultLimit
+    results = results.slice(0, defaultLimit)
 
-    // If trigram results are less than defaultLimit and we have an embedding, get remaining results
-    if (results.length < defaultLimit && embedding) {
-      const remainingLimit = defaultLimit - results.length
+    // If we have an embedding, get embedding results
+    if (embedding) {
       const vectorString = `[${embedding.join(',')}]`
       
       const existingIds = results.map(r => r.entity_id);
@@ -140,30 +146,35 @@ export async function POST(request: Request) {
             vi.state_abbr,
             vi.state_name,
             vi.entity_uuid,
-            1 - (vi.embedding <=> '${vectorString}'::vector) as similarity
+            1 - (vi.embedding <=> '${vectorString}'::vector) as similarity,
+            'embedding' as source
           FROM vector_index vi
           LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
           WHERE vi.embedding IS NOT NULL
           AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
           AND vi.entity_id NOT IN (${existingIds.length ? existingIds.join(',') : 0})
           ORDER BY vi.embedding <=> '${vectorString}'::vector
-          LIMIT ${remainingLimit}
+          OFFSET ${offset}
+          LIMIT ${defaultLimit + 1}
         ),
         ${entityDataCTE}
-        SELECT * FROM entity_data
+        SELECT e.*, r.source FROM entity_data e
+        JOIN ranked r ON r.entity_type = e.entity_type AND r.entity_id = e.entity_id
         ORDER BY 
-          CASE entity_type 
+          CASE e.entity_type 
             WHEN 'sponsor' THEN 1
             WHEN 'blog_post' THEN 2
             WHEN 'bill' THEN 3
           END,
-          similarity DESC;
+          e.similarity DESC;
       `
       const embeddingResults = Array.from(await db.unsafe(embeddingQuery))
       
       if (embeddingResults.length > 0) {
         searchType = 'hybrid'
         results = [...results, ...embeddingResults]
+        has_more = has_more || embeddingResults.length > defaultLimit
+        results = results.slice(0, defaultLimit)
       } 
     }
 
@@ -171,9 +182,12 @@ export async function POST(request: Request) {
       results: results.map(r => ({
         type: r.entity_type,
         similarity: r.similarity,
+        source: r.source,
         item: r.item_data
       })),
-      search_type: searchType
+      search_type: searchType,
+      has_more,
+      page
     })
   } catch (error) {
     console.error('Search error:', error)

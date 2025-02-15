@@ -3,7 +3,7 @@
 import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogTrigger } from "@/app/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Search, Sparkles } from "lucide-react"
+import { Search, Sparkles, Loader2 } from "lucide-react"
 import { Bill, Sponsor, BlogPost } from '@/app/types'
 import { SearchResults } from './SearchResults'
 import { embeddingService } from '@/app/services/embedding.service'
@@ -22,14 +22,16 @@ export function SearchDialog() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
   const hasInitialized = useRef(false)
   const abortControllerRef = useRef<AbortController>()
   const previousQueryRef = useRef<string | null>(null)
   const router = useRouter()
 
   const handleSearch = useCallback(
-    debounce(async (searchQuery: string) => {
-      if (searchQuery === previousQueryRef.current) {
+    debounce(async (searchQuery: string, pageNum: number = 1) => {
+      if (searchQuery === previousQueryRef.current && pageNum === 1) {
         return
       }
       setIsLoading(true)
@@ -57,6 +59,7 @@ export function SearchDialog() {
           body: JSON.stringify({
             keyword: searchQuery,
             embedding,
+            page: pageNum
           }),
           signal,
         })
@@ -67,16 +70,21 @@ export function SearchDialog() {
 
         const data = await response.json()
         if (!signal.aborted) {
-          setResults(data.results)
+          setResults(prev => pageNum === 1 ? data.results : [...prev, ...data.results])
+          setHasMore(data.has_more)
+          setPage(data.page)
           hasInitialized.current = true
         }
       } catch (error) {
         if (error instanceof Error && error.name !== 'AbortError') {
           console.error('Search failed:', error)
           setResults([])
+          setHasMore(false)
         }
       } finally {
-        previousQueryRef.current = searchQuery
+        if (pageNum === 1) {
+          previousQueryRef.current = searchQuery
+        }
         if (!abortControllerRef.current?.signal.aborted) {
           setIsLoading(false)
         }
@@ -88,9 +96,16 @@ export function SearchDialog() {
     [setResults, setIsLoading]
   )
 
+  const handleLoadMore = useCallback(() => {
+    if (!isLoading && hasMore) {
+      handleSearch(query, page + 1)
+    }
+  }, [query, page, isLoading, hasMore, handleSearch])
+
   const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
-    handleSearch(e.target.value)
+    setPage(1)
+    handleSearch(e.target.value, 1)
   }, [handleSearch])
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
@@ -180,6 +195,24 @@ export function SearchDialog() {
                 isLoading={isLoading}
                 onItemClick={onSelect}
               />
+              {hasMore && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={isLoading}
+                    className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading...
+                      </div>
+                    ) : (
+                      'Show More'
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -22,9 +22,9 @@ export const SearchResults = memo(function SearchResults({
 }: SearchResultsProps) {
   const router = useRouter()
 
-  const bills = results.filter(r => r.type === 'bill').slice(0, 50)
-  const sponsors = results.filter(r => r.type === 'sponsor').slice(0, 50)
-  const blogPosts = results.filter(r => r.type === 'blog_post').slice(0, 50)
+  const bills = results.filter(r => r.type === 'bill')
+  const sponsors = results.filter(r => r.type === 'sponsor')
+  const blogPosts = results.filter(r => r.type === 'blog_post')
 
   const handleItemClick = (item: SearchResult) => {
     let href: string
@@ -82,6 +82,7 @@ export const SearchResults = memo(function SearchResults({
                     key={sponsor.people_id}
                     sponsor={sponsor}
                     onClick={() => handleItemClick(result)}
+                    result={result}
                   />
                 )
               })}
@@ -100,6 +101,7 @@ export const SearchResults = memo(function SearchResults({
                   key={(result.item as BlogPost).post_id}
                   blogPost={result.item as BlogPost}
                   onClick={() => handleItemClick(result)}
+                  result={result}
                 />
               ))}
             </div>
@@ -165,7 +167,15 @@ const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onC
   )
 })
 
-const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponsor: Sponsor, onClick: () => void }) {
+const SponsorResult = memo(function SponsorResult({ 
+  sponsor, 
+  onClick,
+  result 
+}: { 
+  sponsor: Sponsor, 
+  onClick: () => void,
+  result: SearchResult
+}) {
   return (
     <div 
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
@@ -209,6 +219,9 @@ const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponso
       <div className="min-w-0 flex-1">
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
           {sponsor.state_abbr} • {sponsor.party_name} • {sponsor.body_name}
+          <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-800">
+            {result.source}
+          </span>
         </div>
         <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
           {sponsor.name}
@@ -240,10 +253,12 @@ function AvatarPlaceholder() {
 
 const BlogPostResult = memo(function BlogPostResult({ 
   blogPost, 
-  onClick 
+  onClick,
+  result
 }: { 
   blogPost: BlogPost, 
-  onClick: () => void 
+  onClick: () => void,
+  result: SearchResult
 }) {
   return (
     <div 
@@ -274,6 +289,9 @@ const BlogPostResult = memo(function BlogPostResult({
               <time>{format(new Date(blogPost.published_at), 'MMM d, yyyy')}</time>
             </>
           )}
+          <span className="text-xs px-1.5 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-800">
+            {result.source}
+          </span>
         </div>
         <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
           {blogPost.title}
