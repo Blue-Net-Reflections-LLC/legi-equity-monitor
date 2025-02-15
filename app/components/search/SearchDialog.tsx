@@ -29,6 +29,7 @@ export function SearchDialog() {
   const abortControllerRef = useRef<AbortController>()
   const previousQueryRef = useRef<string | null>(null)
   const resultsContainerRef = useRef<HTMLDivElement>(null)
+  const mainContentRef = useRef<HTMLDivElement>(null)
   const previousResultsLengthRef = useRef<number>(0)
   const router = useRouter()
 
@@ -81,6 +82,10 @@ export function SearchDialog() {
           // Always set results directly for page 1 or new queries
           if (pageNum === 1 || previousQueryRef.current !== searchQuery) {
             setResults(data.results)
+            // Force scroll to top for new searches with smooth behavior
+            if (resultsContainerRef.current) {
+              resultsContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+            }
           } else {
             // Only append for subsequent pages of the same query
             setResults(prev => [...prev, ...data.results])
@@ -202,13 +207,13 @@ export function SearchDialog() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 min-h-0 flex flex-col p-3">
-            <div className="relative flex items-center gap-2">
+          <div className="flex flex-col h-full">
+            <div className="flex items-center gap-2 p-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-400" />
                 <Input
                   type="search"
-                  placeholder="Search bills and sponsors..."
+                  placeholder="Search bills, sponsors, and articles..."
                   value={query}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
@@ -220,33 +225,37 @@ export function SearchDialog() {
                 ESC
               </kbd>
             </div>
-            <div className="flex-1 min-h-0 mt-2">
-              <div ref={resultsContainerRef} className="h-full overflow-auto">
-                <SearchResults 
-                  results={results} 
-                  isLoading={isLoading}
-                  onItemClick={onSelect}
-                />
-              </div>
+            <div ref={resultsContainerRef} className="flex-1 min-h-0 overflow-auto px-3 
+              [&::-webkit-scrollbar]:w-2 
+              [&::-webkit-scrollbar-thumb]:rounded-full 
+              [&::-webkit-scrollbar-thumb]:bg-zinc-300
+              dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
+              [&::-webkit-scrollbar-track]:bg-transparent"
+            >
+              <SearchResults 
+                results={results} 
+                isLoading={isLoading}
+                onItemClick={onSelect}
+              />
+              {hasMore && (
+                <div className="mt-4 text-center pb-2">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={isLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-orange-500"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading...
+                      </div>
+                    ) : (
+                      'Show More'
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
-            {hasMore && (
-              <div className="mt-4 text-center pb-2">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={isLoading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-orange-500"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading...
-                    </div>
-                  ) : (
-                    'Show More'
-                  )}
-                </button>
-              </div>
-            )}
           </div>
         )}
       </DialogContent>

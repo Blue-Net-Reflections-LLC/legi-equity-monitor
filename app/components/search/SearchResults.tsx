@@ -63,77 +63,70 @@ export const SearchResults = memo(function SearchResults({
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 min-h-0 overflow-auto px-2 [&::-webkit-scrollbar]:w-2 
-        [&::-webkit-scrollbar-thumb]:rounded-full 
-        [&::-webkit-scrollbar-thumb]:bg-zinc-300
-        dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
-        [&::-webkit-scrollbar-track]:bg-transparent"
-      >
-        {sponsors.length > 0 && (
-          <div className="mt-2">
-            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
-              Sponsors ({sponsors.length})
-            </h3>
-            <div className="space-y-2">
-              {sponsors.map((result, index) => {
-                const sponsor = result.item as Sponsor
-                return (
-                  <SponsorResult 
-                    key={`sponsor-${sponsor.people_id}-${index}`}
-                    sponsor={sponsor}
-                    onClick={() => handleItemClick(result)}
-                    data-result-index={index}
-                  />
-                )
-              })}
-            </div>
+    <div className="space-y-4">
+      {sponsors.length > 0 && (
+        <div>
+          <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+            Sponsors ({sponsors.length})
+          </h3>
+          <div className="space-y-2">
+            {sponsors.map((result, index) => {
+              const sponsor = result.item as Sponsor
+              return (
+                <SponsorResult 
+                  key={`sponsor-${sponsor.people_id}-${index}`}
+                  sponsor={sponsor}
+                  onClick={() => handleItemClick(result)}
+                  data-result-index={index}
+                />
+              )
+            })}
           </div>
-        )}
+        </div>
+      )}
 
-        {blogPosts.length > 0 && (
-          <div className="mt-4">
-            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
-              Articles ({blogPosts.length})
-            </h3>
-            <div className="space-y-2">
-              {blogPosts.map((result, index) => {
-                const offset = sponsors.length
-                return (
-                  <BlogPostResult 
-                    key={`blog-${(result.item as BlogPost).post_id}-${index}`}
-                    blogPost={result.item as BlogPost}
-                    onClick={() => handleItemClick(result)}
-                    data-result-index={offset + index}
-                  />
-                )
-              })}
-            </div>
+      {blogPosts.length > 0 && (
+        <div>
+          <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+            Articles ({blogPosts.length})
+          </h3>
+          <div className="space-y-2">
+            {blogPosts.map((result, index) => {
+              const offset = sponsors.length
+              return (
+                <BlogPostResult 
+                  key={`blog-${(result.item as BlogPost).post_id}-${index}`}
+                  blogPost={result.item as BlogPost}
+                  onClick={() => handleItemClick(result)}
+                  data-result-index={offset + index}
+                />
+              )
+            })}
           </div>
-        )}
+        </div>
+      )}
 
-        {bills.length > 0 && (
-          <div className="mt-4">
-            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
-              Bills ({bills.length})
-            </h3>
-            <div className="space-y-2">
-              {bills.map((result, index) => {
-                const offset = sponsors.length + blogPosts.length
-                const bill = result.item as Bill
-                return (
-                  <BillResult 
-                    key={`bill-${bill.bill_id}-${index}`}
-                    bill={bill}
-                    onClick={() => handleItemClick(result)}
-                    data-result-index={offset + index}
-                  />
-                )
-              })}
-            </div>
+      {bills.length > 0 && (
+        <div>
+          <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+            Bills ({bills.length})
+          </h3>
+          <div className="space-y-2">
+            {bills.map((result, index) => {
+              const offset = sponsors.length + blogPosts.length
+              const bill = result.item as Bill
+              return (
+                <BillResult 
+                  key={`bill-${bill.bill_id}-${index}`}
+                  bill={bill}
+                  onClick={() => handleItemClick(result)}
+                  data-result-index={offset + index}
+                />
+              )
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 })
