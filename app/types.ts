@@ -61,4 +61,6 @@ export interface Sponsor {
   updated: Date;
   body_name: string;
   votesmart_id: string | null;
-} 
+}
+
+export { type BlogPost } from '@/app/lib/validations/blog'; 

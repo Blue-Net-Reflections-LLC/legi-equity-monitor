@@ -3,32 +3,43 @@
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { SearchResult } from './SearchDialog'
-import { Bill, Sponsor } from '@/app/types'
+import { Bill, Sponsor, BlogPost } from '@/app/types'
 import { StateIcon } from './StateIcon'
 import { Star as StarIcon } from 'lucide-react'
 import { memo } from 'react'
-import { Search } from 'lucide-react'
+import { Search, FileText } from 'lucide-react'
+import { format } from 'date-fns'
 
 interface SearchResultsProps {
   results: SearchResult[]
-  isLoading: boolean
   onItemClick?: (item: SearchResult) => void
 }
 
 export const SearchResults = memo(function SearchResults({ 
   results, 
-  onItemClick 
+  onItemClick,
 }: SearchResultsProps) {
   const router = useRouter()
 
-  const bills = results.filter(r => r.type === 'bill').slice(0, 50)
-  const sponsors = results.filter(r => r.type === 'sponsor').slice(0, 50)
+  const bills = results.filter(r => r.type === 'bill')
+  const sponsors = results.filter(r => r.type === 'sponsor')
+  const blogPosts = results.filter(r => r.type === 'blog_post')
 
   const handleItemClick = (item: SearchResult) => {
-    const href = item.type === 'bill' 
-      ? `/${(item.item as Bill).state_abbr.toLowerCase()}/bill/${(item.item as Bill).bill_id}`
-      : `/sponsor/${(item.item as Sponsor).people_id}`
-      
+    let href: string
+    switch (item.type) {
+      case 'bill':
+        href = `/${(item.item as Bill).state_abbr.toLowerCase()}/bill/${(item.item as Bill).bill_id}`
+        break
+      case 'sponsor':
+        href = `/sponsor/${(item.item as Sponsor).people_id}`
+        break
+      case 'blog_post':
+        href = `/blog/${(item.item as BlogPost).slug}`
+        break
+      default:
+        href = '/unknown'
+    }
     if (onItemClick) onItemClick({ ...item, href })
     router.push(href)
   }
@@ -50,60 +61,82 @@ export const SearchResults = memo(function SearchResults({
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 min-h-0 overflow-auto px-2 [&::-webkit-scrollbar]:w-2 
-        [&::-webkit-scrollbar-thumb]:rounded-full 
-        [&::-webkit-scrollbar-thumb]:bg-zinc-300
-        dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700
-        [&::-webkit-scrollbar-track]:bg-transparent"
-      >
-        {sponsors.length > 0 && (
-          <div className="mt-2">
-            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
-              Sponsors ({sponsors.length})
-            </h3>
-            <div className="space-y-2">
-              {sponsors.map(result => {
-                const sponsor = result.item as Sponsor
-                return (
-                  <SponsorResult 
-                    key={sponsor.people_id}
-                    sponsor={sponsor}
-                    onClick={() => handleItemClick(result)}
-                  />
-                )
-              })}
-            </div>
+    <div className="space-y-4">
+      {sponsors.length > 0 && (
+        <div>
+          <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+            Sponsors ({sponsors.length})
+          </h3>
+          <div className="space-y-2">
+            {sponsors.map((result, index) => {
+              const sponsor = result.item as Sponsor
+              return (
+                <SponsorResult 
+                  key={`sponsor-${sponsor.people_id}-${index}`}
+                  sponsor={sponsor}
+                  onClick={() => handleItemClick(result)}
+                  data-result-index={index}
+                />
+              )
+            })}
           </div>
-        )}
+        </div>
+      )}
 
-        {bills.length > 0 && (
-          <div className="mt-4">
-            <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
-              Bills ({bills.length})
-            </h3>
-            <div className="space-y-2">
-              {bills.map(result => {
-                const bill = result.item as Bill
-                return (
-                  <BillResult 
-                    key={bill.bill_id}
-                    bill={bill}
-                    onClick={() => handleItemClick(result)}
-                  />
-                )
-              })}
-            </div>
+      {blogPosts.length > 0 && (
+        <div>
+          <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+            Articles ({blogPosts.length})
+          </h3>
+          <div className="space-y-2">
+            {blogPosts.map((result, index) => {
+              const offset = sponsors.length
+              return (
+                <BlogPostResult 
+                  key={`blog-${(result.item as BlogPost).post_id}-${index}`}
+                  blogPost={result.item as BlogPost}
+                  onClick={() => handleItemClick(result)}
+                  data-result-index={offset + index}
+                />
+              )
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {bills.length > 0 && (
+        <div>
+          <h3 className="font-medium text-sm text-white bg-indigo-500/90 dark:bg-indigo-500/50 px-3 py-1 rounded mb-2">
+            Bills ({bills.length})
+          </h3>
+          <div className="space-y-2">
+            {bills.map((result, index) => {
+              const offset = sponsors.length + blogPosts.length
+              const bill = result.item as Bill
+              return (
+                <BillResult 
+                  key={`bill-${bill.bill_id}-${index}`}
+                  bill={bill}
+                  onClick={() => handleItemClick(result)}
+                  data-result-index={offset + index}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 })
 
-const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onClick: () => void }) {
+interface ResultProps extends React.HTMLAttributes<HTMLDivElement> {
+  onClick: () => void
+}
+
+const BillResult = memo(function BillResult({ bill, onClick, ...props }: { bill: Bill, onClick: () => void } & ResultProps) {
   return (
     <div 
+      {...props}
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
       onClick={onClick}
     >
@@ -136,9 +169,17 @@ const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onC
   )
 })
 
-const SponsorResult = memo(function SponsorResult({ sponsor, onClick }: { sponsor: Sponsor, onClick: () => void }) {
+const SponsorResult = memo(function SponsorResult({ 
+  sponsor, 
+  onClick,
+  ...props
+}: { 
+  sponsor: Sponsor, 
+  onClick: () => void 
+} & ResultProps) {
   return (
     <div 
+      {...props}
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
       onClick={onClick}
     >
@@ -207,4 +248,51 @@ function AvatarPlaceholder() {
       </svg>
     </div>
   );
-} 
+}
+
+const BlogPostResult = memo(function BlogPostResult({ 
+  blogPost, 
+  onClick,
+  ...props
+}: { 
+  blogPost: BlogPost, 
+  onClick: () => void 
+} & ResultProps) {
+  return (
+    <div 
+      {...props}
+      className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
+      onClick={onClick}
+    >
+      <div className="relative w-9 h-9">
+        {blogPost.main_image ? (
+          <Image
+            src={blogPost.main_image}
+            alt={blogPost.title}
+            fill
+            className="object-cover rounded"
+            sizes="36px"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded">
+            <FileText className="w-5 h-5 text-zinc-400" />
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+          <span>Article</span>
+          {blogPost.published_at && (
+            <>
+              <span>•</span>
+              <time>{format(new Date(blogPost.published_at), 'MMM d, yyyy')}</time>
+            </>
+          )}
+        </div>
+        <div className="text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1">
+          {blogPost.title}
+        </div>
+      </div>
+    </div>
+  )
+}) 
