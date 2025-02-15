@@ -104,6 +104,30 @@ export function BlogPostView({
               [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline 
               [&_a:hover]:text-blue-800 dark:[&_a:hover]:text-blue-300
 
+              [&>h2]:text-3xl [&>h2]:font-bold [&>h2]:mb-6 [&>h2]:mt-12
+              [&>h2]:bg-gradient-to-r [&>h2]:from-neutral-900 [&>h2]:to-neutral-600
+              dark:[&>h2]:from-white dark:[&>h2]:to-neutral-400
+              [&>h2]:bg-clip-text [&>h2]:text-transparent
+              [&>h2]:pb-2 [&>h2]:border-b [&>h2]:border-neutral-200 dark:[&>h2]:border-neutral-800
+
+              [&>h3]:text-2xl [&>h3]:font-semibold [&>h3]:mb-4 [&>h3]:mt-8
+              [&>h3]:text-neutral-800 dark:[&>h3]:text-neutral-200
+              [&>h3]:flex [&>h3]:items-center [&>h3]:gap-2
+              [&>h3]:before:content-[''] [&>h3]:before:w-2 [&>h3]:before:h-2
+              [&>h3]:before:rounded-full [&>h3]:before:bg-primary
+
+              [&>h4]:text-xl [&>h4]:font-medium [&>h4]:mb-4 [&>h4]:mt-6
+              [&>h4]:text-neutral-700 dark:[&>h4]:text-neutral-300
+              [&>h4]:pl-4 [&>h4]:border-l-4 [&>h4]:border-primary/60
+
+              [&>h5]:text-lg [&>h5]:font-medium [&>h5]:mb-3 [&>h5]:mt-4
+              [&>h5]:text-neutral-600 dark:[&>h5]:text-neutral-400
+              [&>h5]:uppercase [&>h5]:tracking-wide
+
+              [&>h6]:text-base [&>h6]:font-medium [&>h6]:mb-3 [&>h6]:mt-4
+              [&>h6]:text-neutral-500 dark:[&>h6]:text-neutral-500
+              [&>h6]:italic
+
               [&_table]:w-full
               [&_table]:my-8
               [&_table]:border-collapse

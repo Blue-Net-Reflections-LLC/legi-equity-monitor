@@ -180,9 +180,13 @@ export async function GET(
             response_format: { type: "json_object" }
           }),
           stream: true,
-          max_tokens: 8000
+          max_completion_tokens: 8000,
+          reasoning_effort: 'high',
+          temperature: 0.5,
+          top_p: 0.95,
+          frequency_penalty: 0,
+          presence_penalty: 0,
         });
-
 
         let generatedContent;
         let accumulatedContent = '';
