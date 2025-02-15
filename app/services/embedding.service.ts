@@ -1,13 +1,17 @@
 'use client';
 
-import { pipeline, env, FeatureExtractionPipeline } from '@huggingface/transformers';
+import { pipeline, env, FeatureExtractionPipeline, AutoTokenizer, AutoModel } from '@huggingface/transformers';
 
 // Configure transformers.js to use local models
 env.localModelPath = '/models';
 env.allowLocalModels = true;
 
+const embeddingModel = "Xenova/all-MiniLM-L6-v2";
+
 class EmbeddingService {
   private static pipeline: FeatureExtractionPipeline | null = null;
+  private static tokenizer: any = null;
+  private static model: any = null;
   private loadPromise: Promise<void> | null = null;
 
   constructor() {
@@ -18,15 +22,18 @@ class EmbeddingService {
     if (!this.loadPromise) {
       this.loadPromise = (async () => {
         if (!EmbeddingService.pipeline) {
+          // Load components sequentially
           EmbeddingService.pipeline = await pipeline(
             'feature-extraction',
-            'Xenova/all-MiniLM-L6-v2',
+            embeddingModel,
             {
               revision: 'main',
               device: 'auto',
               dtype: 'fp32',
             }
           );
+          EmbeddingService.tokenizer = await AutoTokenizer.from_pretrained(embeddingModel);
+          EmbeddingService.model = await AutoModel.from_pretrained(embeddingModel);
         }
       })();
     }
@@ -48,10 +55,37 @@ class EmbeddingService {
     return embeddingsArray;
   }
 
+  async generateEmbeddings(texts: string[]): Promise<number[][]> {
+    await this.load();
+
+    if (!EmbeddingService.tokenizer || !EmbeddingService.model) {
+      throw new Error('Tokenizer or model not initialized');
+    }
+
+    const inputs = await EmbeddingService.tokenizer(texts, {
+      return_tensors: "pt",
+      padding: true,
+      truncation: true,
+    });
+
+    const { input_ids, attention_mask } = inputs;
+    const outputs = await EmbeddingService.model.forward({
+      input_ids,
+      attention_mask,
+    });
+    
+    return outputs.last_hidden_state.mean(1).tolist();
+  }
+
   dispose() {
     EmbeddingService.pipeline = null;
+    EmbeddingService.tokenizer = null;
+    EmbeddingService.model = null;
     this.loadPromise = null;
   }
 }
 
-export const embeddingService = new EmbeddingService(); 
+export const embeddingService = new EmbeddingService();
+export const generateEmbeddings = (texts: string[]): Promise<number[][]> => {
+  return embeddingService.generateEmbeddings(texts);
+} 

@@ -11,7 +11,8 @@ export async function GET(
 
     // Get published post by slug
     const [post] = await db`
-      SELECT 
+      SELECT
+        post_id,
         title,
         slug,
         content,
