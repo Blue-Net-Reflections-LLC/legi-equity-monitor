@@ -76,14 +76,14 @@ export const SearchResults = memo(function SearchResults({
               Sponsors ({sponsors.length})
             </h3>
             <div className="space-y-2">
-              {sponsors.map(result => {
+              {sponsors.map((result, index) => {
                 const sponsor = result.item as Sponsor
                 return (
                   <SponsorResult 
                     key={sponsor.people_id}
                     sponsor={sponsor}
                     onClick={() => handleItemClick(result)}
-                    result={result}
+                    data-result-index={index}
                   />
                 )
               })}
@@ -97,14 +97,17 @@ export const SearchResults = memo(function SearchResults({
               Articles ({blogPosts.length})
             </h3>
             <div className="space-y-2">
-              {blogPosts.map(result => (
-                <BlogPostResult 
-                  key={(result.item as BlogPost).post_id}
-                  blogPost={result.item as BlogPost}
-                  onClick={() => handleItemClick(result)}
-                  result={result}
-                />
-              ))}
+              {blogPosts.map((result, index) => {
+                const offset = sponsors.length
+                return (
+                  <BlogPostResult 
+                    key={(result.item as BlogPost).post_id}
+                    blogPost={result.item as BlogPost}
+                    onClick={() => handleItemClick(result)}
+                    data-result-index={offset + index}
+                  />
+                )
+              })}
             </div>
           </div>
         )}
@@ -115,13 +118,15 @@ export const SearchResults = memo(function SearchResults({
               Bills ({bills.length})
             </h3>
             <div className="space-y-2">
-              {bills.map(result => {
+              {bills.map((result, index) => {
+                const offset = sponsors.length + blogPosts.length
                 const bill = result.item as Bill
                 return (
                   <BillResult 
                     key={bill.bill_id}
                     bill={bill}
                     onClick={() => handleItemClick(result)}
+                    data-result-index={offset + index}
                   />
                 )
               })}
@@ -133,9 +138,10 @@ export const SearchResults = memo(function SearchResults({
   )
 })
 
-const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onClick: () => void }) {
+const BillResult = memo(function BillResult({ bill, onClick, ...props }: { bill: Bill, onClick: () => void, [key: string]: any }) {
   return (
     <div 
+      {...props}
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
       onClick={onClick}
     >
@@ -171,14 +177,15 @@ const BillResult = memo(function BillResult({ bill, onClick }: { bill: Bill, onC
 const SponsorResult = memo(function SponsorResult({ 
   sponsor, 
   onClick,
-  result 
+  ...props
 }: { 
   sponsor: Sponsor, 
   onClick: () => void,
-  result: SearchResult
+  [key: string]: any
 }) {
   return (
     <div 
+      {...props}
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
       onClick={onClick}
     >
@@ -252,14 +259,15 @@ function AvatarPlaceholder() {
 const BlogPostResult = memo(function BlogPostResult({ 
   blogPost, 
   onClick,
-  result
+  ...props
 }: { 
   blogPost: BlogPost, 
   onClick: () => void,
-  result: SearchResult
+  [key: string]: any
 }) {
   return (
     <div 
+      {...props}
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
       onClick={onClick}
     >

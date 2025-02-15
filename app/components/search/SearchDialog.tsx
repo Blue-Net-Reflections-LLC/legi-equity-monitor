@@ -27,14 +27,21 @@ export function SearchDialog() {
   const hasInitialized = useRef(false)
   const abortControllerRef = useRef<AbortController>()
   const previousQueryRef = useRef<string | null>(null)
+  const resultsContainerRef = useRef<HTMLDivElement>(null)
+  const previousResultsLengthRef = useRef<number>(0)
   const router = useRouter()
 
   const handleSearch = useCallback(
-    debounce(async (searchQuery: string, pageNum: number = 1) => {
+    debounce(async (searchQuery: string, pageNum: number = 1, currentResults: SearchResult[] = []) => {
       if (searchQuery === previousQueryRef.current && pageNum === 1) {
         return
       }
       setIsLoading(true)
+
+      // Store the current results length before loading more
+      if (pageNum > 1) {
+        previousResultsLengthRef.current = currentResults.length
+      }
 
       // Cancel any pending requests
       if (abortControllerRef.current) {
@@ -74,6 +81,25 @@ export function SearchDialog() {
           setHasMore(data.has_more)
           setPage(data.page)
           hasInitialized.current = true
+
+          // Scroll to new results if this was a "load more" action
+          if (pageNum > 1 && resultsContainerRef.current) {
+            const container = resultsContainerRef.current
+            // Wait for DOM to update
+            setTimeout(() => {
+              const resultElements = container.querySelectorAll('[data-result-index]')
+              // Find the first element of the new results
+              const firstNewResult = Array.from(resultElements).find(
+                el => parseInt(el.getAttribute('data-result-index') || '') === previousResultsLengthRef.current
+              )
+
+              console.log("Horace firstNewResult", previousResultsLengthRef.current, firstNewResult)
+              
+              if (firstNewResult) {
+                firstNewResult.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }, 100)
+          }
         }
       } catch (error) {
         if (error instanceof Error && error.name !== 'AbortError') {
@@ -98,20 +124,21 @@ export function SearchDialog() {
 
   const handleLoadMore = useCallback(() => {
     if (!isLoading && hasMore) {
-      handleSearch(query, page + 1)
+      handleSearch(query, page + 1, results)
     }
-  }, [query, page, isLoading, hasMore, handleSearch])
+  }, [query, page, isLoading, hasMore, handleSearch, results])
 
   const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value)
     setPage(1)
-    handleSearch(e.target.value, 1)
+    setResults([])
+    handleSearch(e.target.value, 1, [])
   }, [handleSearch])
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSearch.cancel()
-      handleSearch(query)
+      handleSearch(query, 1, [])
     }
   }, [query, handleSearch])
 
@@ -190,11 +217,13 @@ export function SearchDialog() {
               </kbd>
             </div>
             <div className="flex-1 min-h-0 mt-2">
-              <SearchResults 
-                results={results} 
-                isLoading={isLoading}
-                onItemClick={onSelect}
-              />
+              <div ref={resultsContainerRef} className="h-full overflow-auto">
+                <SearchResults 
+                  results={results} 
+                  isLoading={isLoading}
+                  onItemClick={onSelect}
+                />
+              </div>
             </div>
             {hasMore && (
               <div className="mt-4 text-center pb-2">
