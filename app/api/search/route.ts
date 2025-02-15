@@ -112,7 +112,13 @@ export async function POST(request: Request) {
       ),
       ${entityDataCTE}
       SELECT * FROM entity_data
-      ORDER BY similarity DESC
+      ORDER BY 
+        CASE entity_type 
+          WHEN 'sponsor' THEN 1
+          WHEN 'blog_post' THEN 2
+          WHEN 'bill' THEN 3
+        END,
+        similarity DESC
       LIMIT ${defaultLimit};
     `
 
@@ -145,7 +151,13 @@ export async function POST(request: Request) {
         ),
         ${entityDataCTE}
         SELECT * FROM entity_data
-        ORDER BY similarity DESC;
+        ORDER BY 
+          CASE entity_type 
+            WHEN 'sponsor' THEN 1
+            WHEN 'blog_post' THEN 2
+            WHEN 'bill' THEN 3
+          END,
+          similarity DESC;
       `
       const embeddingResults = Array.from(await db.unsafe(embeddingQuery))
       
