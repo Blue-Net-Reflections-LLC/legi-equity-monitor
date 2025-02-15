@@ -18,7 +18,8 @@ interface SearchResultsProps {
 
 export const SearchResults = memo(function SearchResults({ 
   results, 
-  onItemClick 
+  onItemClick,
+  isLoading
 }: SearchResultsProps) {
   const router = useRouter()
 
