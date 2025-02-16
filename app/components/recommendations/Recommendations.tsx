@@ -103,7 +103,6 @@ export function Recommendations({
   }, [keyphrases, entityType, limit, exclude]);
 
   useEffect(() => {
-    debugger
     if (!loadOnView || inView) {
       fetchRecommendations();
     }

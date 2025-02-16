@@ -1,6 +1,6 @@
 function BlogCardSkeleton() {
   return (
-    <div className="animate-pulse">
+    <div className="animate-pulse mb-12">
       <div className="aspect-[16/9] bg-zinc-200 dark:bg-zinc-800 rounded-lg mb-4" />
       <div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4 mb-2" />
       <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-1/4" />
