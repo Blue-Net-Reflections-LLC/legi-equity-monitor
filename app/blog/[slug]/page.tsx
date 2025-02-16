@@ -5,6 +5,9 @@ import { BlogPostView } from '../components/BlogPostView';
 async function getBlogPost(slug: string) {
   const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/blog/posts/${slug}`);
   if (!response.ok) {
+    if (response.status === 404) {
+      return null;
+    }
     throw new Error('Failed to fetch blog post');
   }
   const data = await response.json();
