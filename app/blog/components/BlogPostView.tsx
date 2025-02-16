@@ -149,16 +149,15 @@ export function BlogPostView({
           <div className="mt-16 pt-8 border-t border-zinc-200 dark:border-zinc-800">
             <Recommendations
               keyphrases={[
-                post.title,
                 ...(post.metadata?.keywords || [])
               ].filter(Boolean)}
-              limit={4}
+              limit={8}
               exclude={[{ entity_type: 'blog_post', entity_id: post.post_id! }]}
               title="Related Articles"
               description="You might also be interested in these articles"
               orientation="horizontal"
               itemsPerView={4}
-              loadOnView={false}
+              loadOnView
               entityType="blog_post"
             />
           </div>

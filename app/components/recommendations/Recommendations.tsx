@@ -12,6 +12,7 @@ import { SearchResult } from '../search/SearchDialog';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Bill, BlogPost } from '@/app/types';
+import { de } from 'date-fns/locale';
 
 export function Recommendations({
   keyphrases,
@@ -33,6 +34,7 @@ export function Recommendations({
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const fetchingRef = useRef(false);
   const { ref: inViewRef, inView } = useInView({
     threshold: 0.1,
     triggerOnce: true
@@ -41,13 +43,13 @@ export function Recommendations({
   const router = useRouter();
 
   const fetchRecommendations = useCallback(async () => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+debugger
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      // Generate embeddings for all keyphrases at once
       const embeddings = await generateEmbeddings(keyphrases);
-
-      // Fetch recommendations
       const response = await fetch('/api/search/recommendations', {
         method: 'POST',
         headers: {
@@ -58,7 +60,7 @@ export function Recommendations({
           entity_type: entityType,
           limit,
           exclude,
-          offset: state.currentPage * itemsPerView
+          offset: 0
         }),
       });
 
@@ -79,11 +81,14 @@ export function Recommendations({
         loading: false,
         error: 'Failed to load recommendations'
       }));
+    } finally {
+      fetchingRef.current = false;
     }
-  }, [keyphrases, entityType, limit, exclude, state.currentPage, itemsPerView]);
+  }, [keyphrases, entityType, limit, exclude]);
 
   useEffect(() => {
-    if (loadOnView && inView || !loadOnView) {
+    debugger
+    if (!loadOnView || inView) {
       fetchRecommendations();
     }
   }, [fetchRecommendations, inView, loadOnView]);
@@ -125,27 +130,6 @@ export function Recommendations({
     router.push(href);
   }, [router]);
 
-  if (state.loading) {
-    return (
-      <div className={className}>
-        {title && <h3 className="text-lg font-semibold mb-2">{title}</h3>}
-        {description && <p className="text-sm text-muted-foreground mb-4">{description}</p>}
-        <RecommendationsSkeleton 
-          count={itemsPerView} 
-          orientation={orientation}
-        />
-      </div>
-    );
-  }
-
-  if (state.error) {
-    return null; // Fail silently as requested
-  }
-
-  if (!state.results.length) {
-    return null;
-  }
-
   return (
     <div className={className} ref={inViewRef}>
       {/* Header */}
@@ -156,100 +140,111 @@ export function Recommendations({
         </div>
       )}
 
-      {/* Navigation Container */}
-      <div className="relative group">
-        {/* Navigation Buttons */}
-        {orientation === 'horizontal' ? (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute -left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              onClick={() => handleNavigate('prev')}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute -right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              onClick={() => handleNavigate('next')}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute left-1/2 -top-4 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              onClick={() => handleNavigate('prev')}
-            >
-              <ChevronUp className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute left-1/2 -bottom-4 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-              onClick={() => handleNavigate('next')}
-            >
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </>
-        )}
-
-        {/* Results Container */}
-        <div
-          ref={containerRef}
-          className={cn(
-            'grid gap-4 overflow-hidden scroll-smooth',
-            orientation === 'horizontal'
-              ? 'grid-flow-col auto-cols-[minmax(200px,1fr)]'
-              : 'grid-cols-1',
-            'pb-1' // Prevent scrollbar from hiding box-shadow
-          )}
-        >
-          {state.results.map((result, index) => {
-            const item = result.type === 'bill' 
-              ? (result.item as Bill)
-              : (result.item as BlogPost);
-              
-            const itemKey = result.type === 'bill' 
-              ? `${result.type}-${(result.item as Bill).bill_id}-${index}`
-              : `${result.type}-${(result.item as BlogPost).post_id}-${index}`;
-              
-            return (
-              <div
-                key={itemKey}
-                className="group/item cursor-pointer"
-                onClick={() => handleItemClick(result)}
+      {state.loading ? (
+        <RecommendationsSkeleton 
+          count={itemsPerView} 
+          orientation={orientation}
+        />
+      ) : state.error ? (
+        null // Fail silently as requested
+      ) : !state.results.length ? (
+        null
+      ) : (
+        /* Navigation Container */
+        <div className="relative group">
+          {/* Navigation Buttons */}
+          {orientation === 'horizontal' ? (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600 h-24 w-8 rounded-none"
+                onClick={() => handleNavigate('prev')}
               >
-                {/* Image/Icon */}
-                <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-                  {result.type === 'blog_post' && (item as BlogPost).main_image ? (
-                    <Image
-                      src={(item as BlogPost).main_image!}
-                      alt={(item as BlogPost).title}
-                      fill
-                      className="object-cover transition-transform group-hover/item:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-zinc-400" />
-                    </div>
-                  )}
-                </div>
+                <ChevronLeft className="h-6 w-6 text-white" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600 h-24 w-8 rounded-none"
+                onClick={() => handleNavigate('next')}
+              >
+                <ChevronRight className="h-6 w-6 text-white" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute left-1/2 -top-4 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600 h-24 w-4 rounded-none"
+                onClick={() => handleNavigate('prev')}
+              >
+                <ChevronUp className="h-6 w-6 text-white" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute left-1/2 -bottom-4 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600 h-24 w-4 rounded-none"
+                onClick={() => handleNavigate('next')}
+              >
+                <ChevronDown className="h-6 w-6 text-white" />
+              </Button>
+            </>
+          )}
 
-                {/* Title */}
-                <h4 className="text-sm font-medium line-clamp-2 group-hover/item:text-primary transition-colors">
-                  {result.type === 'bill' ? (item as Bill).bill_number : (item as BlogPost).title}
-                </h4>
-              </div>
-            );
-          })}
+          {/* Results Container */}
+          <div
+            ref={containerRef}
+            className={cn(
+              'grid gap-4 overflow-hidden scroll-smooth',
+              orientation === 'horizontal'
+                ? 'grid-flow-col auto-cols-[minmax(200px,1fr)]'
+                : 'grid-cols-1',
+              'pb-1' // Prevent scrollbar from hiding box-shadow
+            )}
+          >
+            {state.results.map((result, index) => {
+              const item = result.type === 'bill' 
+                ? (result.item as Bill)
+                : (result.item as BlogPost);
+                
+              const itemKey = result.type === 'bill' 
+                ? `${result.type}-${(result.item as Bill).bill_id}-${index}`
+                : `${result.type}-${(result.item as BlogPost).post_id}-${index}`;
+                
+              return (
+                <div
+                  key={itemKey}
+                  className="group/item cursor-pointer"
+                  onClick={() => handleItemClick(result)}
+                >
+                  {/* Image/Icon */}
+                  <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                    {result.type === 'blog_post' && (item as BlogPost).main_image ? (
+                      <Image
+                        src={(item as BlogPost).main_image!}
+                        alt={(item as BlogPost).title}
+                        fill
+                        className="object-cover transition-transform group-hover/item:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-zinc-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <h4 className="text-sm font-medium line-clamp-2 group-hover/item:text-primary transition-colors">
+                    {result.type === 'bill' ? (item as Bill).bill_number : (item as BlogPost).title}
+                  </h4>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 } 
