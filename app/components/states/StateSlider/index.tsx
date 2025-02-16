@@ -14,6 +14,11 @@ export function StateSlider({ currentStateCode }: StateSliderProps) {
   const sliderRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
 
+  // Move US to the beginning of the list
+  const usState = STATES.find(s => s.code === 'US');
+  const otherStates = STATES.filter(s => s.code !== 'US');
+  const displayStates = usState ? [usState, ...otherStates] : otherStates;
+
   // Load saved scroll position
   useEffect(() => {
     const savedPosition = localStorage.getItem('stateSliderPosition');
@@ -73,9 +78,9 @@ export function StateSlider({ currentStateCode }: StateSliderProps) {
         className="flex overflow-x-auto hide-scrollbar gap-4 py-2"
         style={{ scrollSnapType: 'x mandatory' }}
       >
-        {STATES.map((state) => (
+        {displayStates.map((state, index) => (
           <StateCard
-            key={state.code}
+            key={`${state.code}-${index}`}
             state={state}
             isSelected={currentStateCode?.toLowerCase() === state.code.toLowerCase()}
           />

@@ -18,38 +18,53 @@ export function StateCard({ state, isSelected }: StateCardProps) {
       href={`/${state.code.toLowerCase()}`}
       className={cn(
         "flex-shrink-0 flex flex-col items-center justify-center w-28 h-28 rounded-lg overflow-hidden transition-all duration-300",
-        "bg-transparent backdrop-blur-sm border border-zinc-200 dark:border-zinc-700",
-        "hover:border-zinc-300 dark:hover:border-zinc-600",
-        isSelected 
-          ? "ring-2 ring-orange-500 dark:ring-orange-400" 
-          : "hover:bg-zinc-100/10 dark:hover:bg-white/5",
+        "bg-transparent backdrop-blur-sm",
+        !isSelected && "hover:bg-zinc-100/10 dark:hover:bg-white/5",
         "scroll-snap-align-start py-2"
       )}
     >
       <div className="relative w-12 h-12 mb-1 flex items-center justify-center">
         {state.code === 'US' ? (
-          <Image
-            src="/images/Seal_of_the_United_States_Congress.svg"
-            alt={state.name}
-            fill
-            className="object-contain"
-          />
+          <div className={cn(
+            "relative w-12 h-12",
+            isSelected && "after:absolute after:inset-[-4px] after:rounded-full after:bg-orange-500/40 after:animate-pulse after:blur-lg"
+          )}>
+            <Image
+              src="/images/Seal_of_the_United_States_Congress.svg"
+              alt={state.name}
+              fill
+              className="object-contain relative z-10"
+            />
+          </div>
         ) : state.code === 'DC' ? (
           <div className={cn(
-            "text-2xl font-bold",
-            isSelected
-              ? "text-orange-500 dark:text-orange-400"
-              : "text-zinc-900 dark:text-white"
+            "relative w-12 h-12",
+            isSelected && "after:absolute after:inset-[-4px] after:rounded-full after:bg-orange-500/40 after:animate-pulse after:blur-lg"
           )}>
-            DC
+            <div className={cn(
+              "text-2xl font-bold relative z-10",
+              isSelected
+                ? "text-orange-500 dark:text-orange-400"
+                : "text-zinc-900 dark:text-white"
+            )}>
+              DC
+            </div>
           </div>
         ) : (
-          <Image
-            src={`/images/states/${state.code.toLowerCase()}.svg`}
-            alt={state.name}
-            fill
-            className="object-contain"
-          />
+          <div className={cn(
+            "relative w-12 h-12",
+            isSelected && "after:absolute after:inset-[-4px] after:rounded-full after:bg-orange-500/40 after:animate-pulse after:blur-lg"
+          )}>
+            <Image
+              src={`/images/states/${state.code.toLowerCase()}.svg`}
+              alt={state.name}
+              fill
+              className={cn(
+                "object-contain relative z-10",
+                isSelected && "[filter:sepia(1)_saturate(10000%)_hue-rotate(310deg)_brightness(0.9)]"
+              )}
+            />
+          </div>
         )}
       </div>
       <div className={cn(
