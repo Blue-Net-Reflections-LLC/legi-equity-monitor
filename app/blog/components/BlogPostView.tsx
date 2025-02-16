@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlogPost } from '@/app/lib/validations/blog';
+import { Recommendations } from '@/components/recommendations';
 
 interface BlogPostViewProps {
   post: BlogPost;
@@ -166,6 +167,23 @@ export function BlogPostView({
               [&_caption]:italic"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
+
+          {/* Recommendations */}
+          <div className="my-16 pt-8 border-t border-zinc-200 dark:border-zinc-800">
+            <Recommendations
+              keyphrases={[
+                ...(post.metadata?.keywords || [])
+              ].filter(Boolean)}
+              limit={8}
+              exclude={[{ entity_type: 'blog_post', entity_id: post.post_id! }]}
+              title="Related Articles"
+              description="You might also be interested in these articles"
+              orientation="horizontal"
+              itemsPerView={4}
+              loadOnView
+              entityType="blog_post"
+            />
+          </div>
         </div>
       </div>
     </article>
