@@ -54,7 +54,10 @@ const formatDate = (dateString: string | null | undefined) => {
 export function ClusterList() {
   const dispatch = useAppDispatch()
   const { items, pagination, filters } = useAppSelector(state => state.clustering)
-  const [sortConfig, setSortConfig] = useState<SortConfig>(null)
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: 'min_date',
+    direction: 'desc'
+  })
 
   const handleSort = (key: string) => {
     const newSortConfig = {
@@ -71,7 +74,7 @@ export function ClusterList() {
       filters,
       sorting: sortConfig
     }))
-  }, [dispatch, pagination, filters, sortConfig]) // Add sortConfig back to dependencies
+  }, [dispatch, pagination, filters, sortConfig])
 
   return (
     <div className="relative">

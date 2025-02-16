@@ -1,69 +1,26 @@
 import { NextResponse } from 'next/server'
 import db from '@/lib/db'
 import { removeStopwords } from 'stopword'
+import { entityDataCTE, mapResults, DatabaseRow } from './sql/common'
 
+const defaultLimit = 25
 export async function POST(request: Request) {
   try {
-    const { keyword, embedding } = await request.json()
+    const { keyword, embedding, page = 1 } = await request.json()
+    const offset = (page - 1) * defaultLimit
     
     // Remove stopwords and get meaningful tokens
     const meaningfulWords = removeStopwords(keyword.toLowerCase().split(' '))
 
     if (keyword.length > 0 && meaningfulWords.length === 0) {
-      //
       return NextResponse.json({
         results: [],
-        search_type: 'no_results'
+        search_type: 'no_results',
+        has_more: false,
+        page
       })
     }
     
-    // Common entity data selection
-    const entityDataCTE = `
-
-      entity_data AS (
-        SELECT 
-          e.entity_type,
-          e.entity_id,
-          e.similarity,
-          CASE 
-            WHEN e.entity_type = 'bill' THEN 
-              json_build_object(
-                'bill_id', bill.bill_id,
-                'bill_number', bill.bill_number,
-                'bill_type', bill.bill_type_abbr,
-                'title', bill.title,
-                'description', bill.description,
-                'committee_name', c.committee_name,
-                'last_action', h.history_action,
-                'last_action_date', h.history_date,
-                'state_abbr', e.state_abbr,
-                'state_name', e.state_name
-              )
-            WHEN e.entity_type = 'sponsor' THEN
-              json_build_object(
-                'people_id', p.people_id,
-                'first_name', split_part(p.name, ' ', 1),
-                'last_name', array_to_string(array_remove(string_to_array(p.name, ' '), split_part(p.name, ' ', 1)), ' '),
-                'name', p.name,
-                'party_name', pa.party_name,
-                'district', p.district,
-                'body_name', ro.role_name,
-                'state_abbr', e.state_abbr,
-                'state_name', e.state_name,
-                'votesmart_id', p.votesmart_id
-              )
-          END as item_data
-        FROM ranked e
-        LEFT JOIN lsv_bill bill ON e.entity_type = 'bill' AND e.entity_id = bill.bill_id AND bill.bill_type_id = 1
-        LEFT JOIN ls_committee c ON bill.pending_committee_id = c.committee_id
-        LEFT JOIN ls_bill_history h ON bill.bill_id = h.bill_id 
-          AND h.history_step = (SELECT MAX(history_step) FROM ls_bill_history WHERE bill_id = bill.bill_id)
-        LEFT JOIN ls_people p ON e.entity_type = 'sponsor' AND e.entity_id = p.people_id
-        LEFT JOIN ls_party pa ON p.party_id = pa.party_id
-        LEFT JOIN ls_role ro ON p.role_id = ro.role_id
-      )
-    `
-
     // Generate ILIKE conditions for each meaningful word
     const tokens = meaningfulWords
       .map((word: string) => `search_text ILIKE '%${word}%'`)
@@ -73,10 +30,10 @@ export async function POST(request: Request) {
     // Try trigram search first with pre-filtering
     const trigramQuery = `
       WITH pre_filtered AS (
-        -- Step 1: Tokenize the phrase and apply ILIKE for flexible matching
         SELECT 
           vi.entity_type,
           vi.entity_id,
+          vi.entity_uuid,
           vi.search_text,
           vi.state_abbr,
           vi.state_name
@@ -84,32 +41,46 @@ export async function POST(request: Request) {
         LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
         WHERE ${tokens}
         AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
-        ORDER BY LENGTH(vi.search_text) ASC  -- Prefer shorter, more relevant matches
-        LIMIT 1000  -- Reduce processing load
+        ORDER BY LENGTH(vi.search_text) ASC
+        LIMIT 1000
       ),
       ranked AS (
-        -- Step 2: Compute word similarity only on pre-filtered matches
         SELECT 
           entity_type,
           entity_id,
+          entity_uuid,
           search_text,
           state_abbr,
           state_name,
-          word_similarity($1, search_text) AS similarity
+          word_similarity($1, search_text) AS similarity,
+          'trigram' as source
         FROM pre_filtered
-        WHERE word_similarity($1, search_text) > 0.1  -- Apply similarity threshold
+        WHERE word_similarity($1, search_text) > 0.1
       ),
       ${entityDataCTE}
-      SELECT * FROM entity_data
-      ORDER BY similarity DESC
-      LIMIT 25;
+      SELECT e.*, r.source FROM entity_data e
+      JOIN ranked r ON r.entity_type = e.entity_type AND r.entity_id = e.entity_id
+      ORDER BY 
+        CASE e.entity_type 
+          WHEN 'sponsor' THEN 1
+          WHEN 'blog_post' THEN 2
+          WHEN 'bill' THEN 3
+        END,
+        e.similarity DESC
+      OFFSET ${offset}
+      LIMIT ${defaultLimit + 1};
     `
 
-    let results = await db.unsafe(trigramQuery, [keyword])
+    let results = Array.from(await db.unsafe(trigramQuery, [keyword]))
+    let has_more = results.length > defaultLimit
+    results = results.slice(0, defaultLimit)
 
-    // If no results, fall back to embeddings
-    if (results.length === 0 && embedding) {
+    // If we have an embedding, get embedding results
+    if (embedding) {
       const vectorString = `[${embedding.join(',')}]`
+      
+      const existingIds = results.map(r => r.entity_id);
+
       const embeddingQuery = `
         WITH ranked AS (
           SELECT 
@@ -118,29 +89,45 @@ export async function POST(request: Request) {
             vi.search_text,
             vi.state_abbr,
             vi.state_name,
-            1 - (vi.embedding <=> '${vectorString}'::vector) as similarity
+            vi.entity_uuid,
+            1 - (vi.embedding <=> '${vectorString}'::vector) as similarity,
+            'embedding' as source
           FROM vector_index vi
           LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
           WHERE vi.embedding IS NOT NULL
           AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
+          AND vi.entity_id NOT IN (${existingIds.length ? existingIds.join(',') : 0})
+          AND (1 - (vi.embedding <=> '${vectorString}'::vector)) > 0.30
           ORDER BY vi.embedding <=> '${vectorString}'::vector
-          LIMIT 25
+          OFFSET ${offset}
+          LIMIT ${defaultLimit + 1}
         ),
         ${entityDataCTE}
-        SELECT * FROM entity_data
-        ORDER BY similarity DESC;
+        SELECT e.*, r.source FROM entity_data e
+        JOIN ranked r ON r.entity_type = e.entity_type AND r.entity_id = e.entity_id
+        ORDER BY 
+          CASE e.entity_type 
+            WHEN 'sponsor' THEN 1
+            WHEN 'blog_post' THEN 2
+            WHEN 'bill' THEN 3
+          END,
+          e.similarity DESC;
       `
-      results = await db.unsafe(embeddingQuery)
-      searchType = results.length > 0 ? 'embedding' : 'no_results'
+      const embeddingResults = Array.from(await db.unsafe(embeddingQuery))
+      
+      if (embeddingResults.length > 0) {
+        searchType = 'hybrid'
+        results = [...results, ...embeddingResults]
+        has_more = has_more || embeddingResults.length > defaultLimit
+        results = results.slice(0, defaultLimit)
+      } 
     }
 
     return NextResponse.json({ 
-      results: results.map(r => ({
-        type: r.entity_type,
-        similarity: r.similarity,
-        item: r.item_data
-      })),
-      search_type: searchType
+      results: mapResults(results as unknown as DatabaseRow[]),
+      search_type: searchType,
+      has_more,
+      page
     })
   } catch (error) {
     console.error('Search error:', error)

@@ -173,17 +173,17 @@ class ClusterAnalysis(Base):
 class BlogPost(Base):
     __tablename__ = 'blog_posts'
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    cluster_id = Column(UUID(as_uuid=True), ForeignKey('legislation_clusters.cluster_id'), nullable=True)
-    analysis_id = Column(UUID(as_uuid=True), ForeignKey('cluster_analysis.analysis_id'), nullable=True)
+    post_id = Column(UUID, primary_key=True)
+    cluster_id = Column(UUID, ForeignKey('legislation_clusters.cluster_id'), nullable=True)
+    analysis_id = Column(UUID, ForeignKey('cluster_analysis.analysis_id'), nullable=True)
     title = Column(String(255), nullable=False)
     slug = Column(String(255), nullable=False, unique=True)
     status = Column(Enum(BlogPostStatus), nullable=False, default=BlogPostStatus.draft)
     content = Column(Text, nullable=False)
-    post_metadata = Column(JSONB, nullable=True)
+    post_metadata = Column('metadata', JSON, nullable=True)
     author = Column(String(100))
     is_curated = Column(Boolean, nullable=False, default=False)
-    published_at = Column(DateTime(timezone=True))
+    published_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     search_vector = Column(TSVECTOR)

@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export function ClusterFilters() {
   const dispatch = useAppDispatch()
-  const { week = 1, year = new Date().getFullYear() } = useAppSelector(state => state.clustering.filters)
+  const { week = 0, year = new Date().getFullYear() } = useAppSelector(state => state.clustering.filters)
 
   // Get current year only since we don't use currentWeek
   const currentYear = new Date().getFullYear()
@@ -14,16 +14,20 @@ export function ClusterFilters() {
   // Generate years (current year and previous year)
   const years = [currentYear, currentYear - 1]
 
-  // Generate weeks (1-52)
-  const weeks = Array.from({ length: 52 }, (_, i) => i + 1)
+  // Generate weeks (0-52, where 0 is "All Weeks")
+  const weeks = [
+    { value: 0, label: 'All Weeks' },
+    ...Array.from({ length: 52 }, (_, i) => ({
+      value: i + 1,
+      label: `Week ${i + 1}`
+    }))
+  ]
 
   const handleYearChange = (value: string) => {
-    console.log('Dispatching year change:', parseInt(value))
     dispatch(setFilters({ year: parseInt(value) }))
   }
 
   const handleWeekChange = (value: string) => {
-    console.log('Dispatching week change:', parseInt(value))
     dispatch(setFilters({ week: parseInt(value) }))
   }
 
@@ -54,8 +58,8 @@ export function ClusterFilters() {
         </SelectTrigger>
         <SelectContent>
           {weeks.map((week) => (
-            <SelectItem key={week} value={week.toString()}>
-              Week {week}
+            <SelectItem key={week.value} value={week.value.toString()}>
+              {week.label}
             </SelectItem>
           ))}
         </SelectContent>

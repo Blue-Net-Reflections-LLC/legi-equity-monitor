@@ -20,10 +20,12 @@ export default async function AdminLayout({
 
   return (
     <Providers>
-      <div className="flex h-[calc(100vh-4rem)] mt-[4rem]">
+      <div className="flex">
         <AdminSidebar />
         <main className="flex-1 overflow-y-auto pl-16">
-          {children}
+          <div className="mt-12">
+            {children}
+          </div>
         </main>
       </div>
     </Providers>
