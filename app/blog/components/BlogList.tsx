@@ -27,7 +27,7 @@ function scrubTags(html: string): string {
 
 function BlogCard({ post, className = '' }: { post: BlogPost; className?: string }) {
   return (
-    <Link href={`/blog/${post.slug}`} className={`group block text-neutral-900 dark:text-neutral-50 ${className}`}>
+    <Link href={`/blog/${post.slug}`} className={`group block text-neutral-900 dark:text-neutral-50 mb-12 ${className}`}>
       <div className="relative aspect-[16/9] overflow-hidden rounded-lg mb-4">
         {post.main_image ? (
           <Image
@@ -133,9 +133,9 @@ export function BlogList() {
     const [featured, second, third, fourth, fifth, ...rest] = posts;
 
     return (
-      <div className="max-w-[1920px] mx-auto space-y-12">
+      <div className="max-w-[1920px] mx-auto space-y-12 ">
         {/* Featured Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 w-full border-b pb-16 mb-20">
           {/* Left Column */}
           <div className="space-y-8 order-2 md:order-1">
             {second && <BlogCard post={second} />}

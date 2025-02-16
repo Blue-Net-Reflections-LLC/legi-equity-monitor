@@ -51,7 +51,6 @@ export function UrlInput<T extends FieldValues>({
   const handleSelect = (image: { url: string; alt?: string; prompt: string }) => {
     form.setValue(name, image.url as PathValue<T, Path<T>>);
     form.setValue(promptFieldName, image.prompt as PathValue<T, Path<T>>);
-    debugger
     if (image.alt) {
       form.setValue(altFieldName, image.alt as PathValue<T, Path<T>>);
     }

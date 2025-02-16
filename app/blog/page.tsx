@@ -30,7 +30,7 @@ export default function BlogPage() {
       {/* Hero Section */}
       <section className="h-[30vh] relative">
         <AuroraBackground>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center  text-zinc-900 dark:text-white">
             <div className="flex items-center space-x-3 mb-4">
               <Newspaper className="w-8 h-8" />
               <h1 className="text-4xl md:text-6xl font-bold text-zinc-900 dark:text-white text-center">

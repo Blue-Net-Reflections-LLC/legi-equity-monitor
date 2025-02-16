@@ -28,6 +28,8 @@ import { blogPostSchema, type BlogPost } from '@/app/lib/validations/blog';
 import { UrlInput } from '@/components/image-generation';
 import { toast, Toaster } from 'sonner';
 import { Tabs, TabsList, TabsContent, TabsTrigger } from '@/components/ui/tabs';
+import { FilterTag } from '@/components/filters/FilterTag';
+import { useState } from 'react';
 
 interface BlogPostFormProps {
   initialData?: Partial<BlogPost>;
@@ -83,6 +85,27 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
       ...initialData
     }
   });
+
+  const [newKeyword, setNewKeyword] = useState('');
+  const keywords = form.watch('metadata.keywords') || [];
+
+  const handleAddKeyword = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && newKeyword.trim()) {
+      e.preventDefault();
+      const trimmedKeyword = newKeyword.trim();
+      if (!keywords.includes(trimmedKeyword)) {
+        form.setValue('metadata.keywords', [...keywords, trimmedKeyword]);
+        setNewKeyword('');
+      }
+    }
+  };
+
+  const handleRemoveKeyword = (keywordToRemove: string) => {
+    form.setValue(
+      'metadata.keywords',
+      keywords.filter(k => k !== keywordToRemove)
+    );
+  };
 
   const submitForm = async (status: 'published' | 'draft') => {
     try {
@@ -232,6 +255,41 @@ export function BlogPostForm({ initialData, isSubmitting = false, onSubmit }: Bl
                   )}
                 />
               </div>
+
+              {/* Keywords Field */}
+              <FormField
+                control={form.control}
+                name="metadata.keywords"
+                render={() => (
+                  <FormItem className="py-4">
+                    <FormLabel>Keywords</FormLabel>
+                    <FormControl>
+                      <div className="space-y-4">
+                        <Input
+                          placeholder="Type a keyword and press Enter"
+                          value={newKeyword}
+                          onChange={(e) => setNewKeyword(e.target.value)}
+                          onKeyDown={handleAddKeyword}
+                          className={cn(
+                            "bg-white dark:bg-zinc-950",
+                            "text-neutral-950 dark:text-neutral-50"
+                          )}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          {keywords.map((keyword) => (
+                            <FilterTag
+                              key={keyword}
+                              label={keyword}
+                              onRemove={() => handleRemoveKeyword(keyword)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Sidebar */}
