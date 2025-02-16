@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import db from '@/lib/db'
 import { removeStopwords } from 'stopword'
-import { entityDataCTE, mapResults } from './sql/common'
+import { entityDataCTE, mapResults, DatabaseRow } from './sql/common'
 
 const defaultLimit = 25
 export async function POST(request: Request) {
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ 
-      results: mapResults(results),
+      results: mapResults(results as unknown as DatabaseRow[]),
       search_type: searchType,
       has_more,
       page

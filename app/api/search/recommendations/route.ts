@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import db from '@/lib/db'
 import { z } from 'zod'
-import { entityDataCTE, mapResults } from '../sql/common'
+import { entityDataCTE, mapResults, DatabaseRow } from '../sql/common'
 
 // Define exclusion schema
 const exclusionSchema = z.object({
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       ORDER BY e.similarity DESC;
     `
 
-    const recommendations = Array.from(await db.unsafe(recommendationsQuery))
+    const recommendations = Array.from(await db.unsafe(recommendationsQuery)) as DatabaseRow[];
 
     return NextResponse.json({ 
       results: mapResults(recommendations)

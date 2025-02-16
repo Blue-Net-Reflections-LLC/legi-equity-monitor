@@ -5,6 +5,7 @@ export const entityDataCTE = `
       e.entity_type,
       e.entity_id,
       e.similarity,
+      e.source,
       CASE 
         WHEN e.entity_type = 'bill' THEN 
           json_build_object(
@@ -55,8 +56,23 @@ export const entityDataCTE = `
   )
 `
 
+export interface DatabaseRow {
+  entity_type: 'bill' | 'sponsor' | 'blog_post';
+  entity_id: string | number;
+  similarity: number;
+  source: string;
+  item_data: Record<string, unknown>;
+}
+
+export interface SearchResultRow {
+  type: 'bill' | 'sponsor' | 'blog_post';
+  similarity: number;
+  source: string;
+  item: Record<string, unknown>;
+}
+
 // Common result mapping function
-export const mapResults = (results: any[]) => results.map(r => ({
+export const mapResults = (results: DatabaseRow[]) => results.map(r => ({
   type: r.entity_type,
   similarity: r.similarity,
   source: r.source,

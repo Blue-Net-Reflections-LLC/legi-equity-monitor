@@ -12,7 +12,6 @@ import { SearchResult } from '../search/SearchDialog';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Bill, BlogPost } from '@/app/types';
-import { de } from 'date-fns/locale';
 
 export function Recommendations({
   keyphrases,

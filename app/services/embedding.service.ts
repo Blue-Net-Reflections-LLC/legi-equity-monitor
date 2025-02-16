@@ -8,10 +8,34 @@ env.allowLocalModels = true;
 
 const embeddingModel = "Xenova/all-MiniLM-L6-v2";
 
+interface TokenizerType {
+  (texts: string[], options: {
+    return_tensors: string;
+    padding: boolean;
+    truncation: boolean;
+  }): Promise<{
+    input_ids: unknown;
+    attention_mask: unknown;
+  }>;
+}
+
+interface ModelType {
+  forward(input: {
+    input_ids: unknown;
+    attention_mask: unknown;
+  }): Promise<{
+    last_hidden_state: {
+      mean(dim: number): {
+        tolist(): number[][];
+      };
+    };
+  }>;
+}
+
 class EmbeddingService {
   private static pipeline: FeatureExtractionPipeline | null = null;
-  private static tokenizer: any = null;
-  private static model: any = null;
+  private static tokenizer: TokenizerType | null = null;
+  private static model: ModelType | null = null;
   private loadPromise: Promise<void> | null = null;
 
   constructor() {
