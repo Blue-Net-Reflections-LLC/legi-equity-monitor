@@ -42,6 +42,43 @@ export function Recommendations({
 
   const router = useRouter();
 
+  const handleNavigate = useCallback((direction: 'next' | 'prev') => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const scrollAmount = direction === 'next' ? itemsPerView : -itemsPerView;
+    const itemWidth = container.scrollWidth / state.results.length;
+    
+    if (orientation === 'horizontal') {
+      container.scrollBy({
+        left: scrollAmount * itemWidth,
+        behavior: 'smooth'
+      });
+    } else {
+      container.scrollBy({
+        top: scrollAmount * itemWidth,
+        behavior: 'smooth'
+      });
+    }
+  }, [itemsPerView, state.results.length, orientation]);
+
+  const handleItemClick = useCallback((result: SearchResult) => {
+    let href: string;
+    switch (result.type) {
+      case 'bill':
+        const bill = result.item as Bill;
+        href = `/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`;
+        break;
+      case 'blog_post':
+        const post = result.item as BlogPost;
+        href = `/blog/${post.slug}`;
+        break;
+      default:
+        return;
+    }
+    router.push(href);
+  }, [router]);
+
   const fetchRecommendations = useCallback(async () => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
@@ -93,45 +130,11 @@ debugger
     }
   }, [fetchRecommendations, inView, loadOnView]);
 
-  const handleNavigate = useCallback((direction: 'next' | 'prev') => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const scrollAmount = direction === 'next' ? itemsPerView : -itemsPerView;
-    const itemWidth = container.scrollWidth / state.results.length;
-    
-    if (orientation === 'horizontal') {
-      container.scrollBy({
-        left: scrollAmount * itemWidth,
-        behavior: 'smooth'
-      });
-    } else {
-      container.scrollBy({
-        top: scrollAmount * itemWidth,
-        behavior: 'smooth'
-      });
-    }
-  }, [itemsPerView, state.results.length, orientation]);
-
-  const handleItemClick = useCallback((result: SearchResult) => {
-    let href: string;
-    switch (result.type) {
-      case 'bill':
-        const bill = result.item as Bill;
-        href = `/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`;
-        break;
-      case 'blog_post':
-        const post = result.item as BlogPost;
-        href = `/blog/${post.slug}`;
-        break;
-      default:
-        return;
-    }
-    router.push(href);
-  }, [router]);
-
   return (
-    <div className={className} ref={inViewRef}>
+    <div className={cn(
+      "min-h-[300px]", // Reduced minimum height to prevent CLS
+      className
+    )} ref={inViewRef}>
       {/* Header */}
       {(title || description) && (
         <div className="mb-4">

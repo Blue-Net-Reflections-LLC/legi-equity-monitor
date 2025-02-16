@@ -146,7 +146,7 @@ export function BlogPostView({
           />
 
           {/* Recommendations */}
-          <div className="mt-16 pt-8 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="my-16 pt-8 border-t border-zinc-200 dark:border-zinc-800">
             <Recommendations
               keyphrases={[
                 ...(post.metadata?.keywords || [])
