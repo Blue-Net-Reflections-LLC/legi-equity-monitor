@@ -19,7 +19,6 @@ export function BlogPostView({
   backUrl = '/blog',
   backLabel = 'Back to Blog'
 }: BlogPostViewProps) {
-  console.log("Horace.post", post)
   return (
     <article className="text-neutral-900 dark:text-neutral-50 -mt-8">
       {/* Hero Image */}

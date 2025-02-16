@@ -11,6 +11,7 @@ import { RecommendationsSkeleton } from './skeletons';
 import { SearchResult } from '../search/SearchDialog';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Bill, BlogPost } from '@/app/types';
 
 export function Recommendations({
@@ -61,27 +62,10 @@ export function Recommendations({
     }
   }, [itemsPerView, state.results.length, orientation]);
 
-  const handleItemClick = useCallback((result: SearchResult) => {
-    let href: string;
-    switch (result.type) {
-      case 'bill':
-        const bill = result.item as Bill;
-        href = `/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`;
-        break;
-      case 'blog_post':
-        const post = result.item as BlogPost;
-        href = `/blog/${post.slug}`;
-        break;
-      default:
-        return;
-    }
-    router.push(href);
-  }, [router]);
-
   const fetchRecommendations = useCallback(async () => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
-debugger
+
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
@@ -214,12 +198,16 @@ debugger
               const itemKey = result.type === 'bill' 
                 ? `${result.type}-${(result.item as Bill).bill_id}-${index}`
                 : `${result.type}-${(result.item as BlogPost).post_id}-${index}`;
+
+              const href = result.type === 'bill'
+                ? `/${(item as Bill).state_abbr.toLowerCase()}/bill/${(item as Bill).bill_id}`
+                : `/blog/${(item as BlogPost).slug}`;
                 
               return (
-                <div
+                <Link
                   key={itemKey}
+                  href={href}
                   className="group/item cursor-pointer"
-                  onClick={() => handleItemClick(result)}
                 >
                   {/* Image/Icon */}
                   <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800">
@@ -241,7 +229,7 @@ debugger
                   <h4 className="text-sm font-medium line-clamp-2 group-hover/item:text-primary transition-colors">
                     {result.type === 'bill' ? (item as Bill).bill_number : (item as BlogPost).title}
                   </h4>
-                </div>
+                </Link>
               );
             })}
           </div>
