@@ -6,6 +6,7 @@ import { BillCard } from '@/app/components/BillCard'
 import { BillCardSkeleton } from './BillCardSkeleton'
 import { BillFiltersWrapper } from '../filters/BillFiltersWrapper'
 import { FilterPills } from '../filters/FilterPills'
+import { StateSlider } from '../states/StateSlider'
 import Pagination from '../Pagination'
 import { Gavel } from 'lucide-react'
 import type { Bill } from '@/app/types'
@@ -47,82 +48,85 @@ export function BillList({ stateCode }: BillListProps) {
   }, [stateCode, searchParams])
 
   return (
-    <section className="py-4 px-6">
-      <div className="max-w-[2000px] mx-auto space-y-4">
-        <div className="flex justify-between items-center flex-wrap">
-          <div className="text-sm text-zinc-500 whitespace-nowrap">
-            {(!loading && bills.length > 0) && (
-              <>Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}</>
-            )}
-          </div>
-          <div className="flex items-center gap-3 ml-auto">
-            {filters && (
-              <>
-                <FilterPills
-                  stateCode={stateCode}
-                  billFilters={filters}
-                  categoryFilters={filters.categories.filter(cat => cat.selected) as unknown as { id: string; impactTypes: ("POSITIVE" | "BIAS" | "NEUTRAL")[] }[]}
-                  filters={{
-                    party: searchParams.get('party') || undefined,
-                    support: searchParams.get('support') || undefined,
-                    committee: searchParams.getAll('committee')
-                  }}
-                  searchParams={Object.fromEntries(searchParams.entries())}
-                />
-                <BillFiltersWrapper 
-                  filters={filters} 
-                  stateCode={stateCode} 
-                />
-              </>
-            )}
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-            {Array.from({ length: pageSize }).map((_, i) => (
-              <BillCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : bills.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-            {bills.map(bill => (
-              <BillCard key={bill.bill_id} bill={bill} />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
-            <div className="mb-8">
-              <Gavel className="w-32 h-32 text-orange-500" strokeWidth={1.5} />
+    <>
+      <StateSlider currentStateCode={stateCode} />
+      <section className="py-4 px-6">
+        <div className="max-w-[2000px] mx-auto space-y-4">
+          <div className="flex justify-between items-center flex-wrap">
+            <div className="text-sm text-zinc-500 whitespace-nowrap">
+              {(!loading && bills.length > 0) && (
+                <>Showing bills {offset + 1}-{Math.min(offset + bills.length, totalCount)} of {totalCount}</>
+              )}
             </div>
-            <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
-              No bills found
-            </h3>
-            <p className="text-zinc-500 dark:text-zinc-400 mb-6 max-w-md">
-              {searchParams.toString()
-                ? "Try adjusting your filters to see more bills."
-                : "There are no bills available at the moment."}
-            </p>
-            {searchParams.toString() && (
-              <a
-                href={`/${stateCode.toLowerCase()}`}
-                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
-              >
-                Clear all filters
-              </a>
-            )}
+            <div className="flex items-center gap-3 ml-auto">
+              {filters && (
+                <>
+                  <FilterPills
+                    stateCode={stateCode}
+                    billFilters={filters}
+                    categoryFilters={filters.categories.filter(cat => cat.selected) as unknown as { id: string; impactTypes: ("POSITIVE" | "BIAS" | "NEUTRAL")[] }[]}
+                    filters={{
+                      party: searchParams.get('party') || undefined,
+                      support: searchParams.get('support') || undefined,
+                      committee: searchParams.getAll('committee')
+                    }}
+                    searchParams={Object.fromEntries(searchParams.entries())}
+                  />
+                  <BillFiltersWrapper 
+                    filters={filters} 
+                    stateCode={stateCode} 
+                  />
+                </>
+              )}
+            </div>
           </div>
-        )}
 
-        {totalCount > pageSize && (
-          <Pagination
-            currentPage={page}
-            totalItems={totalCount}
-            pageSize={pageSize}
-            searchParams={Object.fromEntries(searchParams.entries())}
-          />
-        )}
-      </div>
-    </section>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+              {Array.from({ length: pageSize }).map((_, i) => (
+                <BillCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : bills.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+              {bills.map(bill => (
+                <BillCard key={bill.bill_id} bill={bill} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
+              <div className="mb-8">
+                <Gavel className="w-32 h-32 text-orange-500" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
+                No bills found
+              </h3>
+              <p className="text-zinc-500 dark:text-zinc-400 mb-6 max-w-md">
+                {searchParams.toString()
+                  ? "Try adjusting your filters to see more bills."
+                  : "There are no bills available at the moment."}
+              </p>
+              {searchParams.toString() && (
+                <a
+                  href={`/${stateCode.toLowerCase()}`}
+                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
+                >
+                  Clear all filters
+                </a>
+              )}
+            </div>
+          )}
+
+          {totalCount > pageSize && (
+            <Pagination
+              currentPage={page}
+              totalItems={totalCount}
+              pageSize={pageSize}
+              searchParams={Object.fromEntries(searchParams.entries())}
+            />
+          )}
+        </div>
+      </section>
+    </>
   )
 } 
