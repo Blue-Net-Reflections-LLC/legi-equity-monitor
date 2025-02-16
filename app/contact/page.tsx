@@ -2,6 +2,7 @@ import { Mail, Newspaper, ArrowUpRight } from 'lucide-react'
 import { AuroraBackground } from "@/app/components/ui/aurora-background"
 import { Footer } from "@/app/components/layout/Footer"
 import { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Contact Us | LegiEquity',
@@ -75,11 +76,11 @@ export default function ContactPage() {
             <section className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-8 rounded-lg">
               <div className="flex items-center space-x-2 mb-6">
                 <Newspaper className="w-6 h-6 text-zinc-900 dark:text-white" />
-                <h2 className="text-2xl font-bold m-0 text-zinc-900 dark:text-white">Coming Soon: Impact Blog</h2>
+                <h2 className="text-2xl font-bold m-0 text-zinc-900 dark:text-white">Impact Blog Now Available</h2>
               </div>
               <p className="text-lg leading-relaxed mb-6 text-zinc-700 dark:text-zinc-300">
-                We&apos;re evolving our platform to include in-depth analysis of bills that have severe impacts across the nation. 
-                Our upcoming blog will feature:
+                Explore our in-depth analysis of bills that have significant impacts across the nation. 
+                Our blog features:
               </p>
               <ul className="list-disc pl-6 space-y-2 mb-6 text-zinc-700 dark:text-zinc-300">
                 <li>Detailed analysis of high-impact legislation</li>
@@ -88,7 +89,7 @@ export default function ContactPage() {
                 <li>Regular updates on critical bills</li>
               </ul>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Stay tuned for our first publications. Follow us on social media for updates.
+                Visit our <Link href="/blog" className="text-orange-500 hover:text-orange-600 transition-colors">Impact Blog</Link> to stay informed about legislative developments.
               </p>
             </section>
           </div>

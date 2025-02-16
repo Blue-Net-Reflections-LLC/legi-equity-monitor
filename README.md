@@ -35,6 +35,13 @@ Visit us at: https://legiequity.us
 - Overall positive impact and bias assessment
 - Integration with VoteSmart API for legislator photos
 
+#### Impact Blog
+- In-depth analysis of high-impact legislation
+- Expert insights on legislative trends
+- Community perspectives and discussions
+- Regular updates on critical bills
+- Detailed policy impact assessments
+
 ### Technical Implementation
 
 #### Advanced Search System
@@ -149,7 +156,6 @@ Required environment variables:
 
 - Enhanced Search and Filtering
 - State-level Analytics Dashboard
-- Impact Blog
 - API Access
 
 ## About
