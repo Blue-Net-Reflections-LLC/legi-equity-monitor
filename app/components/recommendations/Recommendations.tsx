@@ -8,8 +8,6 @@ import { generateEmbeddings } from '@/app/services/embedding.service';
 import { useInView } from 'react-intersection-observer';
 import { RecommendationsProps, RecommendationState } from './types';
 import { RecommendationsSkeleton } from './skeletons';
-import { SearchResult } from '../search/SearchDialog';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Bill, BlogPost } from '@/app/types';
@@ -39,8 +37,6 @@ export function Recommendations({
     threshold: 0.1,
     triggerOnce: true
   });
-
-  const router = useRouter();
 
   const handleNavigate = useCallback((direction: 'next' | 'prev') => {
     if (!containerRef.current) return;
