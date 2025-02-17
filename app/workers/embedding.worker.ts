@@ -8,6 +8,16 @@ env.allowLocalModels = true;
 
 const embeddingModel = "Xenova/all-MiniLM-L6-v2";
 
+// Check if running on mobile/iOS
+const isMobileDevice = () => {
+  try {
+    const userAgent = navigator.userAgent || navigator.vendor || ((window as Window & typeof globalThis) as unknown as { opera: string }).opera;
+    return /iPhone|iPad|iPod|Android/i.test(userAgent);
+  } catch {
+    return false;
+  }
+};
+
 // Use the Singleton pattern to enable lazy construction of the model
 class ModelSingleton {
   static tokenizer: Awaited<ReturnType<typeof AutoTokenizer.from_pretrained>> | null = null;
@@ -66,9 +76,12 @@ class ModelSingleton {
         }
 
         try {
+          const isMobile = isMobileDevice();
+          console.log('[Worker] Device detection:', { isMobile });
+          
           this.model = await AutoModel.from_pretrained(embeddingModel, {
             revision: 'main',
-            dtype: 'fp32'
+            dtype: isMobile ? 'int8' : 'fp32' // Use quantized model for mobile
           });
           console.log('[Worker] Model loaded successfully');
         } catch (error) {

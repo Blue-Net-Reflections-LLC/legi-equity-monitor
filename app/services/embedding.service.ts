@@ -79,11 +79,6 @@ class EmbeddingService {
   }
 
   async load(): Promise<void> {
-    if (this.isMobile) {
-      console.log('[EmbeddingService] Skipping initialization on mobile device');
-      return;
-    }
-
     // Skip if already initialized
     if (EmbeddingService.hasInitialized) {
       console.log('[EmbeddingService] Already initialized, skipping...');
@@ -255,11 +250,6 @@ class EmbeddingService {
   }
 
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
-    if (this.isMobile) {
-      console.log('[EmbeddingService] Skipping embedding generation on mobile device');
-      return texts.map(() => []);
-    }
-
     try {
       await this.load(); // Ensure worker is initialized
       return await this.sendWorkerMessage('GENERATE_EMBEDDINGS', { texts }) as number[][];
