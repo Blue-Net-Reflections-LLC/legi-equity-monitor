@@ -78,6 +78,11 @@ export function BillList({ stateCode }: BillListProps) {
                   />
                 </>
               )}
+              {!filters && (
+                <div className="h-10 w-10 text-sm text-zinc-500 whitespace-nowrap">
+                  
+                </div>
+              )}
             </div>
           </div>
 
