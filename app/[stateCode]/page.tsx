@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { BillList } from '@/app/components/bills/BillList'
 import { StateHero } from '@/app/components/states/StateHero'
+import { Footer } from '@/app/components/layout/Footer'
 
 interface StatePageProps {
   params: {
@@ -31,6 +32,8 @@ export default function StatePage({ params }: StatePageProps) {
           stateCode={stateCode}
         />
       </div>
+
+      <Footer />
     </div>
   )
 } 
