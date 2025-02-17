@@ -5,8 +5,16 @@ import { store } from '@/app/lib/redux/store';
 import { setStatus, setError } from '@/app/lib/redux/features/embedding/embeddingSlice';
 
 // Configure transformers.js to use local models
-env.localModelPath = '/models';
-env.allowLocalModels = true;
+const isIOS = () => {
+  if (typeof window === 'undefined') return false;
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+};
+
+// Only use local models for non-iOS devices
+if (!isIOS()) {
+  env.localModelPath = '/models';
+  env.allowLocalModels = true;
+}
 
 // Device detection
 const isAndroid = () => {
@@ -16,8 +24,8 @@ const isAndroid = () => {
 
 function isMobileDevice(): boolean {
   if (typeof window === 'undefined') return false;
-  // Only return true for Android - iOS will be blocked
-  return isAndroid();
+  // Return true for both Android and iOS
+  return isAndroid() || isIOS();
 }
 
 interface PendingRequest {
