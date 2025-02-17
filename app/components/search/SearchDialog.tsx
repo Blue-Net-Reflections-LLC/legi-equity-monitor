@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef, useCallback } from 'react'
-import { Dialog, DialogContent, DialogTrigger } from "@/app/components/ui/dialog"
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/app/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Search, Sparkles, Loader2 } from "lucide-react"
 import { Bill, Sponsor, BlogPost } from '@/app/types'
@@ -9,6 +9,8 @@ import { SearchResults } from './SearchResults'
 import { embeddingService } from '@/app/services/embedding.service'
 import { debounce } from 'lodash'
 import { useRouter } from 'next/navigation'
+import { useSelector } from 'react-redux'
+import type { RootState } from '@/app/lib/redux/store'
 
 export interface SearchResult {
   type: 'bill' | 'sponsor' | 'blog_post'
@@ -31,6 +33,7 @@ export function SearchDialog() {
   const resultsContainerRef = useRef<HTMLDivElement>(null)
   const previousResultsLengthRef = useRef<number>(0)
   const router = useRouter()
+  const embeddingStatus = useSelector((state: RootState) => state.embedding)
 
   const handleSearch = useCallback(
     debounce(async (searchQuery: string, pageNum: number = 1, currentResults: SearchResult[] = []) => {
@@ -55,7 +58,7 @@ export function SearchDialog() {
       const signal = abortControllerRef.current.signal
 
       try {
-        // Generate embedding for the search query
+        // Use the service without worrying about initialization
         const embedding = await embeddingService.generateEmbedding(searchQuery)
 
         // Call search API with keyword and embedding
@@ -171,7 +174,8 @@ export function SearchDialog() {
 
   useEffect(() => {
     if (open && query === '' && previousQueryRef.current !== query) {
-      handleSearch(defaultQuery, 1, [])      // handleSearch('congress')
+      // Don't initialize here, just start the search
+      handleSearch(defaultQuery, 1, [])
     }
   }, [open, query, handleSearch])
 
@@ -193,7 +197,11 @@ export function SearchDialog() {
         className="sm:max-w-[600px] h-[80vh] flex flex-col bg-white dark:bg-zinc-950 p-0 gap-0 border-zinc-200 dark:border-zinc-800" 
         showCloseButton={false}
       >
-        {!hasInitialized.current ? (
+        <DialogTitle className="sr-only">Search</DialogTitle>
+        <DialogDescription className="sr-only">
+          Search for bills, sponsors, and articles across the platform
+        </DialogDescription>
+        {embeddingStatus.status !== 'ready' ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-4">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 relative">
@@ -201,8 +209,13 @@ export function SearchDialog() {
                 <Sparkles className="w-8 h-8 text-indigo-600 dark:text-indigo-400 animate-pulse relative z-10" />
               </div>
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                AI Driven Search is initializing
+                {embeddingStatus.message || 'AI Driven Search is initializing'}
               </p>
+              {embeddingStatus.error && (
+                <p className="text-sm text-red-500">
+                  Error: {embeddingStatus.error}
+                </p>
+              )}
             </div>
           </div>
         ) : (
