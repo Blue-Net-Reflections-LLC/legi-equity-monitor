@@ -64,6 +64,12 @@ class EmbeddingService {
   }
 
   async load(): Promise<void> {
+    // Skip loading on mobile devices
+    if (this.isMobile) {
+      console.log('[EmbeddingService] Skipping model loading on mobile device');
+      return;
+    }
+
     if (!this.loadPromise) {
       this.loadPromise = (async () => {
         if (!EmbeddingService.tokenizer || !EmbeddingService.model) {
@@ -83,6 +89,13 @@ class EmbeddingService {
   }
 
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
+    // Disable embeddings on mobile devices
+    if (this.isMobile) {
+      console.log('[EmbeddingService] Skipping embedding generation on mobile device');
+      // Return empty embeddings array matching the input length
+      return texts.map(() => []);
+    }
+
     await this.load();
 
     if (!EmbeddingService.tokenizer || !EmbeddingService.model) {
