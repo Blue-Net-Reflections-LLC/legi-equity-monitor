@@ -5,6 +5,7 @@ import { clusterDetailReducer } from './features/clustering/clusterDetailSlice'
 import { blogReducer } from './features/blog/blogSlice'
 import { billsReducer } from './features/bills/billsSlice'
 import { stateSliderReducer } from './features/stateSlider/stateSliderSlice'
+import { embeddingReducer } from './features/embedding/embeddingSlice'
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     blog: blogReducer,
     bills: billsReducer,
     stateSlider: stateSliderReducer,
+    embedding: embeddingReducer,
   },
   devTools: true
 })
