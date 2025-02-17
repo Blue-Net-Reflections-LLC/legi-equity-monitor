@@ -1,14 +1,12 @@
 'use client';
 
-import { env, AutoTokenizer, AutoModel } from '@huggingface/transformers';
+import { env } from '@huggingface/transformers';
 import { store } from '@/app/lib/redux/store';
 import { setStatus, setError } from '@/app/lib/redux/features/embedding/embeddingSlice';
 
 // Configure transformers.js to use local models
 env.localModelPath = '/models';
 env.allowLocalModels = true;
-
-const embeddingModel = "Xenova/all-MiniLM-L6-v2";
 
 // Add device detection function
 function isMobileDevice(): boolean {
@@ -24,28 +22,9 @@ function isMobileDevice(): boolean {
   return isMobile || isSmallScreen;
 }
 
-interface TokenizerType {
-  (texts: string[], options: {
-    return_tensors: string;
-    padding: boolean;
-    truncation: boolean;
-  }): Promise<{
-    input_ids: unknown;
-    attention_mask: unknown;
-  }>;
-}
-
-interface ModelType {
-  forward(input: {
-    input_ids: unknown;
-    attention_mask: unknown;
-  }): Promise<{
-    last_hidden_state: {
-      mean(dim: number): {
-        tolist(): number[][];
-      };
-    };
-  }>;
+interface PendingRequest {
+  resolve: (value: unknown) => void;
+  reject: (reason?: unknown) => void;
 }
 
 class EmbeddingService {
@@ -57,7 +36,7 @@ class EmbeddingService {
 
   private isMobile: boolean = false;
   private isInitialized: boolean = false;
-  private pendingRequests: Map<string, { resolve: Function, reject: Function }> = new Map();
+  private pendingRequests: Map<string, PendingRequest> = new Map();
   private pollInterval: NodeJS.Timeout | null = null;
 
   constructor() {
@@ -257,7 +236,7 @@ class EmbeddingService {
     }
   }
 
-  private sendWorkerMessage(type: string, payload?: any): Promise<any> {
+  private sendWorkerMessage(type: string, payload?: unknown): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (!EmbeddingService.worker || !this.isInitialized) {
         reject(new Error('Worker not initialized'));
@@ -283,7 +262,7 @@ class EmbeddingService {
 
     try {
       await this.load(); // Ensure worker is initialized
-      return await this.sendWorkerMessage('GENERATE_EMBEDDINGS', { texts });
+      return await this.sendWorkerMessage('GENERATE_EMBEDDINGS', { texts }) as number[][];
     } catch (error) {
       console.error('[EmbeddingService] Error generating embeddings:', error);
       return texts.map(() => []);

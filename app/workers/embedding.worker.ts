@@ -10,8 +10,8 @@ const embeddingModel = "Xenova/all-MiniLM-L6-v2";
 
 // Use the Singleton pattern to enable lazy construction of the model
 class ModelSingleton {
-  static tokenizer: any = null;
-  static model: any = null;
+  static tokenizer: Awaited<ReturnType<typeof AutoTokenizer.from_pretrained>> | null = null;
+  static model: Awaited<ReturnType<typeof AutoModel.from_pretrained>> | null = null;
   static isInitializing: boolean = false;
   static initializationProgress: string = '';
   static initializationError: string | null = null;
@@ -29,7 +29,7 @@ class ModelSingleton {
     return { status: 'not_started' };
   }
 
-  static async getInstance(progress_callback: ((progress: any) => void) | null = null) {
+  static async getInstance(progress_callback: ((progress: { status: string; message?: string }) => void) | null = null) {
     if (this.isInitializing) {
       console.log('[Worker] Initialization already in progress');
       return null;
