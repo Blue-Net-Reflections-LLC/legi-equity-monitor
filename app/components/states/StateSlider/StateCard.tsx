@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useDispatch } from 'react-redux';
+import { setScrollPosition } from '@/app/lib/redux/features/stateSlider/stateSliderSlice';
 
 interface StateCardProps {
   state: {
@@ -10,12 +12,26 @@ interface StateCardProps {
     code: string;
   };
   isSelected: boolean;
+  onCardClick?: () => void;
 }
 
 export function StateCard({ state, isSelected }: StateCardProps) {
+  const dispatch = useDispatch();
+
+  const handleClick = () => {
+    const slider = document.querySelector('.hide-scrollbar');
+    if (slider) {
+      dispatch(setScrollPosition({
+        stateCode: state.code.toLowerCase(),
+        position: slider.scrollLeft
+      }));
+    }
+  };
+
   return (
     <Link
       href={`/${state.code.toLowerCase()}`}
+      onClick={handleClick}
       className={cn(
         "flex-shrink-0 flex flex-col items-center justify-center w-28 h-28 rounded-lg overflow-hidden transition-all duration-300",
         "bg-transparent backdrop-blur-sm",
