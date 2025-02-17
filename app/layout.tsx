@@ -5,6 +5,7 @@ import Header from '@/app/components/Header'
 import { systemThemeScript } from './utils/theme-script'
 import { GoogleAnalytics } from '@next/third-parties/google'
 import { AnalyticsProvider } from './providers/AnalyticsProvider'
+import { ReduxProvider } from './providers/ReduxProvider'
 import ClientLayout from './components/ClientLayout'
 import { SessionProvider } from 'next-auth/react'
 import { auth } from '@/app/(auth)/auth'
@@ -31,15 +32,17 @@ export default async function RootLayout({
       </head>
       <body className={`${inter.className} antialiased bg-white dark:bg-zinc-900`}>
         <SessionProvider session={session}>
-          <ClientLayout>
-            <Header />
-            <main className="w-full pt-8 pb-2">
-              <AnalyticsProvider>
-                {children}
-              </AnalyticsProvider>
-            </main>
-            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!} />
-          </ClientLayout>
+          <ReduxProvider>
+            <ClientLayout>
+              <Header />
+              <main className="w-full pt-8 pb-2">
+                <AnalyticsProvider>
+                  {children}
+                </AnalyticsProvider>
+              </main>
+              <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!} />
+            </ClientLayout>
+          </ReduxProvider>
         </SessionProvider>
       </body>
     </html>
