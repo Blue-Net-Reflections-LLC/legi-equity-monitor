@@ -8,18 +8,16 @@ import { setStatus, setError } from '@/app/lib/redux/features/embedding/embeddin
 env.localModelPath = '/models';
 env.allowLocalModels = true;
 
-// Add device detection function
+// Device detection
+const isAndroid = () => {
+  if (typeof window === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent);
+};
+
 function isMobileDevice(): boolean {
   if (typeof window === 'undefined') return false;
-  
-  // Check for mobile user agent patterns
-  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-  const isMobile = mobileRegex.test(navigator.userAgent);
-  
-  // Additional check for screen size
-  const isSmallScreen = window.innerWidth <= 768;
-  
-  return isMobile || isSmallScreen;
+  // Only return true for Android - iOS will be blocked
+  return isAndroid();
 }
 
 interface PendingRequest {

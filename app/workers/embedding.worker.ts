@@ -8,11 +8,19 @@ env.allowLocalModels = true;
 
 const embeddingModel = "Xenova/all-MiniLM-L6-v2";
 
-// Check if running on mobile/iOS
+// Device detection
+const isIOS = () => {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+};
+
+const isAndroid = () => {
+  return /Android/i.test(navigator.userAgent);
+};
+
 const isMobileDevice = () => {
   try {
-    const userAgent = navigator.userAgent || navigator.vendor || ((window as Window & typeof globalThis) as unknown as { opera: string }).opera;
-    return /iPhone|iPad|iPod|Android/i.test(userAgent);
+    // Only return true for Android - iOS will be blocked
+    return isAndroid();
   } catch {
     return false;
   }
@@ -27,6 +35,14 @@ class ModelSingleton {
   static initializationError: string | null = null;
 
   static getStatus() {
+    // Block iOS devices with a clear error message
+    if (isIOS()) {
+      return { 
+        status: 'error', 
+        message: 'iOS devices are not currently supported due to WebAssembly limitations' 
+      };
+    }
+    
     if (this.tokenizer && this.model) {
       return { status: 'ready' };
     }
@@ -40,6 +56,15 @@ class ModelSingleton {
   }
 
   static async getInstance(progress_callback: ((progress: { status: string; message?: string }) => void) | null = null) {
+    // Block iOS devices immediately
+    if (isIOS()) {
+      const message = 'iOS devices are not currently supported due to WebAssembly limitations';
+      if (progress_callback) {
+        progress_callback({ status: 'error', message });
+      }
+      throw new Error(message);
+    }
+
     if (this.isInitializing) {
       console.log('[Worker] Initialization already in progress');
       return null;
