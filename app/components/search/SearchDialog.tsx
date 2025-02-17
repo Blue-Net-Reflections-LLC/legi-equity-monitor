@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef, useCallback } from 'react'
-import { Dialog, DialogContent, DialogTrigger } from "@/app/components/ui/dialog"
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/app/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Search, Sparkles, Loader2 } from "lucide-react"
 import { Bill, Sponsor, BlogPost } from '@/app/types'
@@ -193,6 +193,10 @@ export function SearchDialog() {
         className="sm:max-w-[600px] h-[80vh] flex flex-col bg-white dark:bg-zinc-950 p-0 gap-0 border-zinc-200 dark:border-zinc-800" 
         showCloseButton={false}
       >
+        <DialogTitle className="sr-only">Search</DialogTitle>
+        <DialogDescription className="sr-only">
+          Search for bills, sponsors, and articles across the platform
+        </DialogDescription>
         {!hasInitialized.current ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center space-y-4">

@@ -2,9 +2,33 @@
 
 import Link from 'next/link';
 import { ThemeToggle } from '../ThemeToggle';
-import { Twitter, FacebookIcon, Instagram, Mail } from 'lucide-react';
+import { Twitter, FacebookIcon, Instagram, Mail, Cpu } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function Footer() {
+  const [hasGPUSupport, setHasGPUSupport] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkGPUSupport = async () => {
+      try {
+        // @ts-expect-error - WebGPU is experimental
+        if (!navigator.gpu) {
+          setHasGPUSupport(false);
+          return;
+        }
+        
+        // @ts-expect-error - WebGPU is experimental
+        const adapter = await navigator.gpu.requestAdapter();
+        setHasGPUSupport(!!adapter);
+      } catch (error) {
+        console.error('Error checking GPU support:', error);
+        setHasGPUSupport(false);
+      }
+    };
+
+    checkGPUSupport();
+  }, []);
+
   return (
     <footer className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -17,11 +41,19 @@ export function Footer() {
                 A collaboration between <Link href="https://voterai.chat" className="hover:text-zinc-800 dark:hover:text-zinc-300">VoterAI</Link> and <Link href="http://bluenetreflections.com" className="hover:text-zinc-800 dark:hover:text-zinc-300">BLUE NET REFLECTION, LLC</Link>
               </p>
 
-              <div className="flex items-center space-x-2 text-sm text-zinc-500 dark:text-zinc-400">
-                <Mail className="w-4 h-4" />
-                <a href="mailto:info@voterai.chat" className="hover:text-zinc-800 dark:hover:text-zinc-300">
-                  info@voterai.chat
-                </a>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center space-x-2 text-sm text-zinc-500 dark:text-zinc-400">
+                  <Mail className="w-4 h-4" />
+                  <a href="mailto:info@voterai.chat" className="hover:text-zinc-800 dark:hover:text-zinc-300">
+                    info@voterai.chat
+                  </a>
+                </div>
+                {hasGPUSupport && (
+                  <div className="flex items-center space-x-2 text-sm text-emerald-600 dark:text-emerald-500">
+                    <Cpu className="w-4 h-4" />
+                    <span>GPU Supported</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

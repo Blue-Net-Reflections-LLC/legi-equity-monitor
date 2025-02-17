@@ -1,12 +1,26 @@
 'use client';
 
-import { pipeline, env, FeatureExtractionPipeline, AutoTokenizer, AutoModel } from '@huggingface/transformers';
+import { env, AutoTokenizer, AutoModel } from '@huggingface/transformers';
 
 // Configure transformers.js to use local models
 env.localModelPath = '/models';
 env.allowLocalModels = true;
 
 const embeddingModel = "Xenova/all-MiniLM-L6-v2";
+
+// Add device detection function
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  // Check for mobile user agent patterns
+  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+  const isMobile = mobileRegex.test(navigator.userAgent);
+  
+  // Additional check for screen size
+  const isSmallScreen = window.innerWidth <= 768;
+  
+  return isMobile || isSmallScreen;
+}
 
 interface TokenizerType {
   (texts: string[], options: {
@@ -33,31 +47,31 @@ interface ModelType {
 }
 
 class EmbeddingService {
-  private static pipeline: FeatureExtractionPipeline | null = null;
   private static tokenizer: TokenizerType | null = null;
   private static model: ModelType | null = null;
   private loadPromise: Promise<void> | null = null;
+  private isMobile: boolean = false;
 
   constructor() {
-    // Don't do anything in constructor - defer to load() method
+    if (typeof window !== 'undefined') {
+      this.isMobile = isMobileDevice();
+      console.log('[EmbeddingService] Device detection:', {
+        isMobile: this.isMobile,
+        userAgent: navigator.userAgent,
+        screenWidth: window.innerWidth
+      });
+    }
   }
 
   async load(): Promise<void> {
     if (!this.loadPromise) {
       this.loadPromise = (async () => {
-        if (!EmbeddingService.pipeline) {
-          // Load components sequentially
-          EmbeddingService.pipeline = await pipeline(
-            'feature-extraction',
-            embeddingModel,
-            {
-              revision: 'main',
-              device: 'auto',
-              dtype: 'fp32',
-            }
-          );
+        if (!EmbeddingService.tokenizer || !EmbeddingService.model) {
           EmbeddingService.tokenizer = await AutoTokenizer.from_pretrained(embeddingModel);
-          EmbeddingService.model = await AutoModel.from_pretrained(embeddingModel);
+          EmbeddingService.model = await AutoModel.from_pretrained(embeddingModel, {
+            revision: 'main',
+            dtype: this.isMobile ? 'int8' : 'fp32'
+          });
         }
       })();
     }
@@ -65,18 +79,7 @@ class EmbeddingService {
   }
 
   async generateEmbedding(text: string): Promise<number[][]> {
-    await this.load();
-    
-    if (!EmbeddingService.pipeline) {
-      throw new Error('Pipeline not initialized');
-    }
-    const embeddings = await EmbeddingService.pipeline(text, {
-      pooling: 'mean',
-      normalize: true,
-      quantize: false,
-    });
-    const embeddingsArray = embeddings.tolist();
-    return embeddingsArray;
+    return this.generateEmbeddings([text]);
   }
 
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
@@ -102,7 +105,6 @@ class EmbeddingService {
   }
 
   dispose() {
-    EmbeddingService.pipeline = null;
     EmbeddingService.tokenizer = null;
     EmbeddingService.model = null;
     this.loadPromise = null;
