@@ -258,10 +258,10 @@ class VectorIndexer:
             # Convert numpy array to list and format as PostgreSQL vector literal
             vector_str = f"[{','.join(str(x) for x in embedding.tolist())}]"
             
-            # Prepare parameters based on entity typeA
+            # Prepare parameters based on entity type
             params = {
                 'entity_type': entity_type,
-                'entity_id': item['post_id'],  #if entity_type == 'blog_post' else item[f'{entity_type}_id'],
+                'entity_id': item['post_id'] if entity_type == 'blog_post' else item[f'{entity_type}_id'],
                 'entity_uuid': item.get('uuid'),  # Only set for blog posts
                 'search_text': search_text,
                 'embedding': vector_str,
