@@ -1,20 +1,26 @@
 'use client'
 
 import { useEffect } from 'react'
-import { embeddingService } from '../services/embedding.service'
+import { embeddingService } from '@/app/services/embedding.service'
 
 export default function ClientLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Initialize embedding service once at the app level
   useEffect(() => {
-    // Prefetch the model when the app loads
-    embeddingService.load().catch(console.error)
+    console.log('[ClientLayout] Initializing embedding service...')
+    embeddingService.load().catch(error => {
+      console.error('[ClientLayout] Failed to initialize embedding service:', error)
+    })
 
     // Cleanup when the app unmounts
     return () => {
-      embeddingService.dispose()
+      // Only dispose in production
+      if (process.env.NODE_ENV !== 'development') {
+        embeddingService.dispose()
+      }
     }
   }, [])
 
