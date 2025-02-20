@@ -1,10 +1,14 @@
+'use client';
+
 import { format } from 'date-fns';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlogPost } from '@/app/lib/validations/blog';
+import { toast, Toaster } from 'sonner';
 import { Recommendations } from '@/components/recommendations';
+import { ShareButtons } from '@/app/components/ShareButtons';
 
 interface BlogPostViewProps {
   post: BlogPost;
@@ -19,8 +23,11 @@ export function BlogPostView({
   backUrl = '/blog',
   backLabel = 'Back to Blog'
 }: BlogPostViewProps) {
+  const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/blog/${post.slug}`;
+  
   return (
     <article className="text-neutral-900 dark:text-neutral-50 -mt-8">
+      <Toaster />
       {/* Hero Image */}
       {post.hero_image ? (
         <div className="relative h-[80vh] w-full mb-8">
@@ -35,14 +42,17 @@ export function BlogPostView({
             <div className="container mx-auto px-4 h-full flex items-end pb-12">
               <div className="max-w-4xl mx-auto w-full">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">{post.title}</h1>
-                <div className="flex items-center text-white/80">
-                  <span>{post.author}</span>
-                  {post.published_at && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <time>{format(new Date(post.published_at), 'MMMM d, yyyy')}</time>
-                    </>
-                  )}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center text-white/80">
+                    <span>{post.author}</span>
+                    {post.published_at && (
+                      <>
+                        <span className="mx-2">•</span>
+                        <time>{format(new Date(post.published_at), 'MMMM d, yyyy')}</time>
+                      </>
+                    )}
+                  </div>
+                  <ShareButtons url={shareUrl} title={post.title} />
                 </div>
               </div>
             </div>
@@ -52,14 +62,17 @@ export function BlogPostView({
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
-            <div className="flex items-center text-muted-foreground">
-              <span>{post.author}</span>
-              {post.published_at && (
-                <>
-                  <span className="mx-2">•</span>
-                  <time>{format(new Date(post.published_at), 'MMMM d, yyyy')}</time>
-                </>
-              )}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center text-muted-foreground">
+                <span>{post.author}</span>
+                {post.published_at && (
+                  <>
+                    <span className="mx-2">•</span>
+                    <time>{format(new Date(post.published_at), 'MMMM d, yyyy')}</time>
+                  </>
+                )}
+              </div>
+              <ShareButtons url={shareUrl} title={post.title} />
             </div>
           </div>
         </div>
