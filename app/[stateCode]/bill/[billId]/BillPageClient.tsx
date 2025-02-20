@@ -9,14 +9,125 @@ import BillAnalysis from './BillAnalysis';
 import { Footer } from "@/app/components/layout/Footer";
 import { ShareButtons } from '@/app/components/ShareButtons';
 
+interface Bill {
+  bill_id: string;
+  bill_number: string;
+  title: string;
+  description: string;
+  state_abbr: string;
+  state_name: string;
+  status_id: number;
+  status_desc: string;
+  status_date: Date;
+  bill_type_id: number;
+  bill_type_name: string;
+  bill_type_abbr: string;
+  body_id: number;
+  body_name: string;
+  current_body_id: number;
+  current_body_name: string;
+  pending_committee_id: number;
+  pending_committee_name: string;
+  pending_committee_body_name: string;
+  legiscan_url: string;
+  state_url: string;
+  session_id: number;
+  session_name: string;
+  session_title: string;
+  session_year_start: number;
+  session_year_end: number;
+  session_special: number;
+  session_sine_die: number;
+  session_prior: number;
+}
+
+interface Sponsor {
+  people_id: number;
+  name: string;
+  party_name: string;
+  role_name: string;
+  sponsor_type_desc: string;
+  votesmart_id: string | null;
+  sponsor_order: number;
+}
+
+interface RollCall {
+  roll_call_id: number;
+  roll_call_date: Date;
+  roll_call_desc: string;
+  yea: number;
+  nay: number;
+  nv: number;
+  absent: number;
+  passed: number;
+  roll_call_body_name: string;
+  votes: Array<{
+    people_id: number;
+    name: string;
+    party_name: string;
+    vote_desc: string;
+  }>;
+}
+
+interface BillHistory {
+  history_step: number;
+  history_date: Date;
+  history_action: string;
+  history_body_name: string;
+}
+
+interface BillDocument {
+  text_id?: number;
+  supplement_id?: number;
+  date: Date;
+  title: string;
+  type_desc: string;
+  mime_type: string;
+  mime_ext: string;
+  size: number;
+  legiscan_url: string;
+  state_url: string;
+}
+
+interface Amendment {
+  amendment_id: number;
+  amendment_date: Date;
+  amendment_title: string;
+  amendment_desc: string;
+  adopted: number;
+  mime_type: string;
+  mime_ext: string;
+  legiscan_url: string;
+  state_url: string;
+}
+
+interface BillAnalysis {
+  overall_analysis: {
+    bias_score: number;
+    positive_impact_score: number;
+    confidence: 'High' | 'Medium' | 'Low';
+  };
+  demographic_categories: Array<{
+    category: 'race' | 'religion' | 'gender' | 'age' | 'disability' | 'socioeconomic';
+    bias_score: number;
+    positive_impact_score: number;
+    subgroups: Array<{
+      code: string;
+      bias_score: number;
+      positive_impact_score: number;
+      evidence: string;
+    }>;
+  }>;
+}
+
 interface BillPageClientProps {
-  bill: any; // Using any temporarily - you should define proper types
-  sponsors: any[];
-  rollCalls: any[];
-  history: any[];
-  documents: any[];
-  analysis: any;
-  amendments: any[];
+  bill: Bill;
+  sponsors: Sponsor[];
+  rollCalls: RollCall[];
+  history: BillHistory[];
+  documents: BillDocument[];
+  analysis: BillAnalysis | null;
+  amendments: Amendment[];
 }
 
 export default function BillPageClient({ 

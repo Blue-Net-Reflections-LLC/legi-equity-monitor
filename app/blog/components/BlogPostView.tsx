@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlogPost } from '@/app/lib/validations/blog';
-import { toast, Toaster } from 'sonner';
+import { Toaster } from 'sonner';
 import { Recommendations } from '@/components/recommendations';
 import { ShareButtons } from '@/app/components/ShareButtons';
 
