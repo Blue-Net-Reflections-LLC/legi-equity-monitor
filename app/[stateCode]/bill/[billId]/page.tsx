@@ -9,6 +9,7 @@ import BillAnalysis from './BillAnalysis';
 import { Footer } from "@/app/components/layout/Footer";
 import { Metadata } from 'next'
 import { STATE_NAMES } from '@/app/constants/states';
+import { BillDescription } from './BillDescription';
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -464,7 +465,7 @@ export default async function BillPage({
             <Card className="p-6">
               <div className="prose dark:prose-invert max-w-none">
                 <h2 className="text-xl font-semibold mb-4">Description</h2>
-                <p>{bill.description}</p>
+                <BillDescription text={bill.description} analysis={analysis} />
               </div>
             </Card>
 
