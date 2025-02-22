@@ -29,7 +29,9 @@ interface BillAnalysisProps {
   } | null;
 }
 
-const toTitleCase = (str: string) => {
+const toTitleCase = (str: string | null | undefined) => {
+  if (!str) return 'General Impact';
+  
   return str
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -197,7 +199,7 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
                 {toTitleCase(category.category)}
               </h3>
               <span className="text-sm text-zinc-500 dark:text-zinc-400 font-normal">
-                • {CATEGORY_DESCRIPTIONS[category.category.toLowerCase()] ?? `Impact on ${category.category.toLowerCase()}`}
+                • {CATEGORY_DESCRIPTIONS[(category.category || '').toLowerCase()] ?? `Impact on ${(category.category || 'general').toLowerCase()}`}
               </span>
             </div>
             <ImpactScore 
