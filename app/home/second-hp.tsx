@@ -1,13 +1,8 @@
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import AnimatedContent from "../components/AnimatedContent";
-import dynamic from "next/dynamic";
+import AnimatedStatesMap from "../components/AnimatedStatesMap";
 import Link from "next/link";
 import { Footer } from "@/app/components/layout/Footer";
-
-// Dynamically import the InteractiveMap component with no SSR
-const InteractiveMap = dynamic(() => import("../components/InteractiveMap"), {
-  ssr: false,
-});
 
 export default function SecondHomepage() {
   return (
@@ -48,9 +43,9 @@ export default function SecondHomepage() {
               </AnimatedContent>
 
               {/* Right Column - Interactive Map (Desktop Only) */}
-              <div className="hidden md:flex items-center justify-center">
+              <div className="hidden md:flex items-center justify-center h-[450px]">
                 <div className="relative w-full h-full flex items-center">
-                  <InteractiveMap />
+                  <AnimatedStatesMap />
                 </div>
               </div>
             </div>
