@@ -140,7 +140,7 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
   if (!analysis) return null;
 
   return (
-    <div className="space-y-6">
+    <div id="demographic-breakdown" className="space-y-6">
       {analysis.demographic_categories.map((category) => (
         <Card key={category.category} className="p-6">
           <div className="flex items-center justify-between mb-6">
