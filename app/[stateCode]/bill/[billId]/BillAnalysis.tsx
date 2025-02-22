@@ -212,9 +212,9 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
               const displayScore = impactType === 'POSITIVE' ? subgroup.positive_impact_score : 
                                  impactType === 'BIAS' ? subgroup.bias_score : 0;
               return (
-                <Card 
+                <div 
                   key={subgroup.code} 
-                  className="p-4 bg-zinc-50 dark:bg-zinc-800/50"
+                  className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -233,7 +233,7 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
                   <p className="text-sm text-zinc-600 dark:text-zinc-400">
                     {subgroup.evidence}
                   </p>
-                </Card>
+                </div>
               );
             })}
           </div>
