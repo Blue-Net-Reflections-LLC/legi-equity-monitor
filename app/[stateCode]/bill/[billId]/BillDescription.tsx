@@ -12,7 +12,12 @@ interface BillDescriptionProps {
     };
     demographic_categories?: Array<{
       category: string;
-      subgroups: Array<any>;
+      subgroups: Array<{
+        code: string;
+        bias_score: number;
+        positive_impact_score: number;
+        evidence: string;
+      }>;
     }>;
   } | null;
 }

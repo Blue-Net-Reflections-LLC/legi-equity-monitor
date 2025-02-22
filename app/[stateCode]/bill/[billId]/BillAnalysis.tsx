@@ -1,6 +1,5 @@
 import { Card } from "@/app/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ConfidenceBadge } from "@/app/components/analysis/ConfidenceBadge";
 import { ImpactScore, getImpactType } from "@/app/components/analysis/ImpactScore";
 import {
   Tooltip,
