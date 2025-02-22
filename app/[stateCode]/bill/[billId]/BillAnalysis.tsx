@@ -2,6 +2,12 @@ import { Card } from "@/app/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ConfidenceBadge } from "@/app/components/analysis/ConfidenceBadge";
 import { ImpactScore, getImpactType } from "@/app/components/analysis/ImpactScore";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/components/ui/tooltip"
 
 interface BillAnalysisProps {
   analysis: {
@@ -138,26 +144,43 @@ function ScoreBar({ score, type }: { score: number; type: 'POSITIVE' | 'BIAS' | 
   const fullBars = Math.floor(score / scorePerBar);
   const partialBar = score % scorePerBar > 0 ? score % scorePerBar / scorePerBar : 0;
 
+  const percentage = Math.round(score * 100);
+  const message = type === 'POSITIVE' 
+    ? `${percentage}% Positive Impact`
+    : `${percentage}% Bias Concern`;
+
   return (
-    <div className="flex gap-[2px] h-4">
-      {[...Array(totalBars)].map((_, i) => (
-        <div 
-          key={i} 
-          className="w-1 overflow-hidden bg-zinc-200 dark:bg-zinc-700 relative"
+    <TooltipProvider delayDuration={750}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex gap-[2px] h-4">
+            {[...Array(totalBars)].map((_, i) => (
+              <div 
+                key={i}
+                className="w-1 overflow-hidden bg-zinc-200 dark:bg-zinc-700 relative cursor-help"
+              >
+                <div
+                  className={cn(
+                    "w-full absolute bottom-0",
+                    colors[type as 'POSITIVE' | 'BIAS'].bars[i]
+                  )}
+                  style={{
+                    height: i < fullBars ? '100%' : 
+                           i === fullBars ? `${partialBar * 100}%` : '0%'
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent 
+          side="top"
+          className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700"
         >
-          <div
-            className={cn(
-              "w-full absolute bottom-0",
-              colors[type as 'POSITIVE' | 'BIAS'].bars[i]
-            )}
-            style={{
-              height: i < fullBars ? '100%' : 
-                     i === fullBars ? `${partialBar * 100}%` : '0%'
-            }}
-          />
-        </div>
-      ))}
-    </div>
+          <p>{message}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
