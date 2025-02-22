@@ -1,23 +1,36 @@
 import { Card } from "@/app/components/ui/card";
+import { cn } from "@/lib/utils";
+import { AlertTriangle, CheckCircle2, MinusCircle } from 'lucide-react';
 
-interface BillAnalysis {
-  overall_analysis: {
-    bias_score: number;
-    positive_impact_score: number;
-    confidence: 'High' | 'Medium' | 'Low';
-  };
-  demographic_categories: Array<{
-    category: 'race' | 'religion' | 'gender' | 'age' | 'disability' | 'socioeconomic';
-    bias_score: number;
-    positive_impact_score: number;
-    subgroups: Array<{
-      code: string;
+interface BillAnalysisProps {
+  analysis: {
+    overall_analysis: {
       bias_score: number;
       positive_impact_score: number;
-      evidence: string;
+      confidence: 'High' | 'Medium' | 'Low';
+    };
+    demographic_categories: Array<{
+      category: string;
+      bias_score: number;
+      positive_impact_score: number;
+      subgroups: Array<{
+        code: string;
+        bias_score: number;
+        positive_impact_score: number;
+        evidence: string;
+      }>;
     }>;
-  }>;
+  } | null;
 }
+
+const CATEGORY_LABELS: Record<string, string> = {
+  'race': 'Race',
+  'religion': 'Religion',
+  'gender': 'Gender',
+  'age': 'Age',
+  'disability': 'Disability',
+  'socioeconomic': 'Socioeconomic'
+};
 
 const SUBGROUP_NAMES: Record<string, string> = {
   // Race
@@ -54,117 +67,158 @@ const SUBGROUP_NAMES: Record<string, string> = {
   'BI': 'Bisexual',
   'PS': 'Pansexual',
   'AS': 'Asexual',
-  // Veterans
-  'VT': 'Veterans (General)',
-  'DV': 'Disabled Veterans',
-  'RM': 'Retired Military Personnel',
   // Disability
   'PD': 'Physical Disabilities',
   'MH': 'Mental Health Challenges',
-  'DD': 'Developmental Disabilities'
+  'DD': 'Developmental Disabilities',
+  // Veterans
+  'VT': 'Veterans (General)',
+  'DV': 'Disabled Veterans',
+  'RM': 'Retired Military Personnel'
 };
 
-function ScoreBar({ score, label, sentiment }: { score: number; label: string; sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' }) {
-  const percentage = Math.round(score * 100);
-  const barColor = 
-    percentage >= 60 
-      ? sentiment === 'POSITIVE'
-        ? 'bg-emerald-500'
-        : sentiment === 'NEGATIVE'
-          ? 'bg-red-500'
-          : 'bg-neutral-500'
-      : 'bg-neutral-500';
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className="text-sm text-zinc-600 dark:text-zinc-400 w-32">{label}</div>
-      <div className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-        <div className={`h-full ${barColor}`} style={{ width: `${percentage}%` }} />
-      </div>
-      <div className="text-sm text-zinc-600 dark:text-zinc-400 w-12 text-right">{percentage}%</div>
-    </div>
-  );
+function getImpactType(positiveScore: number, biasScore: number): 'POSITIVE' | 'BIAS' | 'NEUTRAL' {
+  if (positiveScore >= 0.6) return 'POSITIVE';
+  if (biasScore >= 0.6) return 'BIAS';
+  return 'NEUTRAL';
 }
 
-function CategorySection({ category }: { category: BillAnalysis['demographic_categories'][0] }) {
-  const getSentimentAndScore = (positive: number, bias: number): { score: number; sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' } => {
-    const score = Math.max(positive, bias);
-    return {
-      score,
-      sentiment: score >= 0.6 
-        ? (positive >= bias ? 'POSITIVE' : 'NEGATIVE')
-        : 'NEUTRAL'
-    } as const;
+function CategoryScore({ positiveScore, biasScore }: { positiveScore: number; biasScore: number }) {
+  const type = getImpactType(positiveScore, biasScore);
+  const score = type === 'POSITIVE' ? positiveScore : type === 'BIAS' ? biasScore : Math.max(positiveScore, biasScore);
+  const percentage = Math.round(score * 100);
+
+  const styles = {
+    POSITIVE: 'text-emerald-500 dark:text-emerald-400',
+    BIAS: 'text-red-500 dark:text-red-400',
+    NEUTRAL: 'text-zinc-500 dark:text-zinc-400'
   };
 
-  const categoryAnalysis = getSentimentAndScore(category.positive_impact_score, category.bias_score);
+  const icons = {
+    POSITIVE: CheckCircle2,
+    BIAS: AlertTriangle,
+    NEUTRAL: MinusCircle
+  };
+
+  const Icon = icons[type];
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold capitalize">{category.category}</h3>
-      <div className="space-y-2">
-        <ScoreBar 
-          score={categoryAnalysis.score} 
-          label="Impact Score" 
-          sentiment={categoryAnalysis.sentiment}
-        />
-      </div>
-      <div className="space-y-4 mt-4">
-        {category.subgroups?.filter(Boolean).map((subgroup) => {
-          const subgroupAnalysis = getSentimentAndScore(subgroup.positive_impact_score, subgroup.bias_score);
-          
-          return (
-            <div key={subgroup.code} className="border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">
-              <h4 className="text-sm font-medium">{SUBGROUP_NAMES[subgroup.code] || subgroup.code}</h4>
-              <div className="space-y-2 mt-2">
-                <ScoreBar 
-                  score={subgroupAnalysis.score} 
-                  label="Impact Score" 
-                  sentiment={subgroupAnalysis.sentiment}
-                />
-              </div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">{subgroup.evidence}</p>
-            </div>
-          );
-        })}
-      </div>
+    <div className={cn("flex items-center gap-2", styles[type])}>
+      <Icon className="w-5 h-5" />
+      <span className="font-semibold">
+        {percentage}% {type === 'BIAS' ? 'Bias' : type === 'POSITIVE' ? 'Positive' : 'Neutral'}
+      </span>
     </div>
   );
 }
 
-export default function BillAnalysis({ analysis }: { analysis: BillAnalysis | null }) {
-  if (!analysis) {
-    return null;
-  }
+function ImpactBadge({ type }: { type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
+  const styles = {
+    POSITIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+    BIAS: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    NEUTRAL: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300'
+  };
 
-  const overallAnalysis = {
-    score: Math.max(analysis.overall_analysis.positive_impact_score, analysis.overall_analysis.bias_score),
-    sentiment: analysis.overall_analysis.positive_impact_score >= analysis.overall_analysis.bias_score 
-      ? 'POSITIVE' 
-      : 'NEGATIVE'
-  } as const;
+  const labels = {
+    POSITIVE: 'Positive Impact',
+    BIAS: 'Potential Bias',
+    NEUTRAL: 'Neutral'
+  };
 
   return (
-    <Card className="p-6 space-y-6">
-      <div>
-        <h2 className="text-xl font-bold mb-4">Impact Analysis</h2>
-        <div className="space-y-2">
-          <ScoreBar 
-            score={overallAnalysis.score} 
-            label="Overall Impact" 
-            sentiment={overallAnalysis.sentiment}
-          />
-        </div>
-        <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
-          Confidence Level: {analysis.overall_analysis.confidence}
-        </div>
-      </div>
+    <span className={cn(
+      'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+      styles[type]
+    )}>
+      {labels[type]}
+    </span>
+  );
+}
 
-      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6 space-y-6">
+function ConfidenceBadge({ level }: { level: 'High' | 'Medium' | 'Low' }) {
+  const styles = {
+    High: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    Medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+    Low: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+  };
+
+  return (
+    <span className={cn(
+      'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+      styles[level]
+    )}>
+      {level} Confidence
+    </span>
+  );
+}
+
+function ScoreDisplay({ score }: { score: number }) {
+  return (
+    <span className="font-medium">
+      {(score * 100).toFixed(0)}%
+    </span>
+  );
+}
+
+export default function BillAnalysis({ analysis }: BillAnalysisProps) {
+  if (!analysis) return null;
+
+  return (
+    <div className="space-y-6">
+      {/* Overall Analysis Card */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Impact Analysis</h2>
+          <ConfidenceBadge level={analysis.overall_analysis.confidence} />
+        </div>
+        <CategoryScore 
+          positiveScore={analysis.overall_analysis.positive_impact_score}
+          biasScore={analysis.overall_analysis.bias_score}
+        />
+      </Card>
+
+      {/* Category Cards */}
+      <div className="space-y-6">
         {analysis.demographic_categories.map((category) => (
-          <CategorySection key={category.category} category={category} />
+          <Card key={category.category} className="p-6">
+            {/* Category Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold">
+                {CATEGORY_LABELS[category.category]}
+              </h3>
+              <CategoryScore 
+                positiveScore={category.positive_impact_score}
+                biasScore={category.bias_score}
+              />
+            </div>
+
+            {/* Subgroups Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {category.subgroups.map((subgroup) => (
+                <Card 
+                  key={subgroup.code} 
+                  className="p-4 bg-zinc-50 dark:bg-zinc-800/50"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-zinc-900 dark:text-zinc-100">
+                      {SUBGROUP_NAMES[subgroup.code] || subgroup.code}
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <ScoreDisplay score={subgroup.positive_impact_score} />
+                      <ImpactBadge 
+                        type={getImpactType(subgroup.positive_impact_score, subgroup.bias_score)} 
+                      />
+                    </div>
+                  </div>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {subgroup.evidence}
+                  </p>
+                </Card>
+              ))}
+            </div>
+          </Card>
         ))}
       </div>
-    </Card>
+    </div>
   );
 } 
