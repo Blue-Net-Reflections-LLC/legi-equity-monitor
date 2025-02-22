@@ -112,8 +112,24 @@ function ScoreBar({ score, type }: { score: number; type: 'POSITIVE' | 'BIAS' | 
   if (type === 'NEUTRAL') return null;
 
   const colors = {
-    POSITIVE: 'bg-emerald-500 dark:bg-emerald-400',
-    BIAS: 'bg-red-500 dark:bg-red-400',
+    POSITIVE: {
+      bars: [
+        'bg-emerald-300 dark:bg-emerald-300',
+        'bg-emerald-400 dark:bg-emerald-400',
+        'bg-emerald-500 dark:bg-emerald-500',
+        'bg-emerald-600 dark:bg-emerald-600',
+        'bg-emerald-700 dark:bg-emerald-700'
+      ]
+    },
+    BIAS: {
+      bars: [
+        'bg-red-300 dark:bg-red-300',
+        'bg-red-400 dark:bg-red-400',
+        'bg-red-500 dark:bg-red-500',
+        'bg-red-600 dark:bg-red-600',
+        'bg-red-700 dark:bg-red-700'
+      ]
+    }
   };
 
   // Calculate how many full and partial bars to show
@@ -123,7 +139,7 @@ function ScoreBar({ score, type }: { score: number; type: 'POSITIVE' | 'BIAS' | 
   const partialBar = score % scorePerBar > 0 ? score % scorePerBar / scorePerBar : 0;
 
   return (
-    <div className="flex gap-1 h-4">
+    <div className="flex gap-[2px] h-4">
       {[...Array(totalBars)].map((_, i) => (
         <div 
           key={i} 
@@ -132,7 +148,7 @@ function ScoreBar({ score, type }: { score: number; type: 'POSITIVE' | 'BIAS' | 
           <div
             className={cn(
               "w-full absolute bottom-0",
-              colors[type as 'POSITIVE' | 'BIAS']
+              colors[type as 'POSITIVE' | 'BIAS'].bars[i]
             )}
             style={{
               height: i < fullBars ? '100%' : 
