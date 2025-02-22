@@ -463,10 +463,7 @@ export default async function BillPage({
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             <Card className="p-6">
-              <div className="prose dark:prose-invert max-w-none">
-                <h2 className="text-xl font-semibold mb-4">Description</h2>
-                <BillDescription text={bill.description} analysis={analysis} />
-              </div>
+              <BillDescription text={bill.description} analysis={analysis} />
             </Card>
 
             <BillAnalysis analysis={analysis} />

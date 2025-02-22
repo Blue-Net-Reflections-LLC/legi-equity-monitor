@@ -21,12 +21,14 @@ export function BillDescription({ text, analysis }: BillDescriptionProps) {
   const hasSubgroups = analysis?.demographic_categories?.some(cat => cat.subgroups.length > 0);
 
   return (
-    <div className="flex gap-4 items-start">
+    <div className="flex gap-8 items-start">
       <div className="flex-1">
+        <h2 className="text-xl font-semibold mb-4">Legislative Summary</h2>
         <p>{text}</p>
       </div>
+
       {analysis && (
-        <div className="flex flex-col items-end gap-2 min-w-[200px]">
+        <div className="flex flex-col items-end min-w-[200px]">
           <div className="text-right">
             <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               Demographic Impact
