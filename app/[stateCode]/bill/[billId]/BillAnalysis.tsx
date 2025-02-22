@@ -1,23 +1,42 @@
 import { Card } from "@/app/components/ui/card";
+import { cn } from "@/lib/utils";
+import { ImpactScore, getImpactType } from "@/app/components/analysis/ImpactScore";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/components/ui/tooltip"
 
-interface BillAnalysis {
-  overall_analysis: {
-    bias_score: number;
-    positive_impact_score: number;
-    confidence: 'High' | 'Medium' | 'Low';
-  };
-  demographic_categories: Array<{
-    category: 'race' | 'religion' | 'gender' | 'age' | 'disability' | 'socioeconomic';
-    bias_score: number;
-    positive_impact_score: number;
-    subgroups: Array<{
-      code: string;
+interface BillAnalysisProps {
+  analysis: {
+    overall_analysis: {
       bias_score: number;
       positive_impact_score: number;
-      evidence: string;
+      confidence: 'High' | 'Medium' | 'Low';
+    };
+    demographic_categories: Array<{
+      category: string;
+      bias_score: number;
+      positive_impact_score: number;
+      subgroups: Array<{
+        code: string;
+        bias_score: number;
+        positive_impact_score: number;
+        evidence: string;
+      }>;
     }>;
-  }>;
+  } | null;
 }
+
+const toTitleCase = (str: string | null | undefined) => {
+  if (!str) return 'General Impact';
+  
+  return str
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
 
 const SUBGROUP_NAMES: Record<string, string> = {
   // Race
@@ -54,117 +73,174 @@ const SUBGROUP_NAMES: Record<string, string> = {
   'BI': 'Bisexual',
   'PS': 'Pansexual',
   'AS': 'Asexual',
-  // Veterans
-  'VT': 'Veterans (General)',
-  'DV': 'Disabled Veterans',
-  'RM': 'Retired Military Personnel',
   // Disability
   'PD': 'Physical Disabilities',
   'MH': 'Mental Health Challenges',
-  'DD': 'Developmental Disabilities'
+  'DD': 'Developmental Disabilities',
+  // Veterans
+  'VT': 'Veterans (General)',
+  'DV': 'Disabled Veterans',
+  'RM': 'Retired Military Personnel'
 };
 
-function ScoreBar({ score, label, sentiment }: { score: number; label: string; sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' }) {
-  const percentage = Math.round(score * 100);
-  const barColor = 
-    percentage >= 60 
-      ? sentiment === 'POSITIVE'
-        ? 'bg-emerald-500'
-        : sentiment === 'NEGATIVE'
-          ? 'bg-red-500'
-          : 'bg-neutral-500'
-      : 'bg-neutral-500';
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  race: 'Impact across racial and ethnic groups',
+  religion: 'Effects on religious communities',
+  gender: 'Analysis by gender identity',
+  age: 'Impact across age groups',
+  disability: 'Effects on disability communities',
+  socioeconomic: 'Analysis by economic status',
+  environmental: 'Impact on environmental factors'
+};
 
-  return (
-    <div className="flex items-center gap-2">
-      <div className="text-sm text-zinc-600 dark:text-zinc-400 w-32">{label}</div>
-      <div className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-        <div className={`h-full ${barColor}`} style={{ width: `${percentage}%` }} />
-      </div>
-      <div className="text-sm text-zinc-600 dark:text-zinc-400 w-12 text-right">{percentage}%</div>
-    </div>
-  );
-}
-
-function CategorySection({ category }: { category: BillAnalysis['demographic_categories'][0] }) {
-  const getSentimentAndScore = (positive: number, bias: number): { score: number; sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' } => {
-    const score = Math.max(positive, bias);
-    return {
-      score,
-      sentiment: score >= 0.6 
-        ? (positive >= bias ? 'POSITIVE' : 'NEGATIVE')
-        : 'NEUTRAL'
-    } as const;
+function ImpactBadge({ type }: { type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
+  const styles = {
+    POSITIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+    BIAS: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    NEUTRAL: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300'
   };
 
-  const categoryAnalysis = getSentimentAndScore(category.positive_impact_score, category.bias_score);
+  const labels = {
+    POSITIVE: 'Positive',
+    BIAS: 'Bias',
+    NEUTRAL: 'Neutral'
+  };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold capitalize">{category.category}</h3>
-      <div className="space-y-2">
-        <ScoreBar 
-          score={categoryAnalysis.score} 
-          label="Impact Score" 
-          sentiment={categoryAnalysis.sentiment}
-        />
-      </div>
-      <div className="space-y-4 mt-4">
-        {category.subgroups?.filter(Boolean).map((subgroup) => {
-          const subgroupAnalysis = getSentimentAndScore(subgroup.positive_impact_score, subgroup.bias_score);
-          
-          return (
-            <div key={subgroup.code} className="border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">
-              <h4 className="text-sm font-medium">{SUBGROUP_NAMES[subgroup.code] || subgroup.code}</h4>
-              <div className="space-y-2 mt-2">
-                <ScoreBar 
-                  score={subgroupAnalysis.score} 
-                  label="Impact Score" 
-                  sentiment={subgroupAnalysis.sentiment}
-                />
-              </div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">{subgroup.evidence}</p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <span className={cn(
+      'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+      styles[type]
+    )}>
+      {labels[type]}
+    </span>
   );
 }
 
-export default function BillAnalysis({ analysis }: { analysis: BillAnalysis | null }) {
-  if (!analysis) {
-    return null;
-  }
+function ScoreBar({ score, type }: { score: number; type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
+  if (type === 'NEUTRAL') return null;
 
-  const overallAnalysis = {
-    score: Math.max(analysis.overall_analysis.positive_impact_score, analysis.overall_analysis.bias_score),
-    sentiment: analysis.overall_analysis.positive_impact_score >= analysis.overall_analysis.bias_score 
-      ? 'POSITIVE' 
-      : 'NEGATIVE'
-  } as const;
+  const colors = {
+    POSITIVE: {
+      bars: [
+        'bg-emerald-300 dark:bg-emerald-300',
+        'bg-emerald-400 dark:bg-emerald-400',
+        'bg-emerald-500 dark:bg-emerald-500',
+        'bg-emerald-600 dark:bg-emerald-600',
+        'bg-emerald-700 dark:bg-emerald-700'
+      ]
+    },
+    BIAS: {
+      bars: [
+        'bg-red-300 dark:bg-red-300',
+        'bg-red-400 dark:bg-red-400',
+        'bg-red-500 dark:bg-red-500',
+        'bg-red-600 dark:bg-red-600',
+        'bg-red-700 dark:bg-red-700'
+      ]
+    }
+  };
+
+  // Calculate how many full and partial bars to show
+  const totalBars = 5;
+  const scorePerBar = 1 / totalBars;
+  const fullBars = Math.floor(score / scorePerBar);
+  const partialBar = score % scorePerBar > 0 ? score % scorePerBar / scorePerBar : 0;
+
+  const percentage = Math.round(score * 100);
+  const message = type === 'POSITIVE' 
+    ? `${percentage}% Positive Impact`
+    : `${percentage}% Bias Concern`;
 
   return (
-    <Card className="p-6 space-y-6">
-      <div>
-        <h2 className="text-xl font-bold mb-4">Impact Analysis</h2>
-        <div className="space-y-2">
-          <ScoreBar 
-            score={overallAnalysis.score} 
-            label="Overall Impact" 
-            sentiment={overallAnalysis.sentiment}
-          />
-        </div>
-        <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
-          Confidence Level: {analysis.overall_analysis.confidence}
-        </div>
-      </div>
+    <TooltipProvider delayDuration={750}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex gap-[2px] h-4">
+            {[...Array(totalBars)].map((_, i) => (
+              <div 
+                key={i}
+                className="w-1 overflow-hidden bg-zinc-200 dark:bg-zinc-700 relative cursor-help"
+              >
+                <div
+                  className={cn(
+                    "w-full absolute bottom-0",
+                    colors[type as 'POSITIVE' | 'BIAS'].bars[i]
+                  )}
+                  style={{
+                    height: i < fullBars ? '100%' : 
+                           i === fullBars ? `${partialBar * 100}%` : '0%'
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent 
+          side="top"
+          className="bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700"
+        >
+          <p>{message}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
-      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-6 space-y-6">
-        {analysis.demographic_categories.map((category) => (
-          <CategorySection key={category.category} category={category} />
-        ))}
-      </div>
-    </Card>
+export default function BillAnalysis({ analysis }: BillAnalysisProps) {
+  if (!analysis) return null;
+
+  return (
+    <div id="demographic-breakdown" className="space-y-6">
+      {analysis.demographic_categories.map((category) => (
+        <Card key={category.category} className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">
+                {toTitleCase(category.category)}
+              </h3>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400 font-normal">
+                • {CATEGORY_DESCRIPTIONS[(category.category || '').toLowerCase()] ?? `Impact on ${(category.category || 'general').toLowerCase()}`}
+              </span>
+            </div>
+            <ImpactScore 
+              positiveScore={category.positive_impact_score}
+              biasScore={category.bias_score}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(category.subgroups ?? []).map((subgroup) => {
+              const impactType = getImpactType(subgroup.positive_impact_score, subgroup.bias_score);
+              const displayScore = impactType === 'POSITIVE' ? subgroup.positive_impact_score : 
+                                 impactType === 'BIAS' ? subgroup.bias_score : 0;
+              return (
+                <div 
+                  key={subgroup.code} 
+                  className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-zinc-900 dark:text-zinc-100">
+                      {SUBGROUP_NAMES[subgroup.code] || subgroup.code}
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <ImpactBadge type={impactType} />
+                      {impactType !== 'NEUTRAL' && (
+                        <ScoreBar 
+                          score={displayScore}
+                          type={impactType}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {subgroup.evidence}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 } 
