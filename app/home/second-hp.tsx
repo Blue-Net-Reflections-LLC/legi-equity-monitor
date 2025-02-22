@@ -4,8 +4,34 @@ import AnimatedStatesMap from "../components/AnimatedStatesMap";
 import Link from "next/link";
 import { Footer } from "@/app/components/layout/Footer";
 import { ArrowUpRight, Compass } from "lucide-react";
+import Image from "next/image";
+import { format } from "date-fns";
 
-export default function SecondHomepage() {
+// Helper function to remove HTML tags
+function scrubTags(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+}
+
+interface BlogPost {
+  title: string;
+  slug: string;
+  excerpt: string;
+  published_at: string;
+  author: string;
+  main_image: string | null;
+}
+
+async function getRecentBlogPosts(): Promise<BlogPost[]> {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/blog/posts?page=1&limit=4`, { next: { revalidate: 3600 } });
+  if (!response.ok) throw new Error('Failed to fetch blog posts');
+  const data = await response.json();
+  return data.data;
+}
+
+export default async function SecondHomepage() {
+  const blogPosts = await getRecentBlogPosts();
+  const [featuredPost, ...recentPosts] = blogPosts;
+
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-900">
       {/* Hero Section with Split Layout */}
@@ -95,9 +121,85 @@ export default function SecondHomepage() {
           </div>
         </AuroraBackground>
       </section>
-      <section>
-        Content will go here.
+
+      {/* Blog Section */}
+      <section className="relative py-12 px-4 bg-white dark:bg-zinc-900">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-700 to-transparent"></div>
+        <div className="max-w-7xl mx-auto">
+          <div className="inline-flex items-center rounded bg-blue-100 dark:bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 mb-8">
+            Latest Legislative Trends
+          </div>
+          <div className="grid grid-cols-4 gap-6">
+            {/* Featured Post - Split Layout */}
+            {featuredPost && (
+              <div className="col-span-3 group grid md:grid-cols-2 gap-6 overflow-hidden bg-zinc-50 dark:bg-zinc-800/50">
+                <div className="flex flex-col justify-center p-8">
+                  <Link href={`/blog/${featuredPost.slug}`}>
+                    <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors mb-3">
+                      {featuredPost.title}
+                    </h2>
+                  </Link>
+                  <div className="text-sm text-orange-600 dark:text-orange-400 font-medium mb-4">
+                    {format(new Date(featuredPost.published_at), 'MMMM d, yyyy')} • {Math.ceil(featuredPost.excerpt.length / 1000)} MIN READ
+                  </div>
+                  <p className="text-lg text-zinc-600 dark:text-zinc-300 line-clamp-3">
+                    {scrubTags(featuredPost.excerpt)}
+                  </p>
+                </div>
+                <Link 
+                  href={`/blog/${featuredPost.slug}`}
+                  className="relative h-full min-h-[300px] md:min-h-full overflow-hidden"
+                >
+                  {featuredPost.main_image ? (
+                    <Image
+                      src={featuredPost.main_image}
+                      alt={featuredPost.title}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-200 dark:bg-zinc-700" />
+                  )}
+                </Link>
+              </div>
+            )}
+
+            {/* Empty Column for Ads */}
+            <div className="col-span-1">
+              {/* Ad space */}
+            </div>
+
+            {/* Recent Posts - Under the Featured Post */}
+            <div className="col-span-3 grid grid-cols-3 gap-6">
+              {recentPosts.map((post) => (
+                <article key={post.slug} className="group">
+                  <Link href={`/blog/${post.slug}`}>
+                    <div className="aspect-[16/9] relative overflow-hidden mb-4">
+                      {post.main_image ? (
+                        <Image
+                          src={post.main_image}
+                          alt={post.title}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-zinc-200 dark:bg-zinc-700" />
+                      )}
+                    </div>
+                    <h3 className="text-lg font-medium text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors mb-2">
+                      {post.title}
+                    </h3>
+                    <div className="text-sm text-orange-600 dark:text-orange-400">
+                      {format(new Date(post.published_at), 'MMMM d, yyyy')}
+                    </div>
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
+
       <Footer />
     </div>
   );
