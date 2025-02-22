@@ -76,6 +76,15 @@ const SUBGROUP_NAMES: Record<string, string> = {
   'RM': 'Retired Military Personnel'
 };
 
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  race: 'Impact across racial and ethnic groups',
+  religion: 'Effects on religious communities',
+  gender: 'Analysis by gender identity',
+  age: 'Impact across age groups',
+  disability: 'Effects on disability communities',
+  socioeconomic: 'Analysis by economic status'
+};
+
 function ImpactBadge({ type }: { type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
   const styles = {
     POSITIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -144,9 +153,14 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
       {analysis.demographic_categories.map((category) => (
         <Card key={category.category} className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">
-              {toTitleCase(category.category)}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">
+                {toTitleCase(category.category)}
+              </h3>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400 font-normal">
+                • {CATEGORY_DESCRIPTIONS[category.category]}
+              </span>
+            </div>
             <ImpactScore 
               positiveScore={category.positive_impact_score}
               biasScore={category.bias_score}
