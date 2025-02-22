@@ -87,7 +87,8 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   gender: 'Analysis by gender identity',
   age: 'Impact across age groups',
   disability: 'Effects on disability communities',
-  socioeconomic: 'Analysis by economic status'
+  socioeconomic: 'Analysis by economic status',
+  environmental: 'Impact on environmental factors'
 };
 
 function ImpactBadge({ type }: { type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
@@ -196,7 +197,7 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
                 {toTitleCase(category.category)}
               </h3>
               <span className="text-sm text-zinc-500 dark:text-zinc-400 font-normal">
-                • {CATEGORY_DESCRIPTIONS[category.category]}
+                • {CATEGORY_DESCRIPTIONS[category.category.toLowerCase()] ?? `Impact on ${category.category.toLowerCase()}`}
               </span>
             </div>
             <ImpactScore 
@@ -206,7 +207,7 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {category.subgroups.map((subgroup) => {
+            {(category.subgroups ?? []).map((subgroup) => {
               const impactType = getImpactType(subgroup.positive_impact_score, subgroup.bias_score);
               const displayScore = impactType === 'POSITIVE' ? subgroup.positive_impact_score : 
                                  impactType === 'BIAS' ? subgroup.bias_score : 0;

@@ -23,7 +23,7 @@ interface BillDescriptionProps {
 }
 
 export function BillDescription({ text, analysis }: BillDescriptionProps) {
-  const hasSubgroups = analysis?.demographic_categories?.some(cat => cat.subgroups.length > 0);
+  const hasSubgroups = analysis?.demographic_categories?.some(cat => cat.subgroups?.length > 0);
 
   return (
     <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-stretch">
