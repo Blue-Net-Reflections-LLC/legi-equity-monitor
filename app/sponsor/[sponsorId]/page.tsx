@@ -385,7 +385,7 @@ export default async function SponsorPage({
               <div className="space-y-3">
                 {sponsor.ballotpedia && (
                   <a 
-                    href={sponsor.ballotpedia}
+                    href={`https://ballotpedia.org/${sponsor.ballotpedia}`}
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="flex items-center text-blue-600 dark:text-blue-400 hover:underline"
