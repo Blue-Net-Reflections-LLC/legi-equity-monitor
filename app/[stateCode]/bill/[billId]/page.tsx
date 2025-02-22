@@ -10,6 +10,7 @@ import { Footer } from "@/app/components/layout/Footer";
 import { Metadata } from 'next'
 import { STATE_NAMES } from '@/app/constants/states';
 import { BillDescription } from './BillDescription';
+import Link from 'next/link';
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -447,7 +448,12 @@ export default async function BillPage({
           <div className="flex justify-between items-start">
             <div>
               <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                {bill.state_name} Legislature • {bill.session_title}
+                {bill.session_title} • <Link 
+                  href={`/${bill.state_abbr.toLowerCase()}`}
+                  className="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                >
+                  {bill.state_name} Legislature
+                </Link>
               </div>
               <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mt-2">
                 {bill.bill_number}{bill.title !== bill.description && `: ${bill.title}`}
