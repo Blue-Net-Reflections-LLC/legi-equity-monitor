@@ -23,13 +23,11 @@ interface BillAnalysisProps {
   } | null;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  'race': 'Race',
-  'religion': 'Religion',
-  'gender': 'Gender',
-  'age': 'Age',
-  'disability': 'Disability',
-  'socioeconomic': 'Socioeconomic'
+const toTitleCase = (str: string) => {
+  return str
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 };
 
 const SUBGROUP_NAMES: Record<string, string> = {
@@ -106,7 +104,11 @@ function CategoryScore({ positiveScore, biasScore }: { positiveScore: number; bi
     <div className={cn("flex items-center gap-2", styles[type])}>
       <Icon className="w-5 h-5" />
       <span className="font-semibold">
-        {percentage}% {type === 'BIAS' ? 'Bias' : type === 'POSITIVE' ? 'Positive' : 'Neutral'}
+        {type === 'NEUTRAL' ? (
+          'Neutral'
+        ) : (
+          `${percentage}% ${type === 'BIAS' ? 'Bias' : 'Positive'}`
+        )}
       </span>
     </div>
   );
@@ -120,8 +122,8 @@ function ImpactBadge({ type }: { type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
   };
 
   const labels = {
-    POSITIVE: 'Positive Impact',
-    BIAS: 'Potential Bias',
+    POSITIVE: 'Positive',
+    BIAS: 'Bias',
     NEUTRAL: 'Neutral'
   };
 
@@ -152,10 +154,16 @@ function ConfidenceBadge({ level }: { level: 'High' | 'Medium' | 'Low' }) {
   );
 }
 
-function ScoreDisplay({ score }: { score: number }) {
+function ScoreDisplay({ score, biasScore, type }: { score: number; biasScore: number; type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
+  if (type === 'NEUTRAL') {
+    return null;
+  }
+  
+  const displayScore = type === 'POSITIVE' ? score : biasScore;
+                      
   return (
     <span className="font-medium">
-      {(score * 100).toFixed(0)}%
+      {(displayScore * 100).toFixed(0)}%
     </span>
   );
 }
@@ -184,7 +192,7 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
             {/* Category Header */}
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold">
-                {CATEGORY_LABELS[category.category]}
+                {toTitleCase(category.category)}
               </h3>
               <CategoryScore 
                 positiveScore={category.positive_impact_score}
@@ -194,27 +202,32 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
 
             {/* Subgroups Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {category.subgroups.map((subgroup) => (
-                <Card 
-                  key={subgroup.code} 
-                  className="p-4 bg-zinc-50 dark:bg-zinc-800/50"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {SUBGROUP_NAMES[subgroup.code] || subgroup.code}
-                    </h4>
-                    <div className="flex items-center gap-2">
-                      <ScoreDisplay score={subgroup.positive_impact_score} />
-                      <ImpactBadge 
-                        type={getImpactType(subgroup.positive_impact_score, subgroup.bias_score)} 
-                      />
+              {category.subgroups.map((subgroup) => {
+                const impactType = getImpactType(subgroup.positive_impact_score, subgroup.bias_score);
+                return (
+                  <Card 
+                    key={subgroup.code} 
+                    className="p-4 bg-zinc-50 dark:bg-zinc-800/50"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {SUBGROUP_NAMES[subgroup.code] || subgroup.code}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <ScoreDisplay 
+                          score={subgroup.positive_impact_score}
+                          biasScore={subgroup.bias_score}
+                          type={impactType}
+                        />
+                        <ImpactBadge type={impactType} />
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {subgroup.evidence}
-                  </p>
-                </Card>
-              ))}
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                      {subgroup.evidence}
+                    </p>
+                  </Card>
+                );
+              })}
             </div>
           </Card>
         ))}
