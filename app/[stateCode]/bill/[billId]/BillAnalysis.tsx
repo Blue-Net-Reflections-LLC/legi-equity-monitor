@@ -154,17 +154,40 @@ function ConfidenceBadge({ level }: { level: 'High' | 'Medium' | 'Low' }) {
   );
 }
 
-function ScoreDisplay({ score, biasScore, type }: { score: number; biasScore: number; type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
-  if (type === 'NEUTRAL') {
-    return null;
-  }
-  
-  const displayScore = type === 'POSITIVE' ? score : biasScore;
-                      
+function ScoreBar({ score, type }: { score: number; type: 'POSITIVE' | 'BIAS' | 'NEUTRAL' }) {
+  if (type === 'NEUTRAL') return null;
+
+  const colors = {
+    POSITIVE: 'bg-emerald-500 dark:bg-emerald-400',
+    BIAS: 'bg-red-500 dark:bg-red-400',
+  };
+
+  // Calculate how many full and partial bars to show
+  const totalBars = 5;
+  const scorePerBar = 1 / totalBars;
+  const fullBars = Math.floor(score / scorePerBar);
+  const partialBar = score % scorePerBar > 0 ? score % scorePerBar / scorePerBar : 0;
+
   return (
-    <span className="font-medium">
-      {(displayScore * 100).toFixed(0)}%
-    </span>
+    <div className="flex gap-1 h-4">
+      {[...Array(totalBars)].map((_, i) => (
+        <div 
+          key={i} 
+          className="w-1 overflow-hidden bg-zinc-200 dark:bg-zinc-700 relative"
+        >
+          <div
+            className={cn(
+              "w-full absolute bottom-0",
+              colors[type as 'POSITIVE' | 'BIAS']
+            )}
+            style={{
+              height: i < fullBars ? '100%' : 
+                     i === fullBars ? `${partialBar * 100}%` : '0%'
+            }}
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -204,6 +227,8 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {category.subgroups.map((subgroup) => {
                 const impactType = getImpactType(subgroup.positive_impact_score, subgroup.bias_score);
+                const displayScore = impactType === 'POSITIVE' ? subgroup.positive_impact_score : 
+                                   impactType === 'BIAS' ? subgroup.bias_score : 0;
                 return (
                   <Card 
                     key={subgroup.code} 
@@ -214,12 +239,13 @@ export default function BillAnalysis({ analysis }: BillAnalysisProps) {
                         {SUBGROUP_NAMES[subgroup.code] || subgroup.code}
                       </h4>
                       <div className="flex items-center gap-2">
-                        <ScoreDisplay 
-                          score={subgroup.positive_impact_score}
-                          biasScore={subgroup.bias_score}
-                          type={impactType}
-                        />
                         <ImpactBadge type={impactType} />
+                        {impactType !== 'NEUTRAL' && (
+                          <ScoreBar 
+                            score={displayScore}
+                            type={impactType}
+                          />
+                        )}
                       </div>
                     </div>
                     <p className="text-sm text-zinc-600 dark:text-zinc-400">
