@@ -1,0 +1,27 @@
+@keyframes popUp {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate {
+  transition: fill 0.3s ease-in-out;
+  fill: var(--highlight-color) !important;
+}
+
+.stateHover {
+  animation: stateFloat 2s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.stateHover:hover {
+  fill: currentColor;
+  opacity: 0.8;
+  cursor: pointer;
+} 
