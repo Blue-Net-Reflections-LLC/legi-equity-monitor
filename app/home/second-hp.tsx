@@ -6,6 +6,8 @@ import { Footer } from "@/app/components/layout/Footer";
 import { ArrowUpRight, Compass } from "lucide-react";
 import Image from "next/image";
 import { format } from "date-fns";
+import { VideoSection } from "../components/VideoSection";
+import { getYouTubeVideos } from "../lib/youtube";
 
 // Helper function to remove HTML tags
 function scrubTags(html: string): string {
@@ -29,7 +31,11 @@ async function getRecentBlogPosts(): Promise<BlogPost[]> {
 }
 
 export default async function SecondHomepage() {
-  const blogPosts = await getRecentBlogPosts();
+  const [blogPosts, videos] = await Promise.all([
+    getRecentBlogPosts(),
+    getYouTubeVideos(4)
+  ]);
+  
   const [featuredPost, ...recentPosts] = blogPosts;
 
   return (
@@ -199,6 +205,9 @@ export default async function SecondHomepage() {
           </div>
         </div>
       </section>
+
+      {/* Video Section */}
+      <VideoSection videos={videos} />
 
       <Footer />
     </div>
