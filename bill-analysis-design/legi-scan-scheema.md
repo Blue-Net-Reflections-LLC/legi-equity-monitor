@@ -1340,7 +1340,7 @@ FROM
 -- --------------------------------------------------------
 
 --
--- Creating view for lsv_bill_history
+-- Creating view for lsv_bill_historyhistory
 --
 
 CREATE VIEW lsv_bill_history AS

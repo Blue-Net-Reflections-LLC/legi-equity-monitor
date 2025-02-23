@@ -107,7 +107,7 @@ export function VideoSection({ videos }: VideoSectionProps) {
               <div className="text-xs text-zinc-400">Swipe for more</div>
             </div>
             {/* Mobile Horizontal Scroll / Desktop Vertical Stack */}
-            <div className="lg:space-y-14 flex lg:block gap-4 overflow-x-auto touch-pan-x pb-4 lg:pb-0 -mx-4 lg:mx-0 px-4 lg:px-0 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:bg-zinc-700">
+            <div className="lg:space-y-6 flex lg:block gap-4 overflow-x-auto touch-pan-x pb-4 lg:pb-0 -mx-4 lg:mx-0 px-4 lg:px-0 [&::-webkit-scrollbar]{h-1.5} [&::-webkit-scrollbar-track]{bg-zinc-800} [&::-webkit-scrollbar-thumb]{bg-zinc-700}">
               {[featuredVideo, ...otherVideos].map((video) => (
                 <button
                   key={video.id}
@@ -137,6 +137,10 @@ export function VideoSection({ videos }: VideoSectionProps) {
                             </div>
                           </div>
                         )}
+                        {/* Duration Badge */}
+                        <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 rounded text-xs font-medium text-white">
+                          {video.duration}
+                        </div>
                       </div>
                     </div>
                     <div className="lg:col-span-5">
@@ -145,8 +149,6 @@ export function VideoSection({ videos }: VideoSectionProps) {
                       </h4>
                       <div className="flex items-center gap-2 text-xs text-zinc-400">
                         <time>{formatDate(video.publishedAt)}</time>
-                        <span>•</span>
-                        <span>{video.duration}</span>
                       </div>
                     </div>
                   </div>
