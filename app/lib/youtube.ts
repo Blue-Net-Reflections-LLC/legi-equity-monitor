@@ -32,7 +32,7 @@ interface YouTubeVideo {
 export async function getYouTubeVideos(limit = 4): Promise<YouTubeVideo[]> {
   try {
     const playlistResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=${limit}&playlistId=${process.env.NEXT_PUBLIC_YOUTUBE_PLAYLIST_ID}&key=${process.env.NEXT_PUBLIC_YOUTUBE_API_KEY}`
+      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=${limit}&playlistId=${process.env.NEXT_PUBLIC_YOUTUBE_PLAYLIST_ID}&key=${process.env.YOUTUBE_API_KEY}`
     );
 
     if (!playlistResponse.ok) {
@@ -45,7 +45,7 @@ export async function getYouTubeVideos(limit = 4): Promise<YouTubeVideo[]> {
     const videoIds = playlistData.items.map((item: YouTubePlaylistItem) => item.snippet.resourceId.videoId).join(',');
     
     const videosResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${process.env.NEXT_PUBLIC_YOUTUBE_API_KEY}`
+      `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${process.env.YOUTUBE_API_KEY}`
     );
 
     if (!videosResponse.ok) {
