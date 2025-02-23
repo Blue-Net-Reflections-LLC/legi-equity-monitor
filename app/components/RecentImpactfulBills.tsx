@@ -173,7 +173,7 @@ export default function RecentImpactfulBills() {
                           </span>
                           {status && (
                             <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${status.class}`}>
-                              {bill.status_desc}
+                              {status.label}
                             </span>
                           )}
                         </div>
