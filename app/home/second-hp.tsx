@@ -3,7 +3,7 @@ import AnimatedContent from "../components/AnimatedContent";
 import AnimatedStatesMap from "../components/AnimatedStatesMap";
 import Link from "next/link";
 import { Footer } from "@/app/components/layout/Footer";
-import { ArrowUpRight, Compass } from "lucide-react";
+import { ArrowUpRight, Compass, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import { format } from "date-fns";
 import { VideoSection } from "../components/VideoSection";
@@ -132,7 +132,8 @@ export default async function SecondHomepage() {
       <section className="relative py-12 px-4 bg-white dark:bg-zinc-900">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-700 to-transparent"></div>
         <div className="max-w-7xl mx-auto">
-          <div className="inline-flex items-center rounded bg-blue-100 dark:bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 mb-8">
+          <div className="inline-flex items-center gap-2 rounded bg-blue-500/10 px-6 py-3 text-lg font-semibold text-blue-500 dark:text-blue-400 mb-8 uppercase tracking-wide">
+            <TrendingUp className="w-5 h-5" />
             Latest Legislative Trends
           </div>
           <div className="grid grid-cols-4 gap-6">

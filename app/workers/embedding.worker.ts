@@ -1,6 +1,6 @@
 import { env, AutoTokenizer, AutoModel } from '@huggingface/transformers';
 
-console.log('[Worker] Starting embedding worker...');
+// console.log('[Worker] Starting embedding worker...');
 
 // Configure transformers.js to use local models
 env.localModelPath = '/models';
@@ -66,7 +66,7 @@ class ModelSingleton {
     }
 
     if (this.isInitializing) {
-      console.log('[Worker] Initialization already in progress');
+      // console.log('[Worker] Initialization already in progress');
       return null;
     }
 
@@ -80,42 +80,42 @@ class ModelSingleton {
         }
 
         this.initializationProgress = 'Loading tokenizer...';
-        console.log('[Worker] Loading tokenizer...');
+        // console.log('[Worker] Loading tokenizer...');
         if (progress_callback) {
           progress_callback({ status: 'progress', message: this.initializationProgress });
         }
 
         try {
           this.tokenizer = await AutoTokenizer.from_pretrained(embeddingModel);
-          console.log('[Worker] Tokenizer loaded successfully');
+          // console.log('[Worker] Tokenizer loaded successfully');
         } catch (error) {
           this.initializationError = `Error loading tokenizer: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          console.error('[Worker] Error loading tokenizer:', error);
+          // console.error('[Worker] Error loading tokenizer:', error);
           throw error;
         }
 
         this.initializationProgress = 'Loading model...';
-        console.log('[Worker] Loading model...');
+        // console.log('[Worker] Loading model...');
         if (progress_callback) {
           progress_callback({ status: 'progress', message: this.initializationProgress });
         }
 
         try {
           const isMobile = isMobileDevice();
-          console.log('[Worker] Device detection:', { isMobile });
+          // console.log('[Worker] Device detection:', { isMobile });
           
           this.model = await AutoModel.from_pretrained(embeddingModel, {
             revision: 'main',
             dtype: isMobile ? 'int8' : 'fp32' // Use quantized model for mobile
           });
-          console.log('[Worker] Model loaded successfully');
+          // console.log('[Worker] Model loaded successfully');
         } catch (error) {
           this.initializationError = `Error loading model: ${error instanceof Error ? error.message : 'Unknown error'}`;
-          console.error('[Worker] Error loading model:', error);
+          // console.error('[Worker] Error loading model:', error);
           throw error;
         }
 
-        console.log('[Worker] Model initialization complete');
+        // console.log('[Worker] Model initialization complete');
         if (progress_callback) {
           progress_callback({ status: 'ready' });
         }
@@ -123,7 +123,7 @@ class ModelSingleton {
 
       return { tokenizer: this.tokenizer, model: this.model };
     } catch (error) {
-      console.error('[Worker] Error in getInstance:', error);
+      // console.error('[Worker] Error in getInstance:', error);
       if (progress_callback) {
         progress_callback({ 
           status: 'error', 
@@ -160,7 +160,7 @@ async function generateEmbeddings(texts: string[]) {
     
     return outputs.last_hidden_state.mean(1).tolist();
   } catch (error) {
-    console.error('[Worker] Error generating embeddings:', error);
+    // console.error('[Worker] Error generating embeddings:', error);
     throw error;
   }
 }
@@ -168,23 +168,23 @@ async function generateEmbeddings(texts: string[]) {
 // Handle messages from the main thread
 self.onmessage = async (event) => {
   const { type, payload, id } = event.data;
-  console.log('[Worker] Received message:', { type, payload, id });
+  // console.log('[Worker] Received message:', { type, payload, id });
   
   try {
     switch (type) {
       case 'GENERATE_EMBEDDINGS':
-        console.log('[Worker] Generating embeddings...');
+        // console.log('[Worker] Generating embeddings...');
         const embeddings = await generateEmbeddings(payload.texts);
-        console.log('[Worker] Embeddings generated successfully');
+        // console.log('[Worker] Embeddings generated successfully');
         self.postMessage({ type: 'EMBEDDINGS_RESULT', payload: embeddings, id });
         break;
 
       case 'INITIALIZE':
-        console.log('[Worker] Handling initialize request...');
+        // console.log('[Worker] Handling initialize request...');
         await ModelSingleton.getInstance((progress) => {
           self.postMessage({ ...progress, id });
         });
-        console.log('[Worker] Initialization complete');
+        // console.log('[Worker] Initialization complete');
         break;
 
       case 'CHECK_STATUS':
@@ -196,7 +196,7 @@ self.onmessage = async (event) => {
         throw new Error(`Unknown message type: ${type}`);
     }
   } catch (error) {
-    console.error('[Worker] Error handling message:', error);
+    // console.error('[Worker] Error handling message:', error);
     self.postMessage({ 
       type: 'ERROR', 
       payload: error instanceof Error ? error.message : 'Unknown error occurred', 
