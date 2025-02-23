@@ -9,6 +9,12 @@ interface AdUnitProps {
   layoutKey?: string;
 }
 
+declare global {
+  interface Window {
+    adsbygoogle: unknown[];
+  }
+}
+
 export default function AdUnit({ slot, className, format = 'auto', layoutKey }: AdUnitProps) {
   const adRef = useRef<HTMLModElement>(null);
   const isInitialized = useRef(false);
@@ -17,7 +23,6 @@ export default function AdUnit({ slot, className, format = 'auto', layoutKey }: 
     // Only initialize if not already done and element exists
     if (adRef.current && !isInitialized.current) {
       try {
-        // @ts-ignore
         (window.adsbygoogle = window.adsbygoogle || []).push({});
         isInitialized.current = true;
       } catch (err) {
