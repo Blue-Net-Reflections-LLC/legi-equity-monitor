@@ -9,6 +9,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
+import AdUnit from '../components/ads/AdUnit';
 
 // Dynamically import components with CSR
 const AnimatedStatesMap = dynamic(
@@ -208,7 +209,18 @@ export function SecondHomepageClient({ blogPosts, videos }: SecondHomepageProps)
 
             {/* Empty Column for Ads */}
             <div className="col-span-1">
-              {/* Ad space */}
+              <AdUnit
+                slot="4008304448"
+                className="h-full"
+              />
+              <div className="mt-6">
+                <AdUnit
+                  slot="1063173377"
+                  className="min-h-[100px]"
+                  format="fluid"
+                  layoutKey="-6t+ed+2i-1n-4w"
+                />
+              </div>
             </div>
 
             {/* Recent Posts - Under the Featured Post */}
