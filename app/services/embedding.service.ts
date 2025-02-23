@@ -183,20 +183,18 @@ class EmbeddingService {
           }
         };
 
-        EmbeddingService.worker.onerror = (error) => {
-          // console.error('[EmbeddingService] Worker error:', error);
+        EmbeddingService.worker.onerror = (event: ErrorEvent) => {
           EmbeddingService.isInitializing = false;
-          store.dispatch(setError(error instanceof ErrorEvent ? error.message : 'Worker error occurred'));
+          store.dispatch(setError(event.message || 'Worker error occurred'));
           this.cleanup();
-          reject(error);
+          reject(event);
         };
 
-        EmbeddingService.worker.onmessageerror = (error) => {
-          // console.error('[EmbeddingService] Worker message error:', error);
+        EmbeddingService.worker.onmessageerror = () => {
           EmbeddingService.isInitializing = false;
           store.dispatch(setError('Worker message error occurred'));
           this.cleanup();
-          reject(error);
+          reject(new Error('Worker message error occurred'));
         };
 
         // Start polling for initialization status
@@ -252,7 +250,7 @@ class EmbeddingService {
       await this.load(); // Ensure worker is initialized
       return await this.sendWorkerMessage('GENERATE_EMBEDDINGS', { texts }) as number[][];
     } catch (error) {
-      // console.error('[EmbeddingService] Error generating embeddings:', error);
+      console.error('[EmbeddingService] Error generating embeddings:', error);
       return texts.map(() => []);
     }
   }

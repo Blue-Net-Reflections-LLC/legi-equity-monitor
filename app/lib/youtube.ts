@@ -1,3 +1,21 @@
+interface YouTubePlaylistItem {
+  snippet: {
+    resourceId: {
+      videoId: string;
+    };
+    title: string;
+    description: string;
+    publishedAt: string;
+    thumbnails: {
+      high: {
+        url: string;
+        width: number;
+        height: number;
+      };
+    };
+  };
+}
+
 interface YouTubeVideo {
   id: string;
   title: string;
@@ -24,7 +42,7 @@ export async function getYouTubeVideos(limit = 4): Promise<YouTubeVideo[]> {
     const playlistData = await playlistResponse.json();
     
     // Get video IDs to fetch duration
-    const videoIds = playlistData.items.map((item: any) => item.snippet.resourceId.videoId).join(',');
+    const videoIds = playlistData.items.map((item: YouTubePlaylistItem) => item.snippet.resourceId.videoId).join(',');
     
     const videosResponse = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${process.env.NEXT_PUBLIC_YOUTUBE_API_KEY}`
@@ -52,7 +70,7 @@ export async function getYouTubeVideos(limit = 4): Promise<YouTubeVideo[]> {
       return result;
     }
 
-    return playlistData.items.map((item: any, index: number) => ({
+    return playlistData.items.map((item: YouTubePlaylistItem, index: number) => ({
       id: item.snippet.resourceId.videoId,
       title: item.snippet.title,
       description: item.snippet.description,

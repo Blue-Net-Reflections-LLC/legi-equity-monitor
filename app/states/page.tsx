@@ -1,5 +1,4 @@
 import sql from '@/lib/db';
-import { STATES } from '@/app/constants/states';
 import { AuroraBackground } from '@/app/components/ui/aurora-background';
 import { Footer } from '@/app/components/layout/Footer';
 import Image from 'next/image';
