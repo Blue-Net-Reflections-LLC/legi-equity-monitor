@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Scale, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Scale } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Bill {
