@@ -20,13 +20,13 @@ import { usePathname } from 'next/navigation'
 
 const NavLinks = ({ onClick }: { onClick?: () => void }) => (
   <nav className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6">
-    {/* <Link 
-      href="/" 
+    <Link 
+      href="/states" 
       className="text-sm text-zinc-600 dark:text-zinc-200 hover:text-orange-500 transition-colors"
       onClick={onClick}
     >
-      Home
-    </Link> */}
+      US States
+    </Link>
     <Link 
       href="/about" 
       className="text-sm text-zinc-600 dark:text-zinc-200 hover:text-orange-500 transition-colors"

@@ -44,11 +44,11 @@ class EmbeddingService {
 
     if (typeof window !== 'undefined') {
       this.isMobile = isMobileDevice();
-      console.log('[EmbeddingService] Device detection:', {
-        isMobile: this.isMobile,
-        userAgent: navigator.userAgent,
-        screenWidth: window.innerWidth
-      });
+      // console.log('[EmbeddingService] Device detection:', {
+      //   isMobile: this.isMobile,
+      //   userAgent: navigator.userAgent,
+      //   screenWidth: window.innerWidth
+      // });
     }
 
     EmbeddingService.instance = this;
@@ -79,7 +79,7 @@ class EmbeddingService {
   async load(): Promise<void> {
     // Skip if already initialized
     if (EmbeddingService.hasInitialized) {
-      console.log('[EmbeddingService] Already initialized, skipping...');
+      // console.log('[EmbeddingService] Already initialized, skipping...');
       store.dispatch(setStatus({ status: 'ready', message: 'Model loaded successfully' }));
       return;
     }
@@ -99,7 +99,7 @@ class EmbeddingService {
         store.dispatch(setStatus({ status: 'ready', message: 'Model loaded successfully' }));
         resolve();
       } catch (error) {
-        console.error('[EmbeddingService] Failed to initialize:', error);
+        // console.error('[EmbeddingService] Failed to initialize:', error);
         EmbeddingService.loadPromise = null;
         EmbeddingService.hasInitialized = false;
         store.dispatch(setError(error instanceof Error ? error.message : 'Unknown error occurred'));
@@ -113,12 +113,12 @@ class EmbeddingService {
   private async initializeWorker() {
     // Synchronous checks first
     if (EmbeddingService.isInitializing) {
-      console.log('[EmbeddingService] Initialization already in progress');
+      // console.log('[EmbeddingService] Initialization already in progress');
       return;
     }
 
     if (this.isInitialized && EmbeddingService.worker) {
-      console.log('[EmbeddingService] Worker already initialized');
+      // console.log('[EmbeddingService] Worker already initialized');
       return;
     }
 
@@ -127,7 +127,7 @@ class EmbeddingService {
     this.cleanup(); // Clean up any existing state
 
     try {
-      console.log('[EmbeddingService] Creating worker...');
+      // console.log('[EmbeddingService] Creating worker...');
       store.dispatch(setStatus({ status: 'initializing', message: 'Creating worker...' }));
       
       EmbeddingService.worker = new Worker(new URL('../workers/embedding.worker.ts', import.meta.url), {
@@ -146,7 +146,7 @@ class EmbeddingService {
 
         EmbeddingService.worker.onmessage = (event) => {
           const { type, payload, status, message, id } = event.data;
-          console.log('[EmbeddingService] Received worker message:', event.data);
+          // console.log('[EmbeddingService] Received worker message:', event.data);
 
           if (type === 'EMBEDDINGS_RESULT') {
             const request = this.pendingRequests.get(id);
@@ -183,20 +183,18 @@ class EmbeddingService {
           }
         };
 
-        EmbeddingService.worker.onerror = (error) => {
-          console.error('[EmbeddingService] Worker error:', error);
+        EmbeddingService.worker.onerror = (event: ErrorEvent) => {
           EmbeddingService.isInitializing = false;
-          store.dispatch(setError(error instanceof ErrorEvent ? error.message : 'Worker error occurred'));
+          store.dispatch(setError(event.message || 'Worker error occurred'));
           this.cleanup();
-          reject(error);
+          reject(event);
         };
 
-        EmbeddingService.worker.onmessageerror = (error) => {
-          console.error('[EmbeddingService] Worker message error:', error);
+        EmbeddingService.worker.onmessageerror = () => {
           EmbeddingService.isInitializing = false;
           store.dispatch(setError('Worker message error occurred'));
           this.cleanup();
-          reject(error);
+          reject(new Error('Worker message error occurred'));
         };
 
         // Start polling for initialization status
@@ -209,7 +207,7 @@ class EmbeddingService {
           }
 
           if (!this.isInitialized && EmbeddingService.worker) {
-            console.log(`[EmbeddingService] Polling initialization status (${pollCount + 1}/${maxPolls})...`);
+            // console.log(`[EmbeddingService] Polling initialization status (${pollCount + 1}/${maxPolls})...`);
             EmbeddingService.worker.postMessage({ type: 'CHECK_STATUS', id: `poll-${pollCount}` });
             pollCount++;
           }
@@ -219,10 +217,10 @@ class EmbeddingService {
         EmbeddingService.worker.postMessage({ type: 'INITIALIZE', id: 'init' });
       });
 
-      console.log('[EmbeddingService] Worker initialized successfully');
+      // console.log('[EmbeddingService] Worker initialized successfully');
     } catch (error) {
       EmbeddingService.isInitializing = false;
-      console.error('[EmbeddingService] Error initializing worker:', error);
+      // console.error('[EmbeddingService] Error initializing worker:', error);
       store.dispatch(setError(error instanceof Error ? error.message : 'Unknown error occurred'));
       this.cleanup();
       throw error;
@@ -237,7 +235,7 @@ class EmbeddingService {
       }
 
       const id = Math.random().toString(36).substring(7);
-      console.log('[EmbeddingService] Sending message:', { type, payload, id });
+      // console.log('[EmbeddingService] Sending message:', { type, payload, id });
       this.pendingRequests.set(id, { resolve, reject });
       EmbeddingService.worker.postMessage({ type, payload, id });
     });
