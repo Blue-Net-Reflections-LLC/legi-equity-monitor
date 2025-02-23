@@ -2,13 +2,32 @@
 
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import AnimatedContent from "../components/AnimatedContent";
-import AnimatedStatesMap from "../components/AnimatedStatesMap";
 import Link from "next/link";
 import { Footer } from "@/app/components/layout/Footer";
-import { ArrowUpRight, Compass, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import Image from "next/image";
 import { format } from "date-fns";
-import { VideoSection } from "../components/VideoSection";
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+
+// Dynamically import components with CSR
+const AnimatedStatesMap = dynamic(
+  () => import("../components/AnimatedStatesMap"),
+  { ssr: false }
+);
+
+const AnimatedCompass = dynamic(
+  () => import("../components/AnimatedCompass"),
+  { ssr: false }
+);
+
+const VideoSection = dynamic(
+  () => import("../components/VideoSection").then(mod => mod.VideoSection),
+  { 
+    ssr: false,
+    loading: () => <VideoLoadingState />
+  }
+);
 
 // Helper function to remove HTML tags
 function scrubTags(html: string): string {
@@ -42,6 +61,43 @@ interface SecondHomepageProps {
   videos: YouTubeVideo[];
 }
 
+// Loading component for the map
+function MapLoadingState() {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-zinc-100/50 dark:bg-zinc-800/50 backdrop-blur-sm">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Loading interactive map...</p>
+      </div>
+    </div>
+  );
+}
+
+// Loading component for the compass
+function CompassLoadingState() {
+  return (
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="w-8 h-8 border-3 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+    </div>
+  );
+}
+
+// Loading component for the video section
+function VideoLoadingState() {
+  return (
+    <section className="relative py-12 px-4 bg-zinc-950">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+            <p className="text-sm text-zinc-400">Loading video content...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function SecondHomepageClient({ blogPosts, videos }: SecondHomepageProps) {
   const [featuredPost, ...recentPosts] = blogPosts;
 
@@ -54,44 +110,9 @@ export function SecondHomepageClient({ blogPosts, videos }: SecondHomepageProps)
             <div className="grid md:grid-cols-2 gap-8 items-center min-h-[calc(75vh-8rem)] relative">
               {/* Centered Floating Compass Guide - Non-blocking */}
               <div className="hidden md:block pointer-events-none absolute left-[40%] top-[35%] -translate-x-1/2 -translate-y-1/2 z-30 animate-float-y">
-                <div className="relative flex flex-col items-center gap-3">
-                  {/* Main Compass Container */}
-                  <div className="relative">
-                    {/* Rotating Outer Ring */}
-                    <div className="absolute -inset-1 rounded-full border-2 border-dashed border-emerald-500/30 dark:border-emerald-500/30 animate-spin-slow"></div>
-                    
-                    <div className="relative z-10 bg-zinc-900/10 dark:bg-white/10 backdrop-blur-lg rounded-full p-6 border border-zinc-900/20 dark:border-white/20 shadow-xl">
-                      <div className="relative">
-                        {/* Center Icon */}
-                        <Compass className="w-8 h-8 text-emerald-600 dark:text-emerald-500 animate-pulse" />
-                        
-                        {/* Orbiting Dots */}
-                        <div className="absolute inset-0 animate-spin-reverse">
-                          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-600 dark:bg-emerald-500 rounded-full"></div>
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-600 dark:bg-emerald-500 rounded-full"></div>
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-emerald-600 dark:bg-emerald-500 rounded-full"></div>
-                          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-emerald-600 dark:bg-emerald-500 rounded-full"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Text Bubble with Link */}
-                  <div className="pointer-events-auto bg-zinc-900/10 dark:bg-white/10 backdrop-blur-lg rounded-lg px-4 py-2 border border-zinc-900/20 dark:border-white/20">
-                    <div className="flex flex-col items-center gap-1">
-                      <p className="text-zinc-900 dark:text-white text-sm font-medium text-center">
-                        Click any state on the map
-                      </p>
-                      <Link
-                        href="/states"
-                        className="group inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-                      >
-                        or browse all states
-                        <ArrowUpRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <Suspense fallback={<CompassLoadingState />}>
+                  <AnimatedCompass />
+                </Suspense>
               </div>
 
               {/* Left Column - Text Content */}
@@ -127,7 +148,9 @@ export function SecondHomepageClient({ blogPosts, videos }: SecondHomepageProps)
               {/* Right Column - Interactive Map (Desktop Only) */}
               <div className="hidden md:block relative h-[450px]">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <AnimatedStatesMap />
+                  <Suspense fallback={<MapLoadingState />}>
+                    <AnimatedStatesMap />
+                  </Suspense>
                 </div>
               </div>
             </div>
