@@ -29,6 +29,11 @@ const VideoSection = dynamic(
   }
 );
 
+const RecentImpactfulBills = dynamic(
+  () => import("../components/RecentImpactfulBills"),
+  { ssr: false }
+);
+
 // Helper function to remove HTML tags
 function scrubTags(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
@@ -236,6 +241,9 @@ export function SecondHomepageClient({ blogPosts, videos }: SecondHomepageProps)
           </div>
         </div>
       </section>
+
+      {/* Recent Impactful Bills Section */}
+      <RecentImpactfulBills />
 
       {/* Video Section */}
       <VideoSection videos={videos} />

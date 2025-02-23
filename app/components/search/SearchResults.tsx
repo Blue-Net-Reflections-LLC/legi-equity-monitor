@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { SearchResult } from './SearchDialog'
 import { Bill, Sponsor, BlogPost } from '@/app/types'
 import { StateIcon } from './StateIcon'
@@ -129,15 +130,16 @@ export const SearchResults = memo(function SearchResults({
   )
 })
 
-interface ResultProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ResultProps extends React.HTMLAttributes<HTMLAnchorElement> {
   onClick: () => void
 }
 
 const BillResult = memo(function BillResult({ bill, onClick, ...props }: { bill: Bill, onClick: () => void } & ResultProps) {
   return (
-    <div 
+    <Link 
       {...props}
-      className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
+      href={`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`}
+      className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded block"
       onClick={onClick}
     >
       {bill.state_abbr === 'DC' ? (
@@ -165,7 +167,7 @@ const BillResult = memo(function BillResult({ bill, onClick, ...props }: { bill:
           {bill.title}
         </div>
       </div>
-    </div>
+    </Link>
   )
 })
 
@@ -178,9 +180,10 @@ const SponsorResult = memo(function SponsorResult({
   onClick: () => void 
 } & ResultProps) {
   return (
-    <div 
+    <Link 
       {...props}
-      className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
+      href={`/sponsor/${sponsor.people_id}`}
+      className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded block"
       onClick={onClick}
     >
       {sponsor.votesmart_id ? (
@@ -226,7 +229,7 @@ const SponsorResult = memo(function SponsorResult({
           {sponsor.name}
         </div>
       </div>
-    </div>
+    </Link>
   )
 })
 
@@ -259,9 +262,10 @@ const BlogPostResult = memo(function BlogPostResult({
   onClick: () => void 
 } & ResultProps) {
   return (
-    <div 
+    <Link 
       {...props}
-      className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded"
+      href={`/blog/${blogPost.slug}`}
+      className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded block"
       onClick={onClick}
     >
       <div className="relative w-9 h-9">
@@ -293,6 +297,6 @@ const BlogPostResult = memo(function BlogPostResult({
           {blogPost.title}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }) 
