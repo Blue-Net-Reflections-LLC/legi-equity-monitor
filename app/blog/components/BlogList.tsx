@@ -159,7 +159,7 @@ export function BlogList() {
         <div className="w-full mb-12">
           <AdUnit
             slot="9153654065"
-            className="min-h-[250px]"
+            className="h-0"
           />
         </div>
 
@@ -218,7 +218,7 @@ export function BlogList() {
               <div className="col-span-full w-full my-8">
                 <AdUnit
                   slot="3705886260"
-                  className="h-[258px]"
+                  className="h-0"
                 />
               </div>
             )}
