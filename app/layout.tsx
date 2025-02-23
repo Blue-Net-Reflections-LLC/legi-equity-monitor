@@ -29,6 +29,11 @@ export default async function RootLayout({
     <html lang="en" className="[color-scheme:dark_light] dark">
       <head>
         <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.GOOGLE_ADSENSE_CLIENT_ID}`}
+          crossOrigin="anonymous"
+        />
       </head>
       <body className={`${inter.className} antialiased bg-white dark:bg-zinc-900`}>
         <SessionProvider session={session}>
