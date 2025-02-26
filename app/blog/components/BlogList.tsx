@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { BlogSkeleton, RegularGridSkeleton } from './skeletons';
 import { cn } from '@/lib/utils';
+import AdUnit from '@/app/components/ads/AdUnit';
 
 interface BlogPost {
   title: string;
@@ -154,6 +155,14 @@ export function BlogList() {
           </div>
         </div>
 
+        {/* Blog Landing Middle Ad */}
+        <div className="w-full mb-12">
+          <AdUnit
+            slot="9153654065"
+            className="h-0"
+          />
+        </div>
+
         {/* Remaining Posts Grid */}
         {rest.length > 0 && (
           <div className="w-full">
@@ -202,8 +211,18 @@ export function BlogList() {
     <div className="max-w-[1920px] mx-auto space-y-12">
       {/* Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        {posts.map((post: BlogPost) => (
-          <BlogCard key={post.slug} post={post} />
+        {posts.map((post: BlogPost, index: number) => (
+          <>
+            <BlogCard key={post.slug} post={post} />
+            {index === 7 && (
+              <div className="col-span-full w-full my-8">
+                <AdUnit
+                  slot="3705886260"
+                  className="h-0"
+                />
+              </div>
+            )}
+          </>
         ))}
       </div>
 

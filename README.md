@@ -151,6 +151,7 @@ Required environment variables:
 - `npm run type-check`: Run TypeScript compiler
 - `python indexer.py`: Run the indexing service
 - `python test_setup.py`: Test indexing service configuration
+- `python -m indexing_service.clustering -week 7 -year 2025`: Run the clustering service
 
 ## Coming Soon
 

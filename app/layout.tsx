@@ -9,6 +9,7 @@ import { ReduxProvider } from './providers/ReduxProvider'
 import ClientLayout from './components/ClientLayout'
 import { SessionProvider } from 'next-auth/react'
 import { auth } from '@/app/(auth)/auth'
+import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -28,8 +29,9 @@ export default async function RootLayout({
   return (
     <html lang="en" className="[color-scheme:dark_light] dark">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
-        <script
+      <meta name="apple-mobile-web-app-title" content="LegiEquity" />
+      <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
+        <Script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.GOOGLE_ADSENSE_CLIENT_ID}`}
           crossOrigin="anonymous"

@@ -99,7 +99,7 @@ Analyze the provided cluster of related bills drawing from cluster analysis resu
   • Any bill references must include the bill number and state
   • Link specified bills to the bill detail page on the site: E.g. /[CA-HB440](/ca/bill/123456)
   • Use **Markdown formatting** for links, bullet points, tables, headings, and other formatting
-  • Minimum **1000 words** and maximum **3000 words** for the "content" attribute
+  • IMPORTANT: Minimum **1000 words** and maximum **3000 words** for the "content" attribute
 - Closing paragraph with neutral outlook analysis
 
 
@@ -127,7 +127,7 @@ Cluster ID: {cluster_id}
 - Highlight novel policy mechanisms from the legislation cluster
 - Include 2-5 relevant historical precedents where applicable
 - DO NOT MENTION THE WORD CLUSTER OR THE CLUSTER ID IN THE BLOG POST
-- Again, minimum 750 words and maximum 3000 words for the "content" attribute
+- IMPORTANT: minimum 1000 words and maximum 3000 words for the "content" attribute
 - Avoid using subgroup codes in the blog post. Use the subgroup names instead
 
 ^CRITICAL:^ Your response MUST be a valid JSON object EXACTLY matching this structure. Any deviation from this format, including additional fields, missing fields, or incorrect JSON syntax, will cause system failure. Do not include any explanatory text or markdown outside the JSON structure. The response should be parseable by JSON.parse() without any preprocessing.
@@ -137,7 +137,7 @@ Cluster ID: {cluster_id}
     "title": "Blog Title",
     "slug": "url-friendly-version-of-title",
     "status": "draft",
-    "content": "see Content Rules above (minimum 750 words and maximum 3000 words)",
+    "content": "see Content Rules above (IMPORTANT: minimum 1000 words and maximum 3000 words)",
     "meta_description": "Meta Description",
     "author": "LegiEquity Blog Team",
     "cluster_id": "{cluster_id}",

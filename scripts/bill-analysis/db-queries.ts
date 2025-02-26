@@ -32,13 +32,6 @@ export async function getBillsForAnalysis(sql: postgres.Sql, limit: number): Pro
                         )
                     )
                 )
-                AND (
-                    array_length(regexp_split_to_array(trim(b.description), '\s+'), 1) >= 5
-                    OR EXISTS (
-                        SELECT 1 FROM ls_bill_amendment ba 
-                        WHERE ba.bill_id = b.bill_id
-                    )
-                )
                 ORDER BY ${envConfig.randomOrder ? sql`RANDOM()` : sql`b.bill_id DESC`}
                 LIMIT ${limit}
                 FOR UPDATE SKIP LOCKED
