@@ -294,233 +294,136 @@ function setCachedData(key: string, data: any) {
 
 ### API Implementation Strategy
 
-We will leverage our existing trigram search functionality to connect representatives to their sponsored bills. This approach has several advantages:
+We will leverage the existing trigram search functionality to connect representatives to their sponsored bills. This approach has several advantages:
 
 1. It allows us to use the same search infrastructure that powers our main search feature
 2. It provides fuzzy matching to handle name variations and potential data inconsistencies
 3. It's already optimized for performance with appropriate database indexes
 
-#### Step 1: Extend Vector Index for US Legislators
+#### Step 1: Representative-to-Sponsor Matching
 
-We'll need to ensure our `vector_index` table contains representative data from our new `us_leg_` tables:
-
-```sql
--- Example query to populate vector_index from US Legislators tables
-INSERT INTO vector_index (
-  entity_type, 
-  entity_id,
-  search_text,
-  embedding,
-  source_hash,
-  state_abbr,
-  state_name,
-  entity_uuid
-)
-SELECT 
-  'sponsor' as entity_type,
-  l.id as entity_id,
-  CONCAT(
-    n.official_full, ' ',
-    n.first, ' ',
-    COALESCE(n.middle, ''), ' ',
-    n.last, ' ',
-    t.state, ' ',
-    t.party
-  ) as search_text,
-  embedding_function(CONCAT(
-    n.official_full, ' ',
-    t.state, ' ',
-    t.party, ' ',
-    t.chamber
-  )) as embedding,
-  MD5(CONCAT(l.id, '_', l.last_updated)) as source_hash,
-  t.state as state_abbr,
-  state_name_function(t.state) as state_name,
-  i.bioguide_id as entity_uuid
-FROM 
-  us_leg_legislators l
-JOIN 
-  us_leg_names n ON l.id = n.legislator_id
-JOIN 
-  us_leg_terms t ON l.id = t.legislator_id AND t.is_current = TRUE
-JOIN
-  us_leg_ids i ON l.id = i.legislator_id
-WHERE
-  i.bioguide_id IS NOT NULL
-ON CONFLICT (entity_type, entity_id) 
-DO UPDATE SET
-  search_text = EXCLUDED.search_text,
-  embedding = EXCLUDED.embedding,
-  source_hash = EXCLUDED.source_hash,
-  state_abbr = EXCLUDED.state_abbr,
-  state_name = EXCLUDED.state_name,
-  entity_uuid = EXCLUDED.entity_uuid,
-  indexed_at = CURRENT_TIMESTAMP;
-```
-
-#### Step 2: Create Representative Search Endpoint
-
-We'll create a specialized endpoint for representative lookups using trigram search, similar to the existing search API but optimized for our zipcode-to-representative workflow:
+We'll use our us_leg_ tables to find representatives by district, and then use trigram similarity to find matching sponsors in the existing vector_index table:
 
 ```typescript
-// Example implementation in app/api/representatives/search.ts
-import { NextResponse } from 'next/server';
-import db from '@/lib/db';
-import { removeStopwords } from 'stopword';
-import { entityDataCTE, mapResults } from '../search/sql/common';
-
-export async function POST(request: Request) {
-  try {
-    const { state, district } = await request.json();
-    
-    // First query: Find federal representatives by state/district
-    const federalQuery = `
-      -- Federal representatives query
-      WITH federal_reps AS (
-        SELECT
-          n.official_full AS name,
-          i.bioguide_id,
-          t.party,
-          t.state,
-          t.district,
-          t.chamber,
-          t.start_date
-        FROM
-          us_leg_terms t
-        JOIN
-          us_leg_legislators l ON t.legislator_id = l.id
-        JOIN
-          us_leg_names n ON n.legislator_id = l.id
-        JOIN
-          us_leg_ids i ON i.legislator_id = l.id
-        WHERE
-          t.is_current = TRUE
-          AND t.state = $1
-          AND (
-            (t.chamber = 'house' AND t.district = $2)
-            OR t.chamber = 'senate'
-          )
-      ),
-      
-      -- For each representative, use trigram search to find the matching sponsor
-      matched_sponsors AS (
-        SELECT
-          fr.bioguide_id,
-          fr.name,
-          fr.party,
-          fr.state,
-          fr.district,
-          fr.chamber,
-          fr.start_date,
-          vi.entity_id AS sponsor_id,
-          word_similarity(fr.name, vi.search_text) AS similarity
-        FROM
-          federal_reps fr
-        JOIN
-          vector_index vi ON 
-            vi.entity_type = 'sponsor' AND 
-            word_similarity(fr.name, vi.search_text) > 0.6
-        ORDER BY
-          fr.chamber DESC, -- Senate first, then House
-          fr.start_date ASC, -- Sort by seniority
-          similarity DESC
-      )
-      
-      SELECT * FROM matched_sponsors
-    `;
-    
-    const federalReps = await db.unsafe(federalQuery, [state, district]);
-    
-    // For each representative, find their sponsored bills
-    const repsWithBills = await Promise.all(
-      Array.from(federalReps).map(async (rep) => {
-        // Find primary sponsored bills
-        const primaryBillsQuery = `
-          SELECT 
-            b.bill_id,
-            b.bill_number,
-            b.title,
-            b.description,
-            b.impact_score,
-            bs.is_primary
-          FROM 
-            ls_bill_sponsor bs
-          JOIN 
-            lsv_bill b ON bs.bill_id = b.bill_id
-          WHERE 
-            bs.people_id = $1
-            AND bs.is_primary = TRUE
-          ORDER BY 
-            b.impact_score DESC
-          LIMIT 3
-        `;
-        
-        let sponsoredBills = await db.unsafe(primaryBillsQuery, [rep.sponsor_id]);
-        
-        // If no primary bills, get co-sponsored bills
-        if (Array.from(sponsoredBills).length === 0) {
-          const coBillsQuery = `
-            SELECT 
-              b.bill_id,
-              b.bill_number,
-              b.title,
-              b.description,
-              b.impact_score,
-              bs.is_primary
-            FROM 
-              ls_bill_sponsor bs
-            JOIN 
-              lsv_bill b ON bs.bill_id = b.bill_id
-            WHERE 
-              bs.people_id = $1
-              AND bs.is_primary = FALSE
-            ORDER BY 
-              b.impact_score DESC
-            LIMIT 3
-          `;
-          
-          sponsoredBills = await db.unsafe(coBillsQuery, [rep.sponsor_id]);
-        }
-        
-        // Return rep with their bills
-        return {
-          representative: {
-            name: rep.name,
-            party: rep.party,
-            state: rep.state,
-            district: rep.district,
-            chamber: rep.chamber,
-            bioguide_id: rep.bioguide_id
-          },
-          bills: Array.from(sponsoredBills)
-        };
-      })
-    );
-    
-    return NextResponse.json({ 
-      representatives: repsWithBills
-    });
-  } catch (error) {
-    console.error('Representative search error:', error);
-    return NextResponse.json(
-      { error: 'Failed to find representatives' },
-      { status: 500 }
-    );
-  }
+// Optimized approach for matching representatives to existing sponsors in vector_index
+async function matchRepresentativeToSponsor(repName, state) {
+  // Generate meaningful tokens from rep name for pre-filtering
+  const meaningfulWords = removeStopwords(repName.toLowerCase().split(' '));
+  
+  // Generate ILIKE conditions for pre-filtering
+  const tokens = meaningfulWords
+    .map((word) => `search_text ILIKE '%${word}%'`)
+    .join(' AND ');
+  
+  // Use optimized trigram search pattern from search API
+  const sponsorMatchQuery = `
+    WITH pre_filtered AS (
+      SELECT 
+        vi.entity_type,
+        vi.entity_id,
+        vi.entity_uuid,
+        vi.search_text,
+        vi.state_abbr,
+        vi.state_name
+      FROM vector_index vi
+      WHERE ${tokens}
+      AND vi.entity_type = 'sponsor'
+      AND vi.state_abbr = $1
+      ORDER BY LENGTH(vi.search_text) ASC
+      LIMIT 100
+    ),
+    ranked AS (
+      SELECT 
+        entity_type,
+        entity_id,
+        entity_uuid,
+        search_text,
+        state_abbr,
+        state_name,
+        word_similarity($2, search_text) AS similarity
+      FROM pre_filtered
+      WHERE word_similarity($2, search_text) > 0.3
+      ORDER BY similarity DESC
+      LIMIT 1
+    )
+    SELECT * FROM ranked
+  `;
+  
+  const sponsorMatches = await db.unsafe(sponsorMatchQuery, [state, repName]);
+  return sponsorMatches.length > 0 ? sponsorMatches[0] : null;
 }
 ```
 
-#### Step 3: Combine with State Representatives
+#### Step 2: Bill Retrieval for Matched Sponsors
 
-The final implementation will combine this trigram search for federal representatives with the OpenStates API for state representatives:
+For each representative where we find a matching sponsor in the vector_index table, we'll retrieve their sponsored bills:
 
 ```typescript
-// Pseudocode for the complete zipcode-to-representatives API
-async function getRepresentativesByZipcode(zipcode) {
+// For representatives with matching sponsors, find their bills
+async function getBillsForSponsor(sponsorId) {
+  // First try to find primary sponsored bills
+  const primaryBillsQuery = `
+    SELECT 
+      b.bill_id,
+      b.bill_number,
+      b.title,
+      b.description,
+      b.impact_score,
+      bs.is_primary
+    FROM 
+      ls_bill_sponsor bs
+    JOIN 
+      lsv_bill b ON bs.bill_id = b.bill_id
+    WHERE 
+      bs.people_id = $1
+      AND bs.is_primary = TRUE
+    ORDER BY 
+      b.impact_score DESC
+    LIMIT 3
+  `;
+  
+  let sponsoredBills = await db.unsafe(primaryBillsQuery, [sponsorId]);
+  
+  // If no primary bills, get co-sponsored bills
+  if (sponsoredBills.length === 0) {
+    const coBillsQuery = `
+      SELECT 
+        b.bill_id,
+        b.bill_number,
+        b.title,
+        b.description,
+        b.impact_score,
+        bs.is_primary
+      FROM 
+        ls_bill_sponsor bs
+      JOIN 
+        lsv_bill b ON bs.bill_id = b.bill_id
+      WHERE 
+        bs.people_id = $1
+        AND bs.is_primary = FALSE
+      ORDER BY 
+        b.impact_score DESC
+      LIMIT 3
+    `;
+    
+    sponsoredBills = await db.unsafe(coBillsQuery, [sponsorId]);
+  }
+  
+  return sponsoredBills;
+}
+```
+
+#### Step 3: Complete Implementation
+
+The final implementation combines district-based representative lookup with sponsor matching and bill retrieval:
+
+```typescript
+// Pseudocode for the zipcode-to-representatives-with-bills API
+async function getRepresentativesWithBillsByZipcode(zipcode) {
   // 1. Get district info from Census API
   const districtInfo = await fetchDistrictFromCensus(zipcode);
   
-  // 2. Get federal representatives using trigram search
+  // 2. Get federal representatives from us_leg_ tables by district
   const federalReps = await getFederalRepresentatives(
     districtInfo.state,
     districtInfo.district
@@ -532,44 +435,51 @@ async function getRepresentativesByZipcode(zipcode) {
     districtInfo.stateLegislativeDistrict
   );
   
-  // 4. For each state rep, standardize format to match federal reps
-  const formattedStateReps = stateReps.map(formatStateRepresentative);
+  // 4. For each representative, try to find matching sponsor and bills
+  const federalRepsWithBills = await Promise.all(
+    federalReps.map(async (rep) => {
+      // Try to find matching sponsor in vector_index
+      const sponsorMatch = await matchRepresentativeToSponsor(rep.name, rep.state);
+      
+      // Get bills if sponsor match found, otherwise return empty array
+      const bills = sponsorMatch 
+        ? await getBillsForSponsor(sponsorMatch.entity_id)
+        : [];
+      
+      return {
+        ...rep,
+        bills: bills,
+        hasMatchingSponsor: !!sponsorMatch
+      };
+    })
+  );
   
-  // 5. Combine and sort all representatives
+  // 5. For state reps, follow similar pattern
+  const stateRepsWithBills = await Promise.all(/* similar implementation for state reps */);
+  
+  // 6. Combine and sort all representatives
   const allReps = [
-    ...federalReps,
-    ...formattedStateReps
-  ].sort((a, b) => {
-    // Sort by level (federal first)
-    if (a.level !== b.level) return a.level === 'federal' ? -1 : 1;
-    
-    // Then by chamber (Senate first for federal)
-    if (a.chamber !== b.chamber) {
-      if (a.level === 'federal') return a.chamber === 'senate' ? -1 : 1;
-      if (a.level === 'state') return a.chamber === 'upper' ? -1 : 1;
-    }
-    
-    // Finally by seniority
-    return new Date(a.startDate) - new Date(b.startDate);
-  });
+    ...federalRepsWithBills,
+    ...stateRepsWithBills
+  ].sort(/* sorting logic by level, chamber, seniority */);
   
   return allReps;
 }
 ```
 
-### Performance Considerations
+### Important Notes
 
-1. **Caching Strategy**: As mentioned in the caching section, we'll cache district information by zipcode and OpenStates API responses.
+1. **Read-Only Approach**: This implementation only reads from the existing vector_index table and does not modify it in any way.
 
-2. **Trigram Search Optimization**: We'll use pre-filtering in the trigram search to improve performance:
-   - Filter first by state to reduce the search space
-   - Use word_similarity threshold of 0.6 to ensure quality matches
-   - Index the vector_index table appropriately with GIN/GIST indexes for the trigram operations
+2. **Graceful Handling of Unmatched Representatives**: 
+   - All representatives from the us_leg_ tables will be displayed in the UI
+   - Only representatives with matching sponsors in vector_index will have bill information
+   - The UI should handle representatives without matching bills appropriately
 
-3. **Background Processing**: For improved user experience, we can implement a background job that periodically:
-   - Updates the vector_index table with the latest representative data
-   - Pre-computes common zipcode-to-district mappings
-   - Refreshes the connection between representatives and their sponsored bills
+3. **Performance Considerations**:
+   - The trigram search uses the same optimized pattern as the main search API
+   - Pre-filtering by state and using ILIKE conditions reduces the search space
+   - Appropriate limits at each step prevent excessive processing
 
 ## UI/UX Design
 
