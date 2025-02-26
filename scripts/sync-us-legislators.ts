@@ -59,10 +59,7 @@ if (!fs.existsSync(TEMP_DIR)) {
 }
 
 // Database connection
-const sql = postgres(process.env.LEGISCAN_DB_URL || '', {
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 10
-});
+const sql = postgres(process.env.LEGISCAN_DB_URL || '');
 
 /**
  * Main function to orchestrate the sync process
