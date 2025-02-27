@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { MapPin } from 'lucide-react';
 
 /**
- * Loads the Google Maps Places API script if it's not already loaded
+ * Loads the Google Maps API script if it's not already loaded
  */
 function loadGoogleMapsScript() {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -34,7 +34,7 @@ function loadGoogleMapsScript() {
 
     // Create script element
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=googleMapsCallback`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=googleMapsCallback`;
     script.async = true;
     script.defer = true;
 
@@ -72,14 +72,12 @@ export default function LocationAutocomplete({
   fullWidth = false,
   formAction = '/api/representatives/submit',
 }: LocationAutocompleteProps) {
-  const [selectedAddress, setSelectedAddress] = useState<string>('');
+  const [zipCode, setZipCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [scriptLoaded, setScriptLoaded] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-  const autocompleteInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteInstance = useRef<google.maps.places.Autocomplete | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Load Google Maps script on component mount
@@ -90,101 +88,83 @@ export default function LocationAutocomplete({
       })
       .catch((err: unknown) => {
         console.error('Failed to load Google Maps script:', err);
-        setError('Unable to load address autocomplete. Please enter your address manually.');
+        setError('Unable to load location service. Please try again later.');
       });
   }, []);
 
-  // Initialize Google Places Autocomplete when script is loaded
-  useEffect(() => {
-    if (scriptLoaded && autocompleteInputRef.current) {
-      try {
-        const options = {
-          componentRestrictions: { country: 'us' },
-          fields: ['address_components', 'formatted_address', 'geometry'],
-        };
+  // Validate US zip code format
+  const isValidZipCode = (zip: string): boolean => {
+    return /^\d{5}(-\d{4})?$/.test(zip);
+  };
 
-        autocompleteInstance.current = new google.maps.places.Autocomplete(
-          autocompleteInputRef.current,
-          options
-        );
-
-        // Handle place selection
-        autocompleteInstance.current.addListener('place_changed', () => {
-          const place = autocompleteInstance.current?.getPlace();
-          if (place && place.formatted_address) {
-            setSelectedAddress(place.formatted_address);
-            
-            // Store coordinates in state if available
-            if (place.geometry?.location) {
-              setLatitude(place.geometry.location.lat());
-              setLongitude(place.geometry.location.lng());
-            } else {
-              setLatitude(null);
-              setLongitude(null);
-            }
-            
-            setError(null);
-          }
-        });
-      } catch (err: unknown) {
-        console.error('Error initializing autocomplete:', err);
-        setError('Address autocomplete is unavailable. Please enter your address manually.');
-      }
-    }
-  }, [scriptLoaded]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    // Form validation only
-    if (!selectedAddress) {
-      e.preventDefault();
-      setError('Please enter a complete address');
-      return;
-    }
-
-    // If we don't have coordinates from autocomplete, try to geocode
-    if (!latitude || !longitude) {
-      e.preventDefault();
-      
+  // Convert zip code to coordinates using Google Maps Geocoding
+  const geocodeZipCode = (zip: string): Promise<google.maps.GeocoderResult[]> => {
+    return new Promise((resolve, reject) => {
       if (!scriptLoaded) {
-        setError('Maps service is not available. Please try again later.');
+        reject(new Error('Google Maps not loaded'));
         return;
       }
-      
+
       const geocoder = new google.maps.Geocoder();
       geocoder.geocode(
-        { address: selectedAddress },
-        (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-          if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
-            const location = results[0].geometry.location;
-            
-            // Set coordinate values in hidden fields
-            const latInput = document.querySelector('input[name="lat"]') as HTMLInputElement;
-            const lngInput = document.querySelector('input[name="lng"]') as HTMLInputElement;
-            
-            if (latInput && lngInput) {
-              latInput.value = location.lat().toString();
-              lngInput.value = location.lng().toString();
-              
-              // Submit the form manually
-              formRef.current?.submit();
-            } else {
-              setError('Error with form fields. Please try again.');
-            }
+        { address: zip, componentRestrictions: { country: 'us' } },
+        (results, status) => {
+          if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+            resolve(results);
           } else {
-            setError('Could not find the location for the provided address. Please enter a valid US address.');
+            reject(new Error(`Geocoding failed: ${status}`));
           }
         }
       );
-    } else {
-      // Ensure coordinates are properly set in hidden inputs before submitting
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!zipCode) {
+      setError('Please enter a zip code');
+      return;
+    }
+    
+    if (!isValidZipCode(zipCode)) {
+      setError('Please enter a valid US zip code (5 digits)');
+      return;
+    }
+
+    if (!scriptLoaded) {
+      setError('Location service is not available. Please try again later.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const results = await geocodeZipCode(zipCode);
+      const location = results[0].geometry.location;
+      
+      setLatitude(location.lat());
+      setLongitude(location.lng());
+      
+      // Set hidden form fields
       const latInput = document.querySelector('input[name="lat"]') as HTMLInputElement;
       const lngInput = document.querySelector('input[name="lng"]') as HTMLInputElement;
       
       if (latInput && lngInput) {
-        latInput.value = latitude.toString();
-        lngInput.value = longitude.toString();
+        latInput.value = location.lat().toString();
+        lngInput.value = location.lng().toString();
+        
+        // Submit the form
+        formRef.current?.submit();
+      } else {
+        setError('Error with form fields. Please try again.');
       }
-      // Form will submit normally
+    } catch (err) {
+      console.error('Error geocoding zip code:', err);
+      setError('Could not find location for the provided zip code. Please enter a valid US zip code.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -206,31 +186,47 @@ export default function LocationAutocomplete({
           setLatitude(latitude);
           setLongitude(longitude);
           
-          // Reverse geocode to get address
+          // Optionally reverse geocode to get zip code
           const geocoder = new google.maps.Geocoder();
           geocoder.geocode(
             { location: { lat: latitude, lng: longitude } },
             (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
               if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
-                setSelectedAddress(results[0].formatted_address);
-              } else {
-                setError('Could not determine your address. Please enter it manually.');
+                // Extract zip code from address components
+                const addressComponents = results[0].address_components;
+                const zipComponent = addressComponents.find(
+                  component => component.types.includes('postal_code')
+                );
+                
+                if (zipComponent) {
+                  setZipCode(zipComponent.short_name);
+                }
               }
               setIsLoading(false);
+              
+              // Submit the form with location data
+              const latInput = document.querySelector('input[name="lat"]') as HTMLInputElement;
+              const lngInput = document.querySelector('input[name="lng"]') as HTMLInputElement;
+              
+              if (latInput && lngInput) {
+                latInput.value = latitude.toString();
+                lngInput.value = longitude.toString();
+                formRef.current?.submit();
+              }
             }
           );
         } catch (err: unknown) {
           console.error('Error during reverse geocoding:', err);
-          setError('An error occurred while finding your address. Please enter it manually.');
+          setError('An error occurred while finding your location. Please enter a zip code manually.');
           setIsLoading(false);
         }
       },
       (err: GeolocationPositionError) => {
         console.error('Geolocation error:', err);
-        let errorMessage = 'Unable to access your location. Please enter your address manually.';
+        let errorMessage = 'Unable to access your location. Please enter your zip code manually.';
         
         if (err.code === 1) {
-          errorMessage = 'Location access was denied. Please enter your address manually.';
+          errorMessage = 'Location access was denied. Please enter your zip code manually.';
         }
         
         setError(errorMessage);
@@ -250,27 +246,28 @@ export default function LocationAutocomplete({
         className="space-y-4"
       >
         <div className="flex flex-col">
-          <label htmlFor="address" className="mb-2 text-sm font-medium">
-            Enter your complete address to find your representatives
+          <label htmlFor="zipCode" className="mb-2 text-sm font-medium">
+            Enter your zip code to find your representatives
           </label>
           <div className="flex gap-2">
             <div className={`${fullWidth ? 'w-full' : 'flex-1'}`}>
               <Input
-                ref={autocompleteInputRef}
-                id="address"
-                name="address"
+                id="zipCode"
+                name="zipCode"
                 type="text"
-                placeholder="Enter your complete address"
-                value={selectedAddress}
-                onChange={(e) => setSelectedAddress(e.target.value)}
+                placeholder="Enter your zip code (e.g., 10001)"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
                 className="w-full"
+                maxLength={10}
+                pattern="^\d{5}(-\d{4})?$"
                 required
                 disabled={isLoading}
-                autoComplete="off"
               />
               {/* Hidden inputs for coordinates */}
               <input type="hidden" name="lat" value={latitude?.toString() || ''} />
               <input type="hidden" name="lng" value={longitude?.toString() || ''} />
+              <input type="hidden" name="address" value={zipCode || ''} />
             </div>
             <Button
               type="button"
@@ -284,7 +281,7 @@ export default function LocationAutocomplete({
             </Button>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Enter your full street address to accurately find your representatives.
+            Enter your zip code to find representatives for your area.
           </p>
         </div>
 
@@ -297,7 +294,7 @@ export default function LocationAutocomplete({
         <Button
           type="submit"
           className="w-full"
-          disabled={isLoading || !selectedAddress}
+          disabled={isLoading || !zipCode}
         >
           {isLoading ? 'Finding Your Location...' : 'Find My Representatives'}
         </Button>

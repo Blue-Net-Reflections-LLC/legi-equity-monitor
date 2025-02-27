@@ -176,7 +176,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
     return (
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-6">Find Your Representatives</h1>
-        <p className="mb-6">Enter your complete address to find your representatives and see their impact on legislation.</p>
+        <p className="mb-6">Enter your zip code to find your representatives and see their impact on legislation.</p>
         <LocationAutocomplete formAction="/api/representatives/submit" />
       </div>
     );
@@ -196,7 +196,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               {districtData.error === 'DISTRICT_NOT_FOUND' 
-                ? "We couldn't determine your district from this address. Please try another address."
+                ? "We couldn't determine your district from this zip code. Please try another zip code."
                 : "An error occurred while retrieving district information. Please try again later."}
             </AlertDescription>
           </Alert>

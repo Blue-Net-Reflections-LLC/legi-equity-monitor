@@ -306,8 +306,5 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { error: 'Failed to fetch state representatives' },
       { status: 500 }
     );
-  } finally {
-    // Close the database connection
-    await sql.end();
   }
 }

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * API Route to handle address form submissions
  * POST /api/representatives/submit
  * 
- * Takes form data with address, lat, and lng fields
+ * Takes form data with zipCode, lat, and lng fields
  * Redirects to the representatives-impact page with query parameters
  */
 export async function POST(request: NextRequest) {
@@ -12,10 +12,14 @@ export async function POST(request: NextRequest) {
     // Get form data from the request
     const formData = await request.formData();
     
-    // Extract and validate address
-    const address = formData.get('address');
+    // Extract and validate address/zip code (supporting both for backward compatibility)
+    let address = formData.get('zipCode');
     if (!address || typeof address !== 'string' || address.trim() === '') {
-      return NextResponse.json({ error: 'Address is required' }, { status: 400 });
+      // Fallback to address field if zipCode is not provided
+      address = formData.get('address');
+      if (!address || typeof address !== 'string' || address.trim() === '') {
+        return NextResponse.json({ error: 'Zip code is required' }, { status: 400 });
+      }
     }
     
     // Extract and validate coordinates
