@@ -27,13 +27,6 @@ const getPartyName = (partyId: string): string => {
   return PARTY_NAMES[partyId] || partyId;
 };
 
-// Get party color class
-const getPartyColor = (partyId: string): string => {
-  if (partyId === "1") return "text-blue-600 dark:text-blue-400"; // Democrat
-  if (partyId === "2") return "text-red-600 dark:text-red-400"; // Republican
-  return "text-gray-600 dark:text-gray-400"; // Other parties
-};
-
 export const metadata: Metadata = {
   title: 'Your Elected Representatives | Bills Impact',
   description: 'Find your representatives and see the bills that impact you the most.',
@@ -44,7 +37,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 interface RepresentativesImpactPageProps {
-  params: {};
+  params: Record<string, unknown>;
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
@@ -295,7 +288,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
           <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-8 max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-zinc-900 dark:text-white">Enter your zip code</h2>
             <p className="mb-6 text-zinc-700 dark:text-zinc-300">
-              We'll use your location to find your federal and state representatives and show you the bills they've sponsored.
+              We&apos;ll use your location to find your federal and state representatives and show you the bills they&apos;ve sponsored.
             </p>
             <LocationAutocomplete formAction="/api/representatives/submit" />
           </div>
@@ -427,7 +420,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
 // Representative List Item Component
 function RepresentativeListItem({ representative }: { representative: Representative }) {
   const { 
-    id, name, party, state, district, role, office, bills, votesmart_id, chamber
+    id, name, party, state, district, role, office, bills, votesmart_id, 
   } = representative;
   
   // Filter bills to only show type 1

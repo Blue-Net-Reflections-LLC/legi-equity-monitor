@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
+ * Type definition for Census API response
+ */
+interface CensusApiResponse {
+  result?: {
+    geographies?: {
+      [key: string]: Array<{
+        STUSAB?: string;
+        BASENAME?: string;
+        [key: string]: unknown;
+      }>;
+    };
+  };
+}
+
+/**
  * Extracts district data from the Census API response
  */
-function extractDistrictData(data: any) {
+function extractDistrictData(data: CensusApiResponse) {
   try {
     // Check if we have a valid response with geographies
     if (!data?.result?.geographies) {
