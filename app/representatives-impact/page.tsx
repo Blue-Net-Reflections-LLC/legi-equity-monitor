@@ -3,9 +3,36 @@ import LocationAutocomplete from '@/app/components/address/LocationAutocomplete'
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { AlertCircle, CheckCircle, AlertTriangle, MinusCircle } from 'lucide-react';
 import Link from 'next/link';
-import { getStateName } from '@/app/utils/stateUtils';
 import { AuroraBackground } from '@/app/components/ui/aurora-background';
 import { Footer } from '@/app/components/layout/Footer';
+import SponsorImage from '@/app/components/sponsor/SponsorImage';
+import { STATE_NAMES } from '@/app/constants/states';
+
+const getStateName = (stateCode: string) => STATE_NAMES[stateCode] || stateCode;
+
+// Map party IDs to party names based on the ls_party table
+const PARTY_NAMES: {[key: string]: string} = {
+  "1": "Democrat",
+  "2": "Republican",
+  "3": "Independent",
+  "4": "Green",
+  "5": "Libertarian",
+  "6": "Nonpartisan",
+  "7": "Unaffiliated",
+  "8": "Reform"
+};
+
+// Get party name from party ID
+const getPartyName = (partyId: string): string => {
+  return PARTY_NAMES[partyId] || partyId;
+};
+
+// Get party color class
+const getPartyColor = (partyId: string): string => {
+  if (partyId === "1") return "text-blue-600 dark:text-blue-400"; // Democrat
+  if (partyId === "2") return "text-red-600 dark:text-red-400"; // Republican
+  return "text-gray-600 dark:text-gray-400"; // Other parties
+};
 
 export const metadata: Metadata = {
   title: 'Your Elected Representatives | Bills Impact',
@@ -44,12 +71,14 @@ interface Representative {
     twitter: string;
     facebook: string;
   };
+  votesmart_id?: string;
   bills: Array<{
     id: string;
     title: string;
     number: string;
     impactScore: number;
     isPrimary: boolean;
+    bill_type_id?: number;
   }>;
 }
 
@@ -182,8 +211,8 @@ function calculateImpact(score: number, isPrimary: boolean) {
     colorClass,
     Icon,
     sponsorType: isPrimary ? 'Primary Sponsor' : 'Co-Sponsor',
-    sponsorClass: isPrimary ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' : 
-                   'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+    sponsorClass: isPrimary ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white' : 
+                   'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
   };
 }
 
@@ -334,29 +363,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
           </AuroraBackground>
         </section>
         
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="mb-8 grid gap-4 md:grid-cols-3">
-            {state && district && (
-              <div className="p-4 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
-                <h3 className="font-medium text-sm text-gray-500 dark:text-gray-400">Congressional District</h3>
-                <p className="text-lg font-semibold">{stateName}-{district}</p>
-              </div>
-            )}
-            
-            {state && stateSenateDistrict && (
-              <div className="p-4 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
-                <h3 className="font-medium text-sm text-gray-500 dark:text-gray-400">State Senate District</h3>
-                <p className="text-lg font-semibold">{stateName}-{stateSenateDistrict}</p>
-              </div>
-            )}
-            
-            {state && stateHouseDistrict && (
-              <div className="p-4 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
-                <h3 className="font-medium text-sm text-gray-500 dark:text-gray-400">State House District</h3>
-                <p className="text-lg font-semibold">{stateName}-{stateHouseDistrict}</p>
-              </div>
-            )}
-          </div>
+        <div className="max-w-7xl mx-auto px-4 ">
 
           {/* Federal Representatives Section */}
           <section className="mb-10">
@@ -420,23 +427,20 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
 // Representative List Item Component
 function RepresentativeListItem({ representative }: { representative: Representative }) {
   const { 
-    id, name, party, state, district, role, office, bills 
+    id, name, party, state, district, role, office, bills, votesmart_id, chamber
   } = representative;
   
-  // Calculate overall impact
-  const overallImpact = calculateOverallImpact(bills);
+  // Filter bills to only show type 1
+  const filteredBills = bills.filter(bill => bill.bill_type_id === undefined || bill.bill_type_id === 1);
   
-  // Get party color
-  const partyColor = party === 'D' ? 'text-blue-600 dark:text-blue-400' : 
-                     party === 'R' ? 'text-red-600 dark:text-red-400' : 
-                     'text-gray-600 dark:text-gray-400';
-                     
-  // Get party name
-  const partyName = party === 'D' ? 'Democrat' : 
-                    party === 'R' ? 'Republican' : 
-                    party;
+  // Calculate overall impact based on filtered bills
+  const overallImpact = calculateOverallImpact(filteredBills);
   
-  const OverallImpactIcon = overallImpact.Icon;
+  // Get party name and color
+  const partyName = getPartyName(party);
+  
+  // Determine if this is a federal representative (for bill links)
+  const isFederal = office === "U.S. House of Representatives" || office === "U.S. Senate";
   
   return (
     <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm overflow-hidden text-zinc-900 dark:text-white">
@@ -444,9 +448,12 @@ function RepresentativeListItem({ representative }: { representative: Representa
         {/* Column 1: Bio */}
         <div className="p-6 md:w-1/3 flex flex-col md:border-r border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-4 mb-4">
-            {/* Bio image - using a placeholder */}
-            <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex items-center justify-center text-gray-500 dark:text-gray-400">
-              <span className="text-2xl font-bold">{name.charAt(0)}</span>
+            {/* Bio image - using SponsorImage component with votesmart_id */}
+            <div className="relative w-24 h-32 rounded-md overflow-hidden mb-3 md:mb-0">
+              <SponsorImage 
+                votesmartId={votesmart_id || null} 
+                name={name} 
+              />
             </div>
             
             {/* Overall impact score */}
@@ -455,12 +462,18 @@ function RepresentativeListItem({ representative }: { representative: Representa
                 {overallImpact.Icon && <overallImpact.Icon className="h-5 w-5 mr-1" />}
                 <span className="font-semibold">{overallImpact.score}% {overallImpact.type.charAt(0).toUpperCase() + overallImpact.type.slice(1)}</span>
               </div>
-              <span className={`text-sm ${partyColor}`}>{partyName}</span>
+              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${
+                party === "1" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" : 
+                party === "2" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" : 
+                "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+              }`}>
+                {partyName}
+              </span>
             </div>
           </div>
           
           {/* Name and district */}
-          <Link href={`/representative/${id}`} className="text-xl font-bold hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+          <Link href={`/sponsor/${id}`} className="text-xl font-bold hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
             {name}
           </Link>
           
@@ -477,20 +490,23 @@ function RepresentativeListItem({ representative }: { representative: Representa
         <div className="p-6 md:w-2/3 bg-gray-50 dark:bg-zinc-900/50">
           <h3 className="text-lg font-semibold mb-3">Top Impact Bills</h3>
           
-          {bills && bills.length > 0 ? (
+          {filteredBills && filteredBills.length > 0 ? (
             <div className="space-y-4">
-              {bills.map(bill => {
+              {filteredBills.map(bill => {
                 const impact = calculateImpact(bill.impactScore, bill.isPrimary);
                 const ImpactIcon = impact.Icon;
                 
+                // Use "us" for federal representatives, state code for state representatives
+                const stateCode = isFederal ? "us" : state.toLowerCase();
+                
                 return (
                   <div key={bill.id} className="border-b border-gray-200 dark:border-gray-700 pb-3 last:border-0 last:pb-0">
-                    <Link href={`/bill/${bill.id}`} className="font-medium line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                    <Link href={`/${stateCode}/bill/${bill.id}`} className="font-medium line-clamp-2 hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                       {bill.title}
                     </Link>
                     
                     <div className="flex items-center justify-between mt-2">
-                      <span className={`text-xs px-2 py-1 rounded-full ${impact.sponsorClass}`}>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full ${impact.sponsorClass}`}>
                         {impact.sponsorType}
                       </span>
                       

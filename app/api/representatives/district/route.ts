@@ -40,7 +40,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       );
     }
     
-    const stateId = stateResult[0].state_id;
     const stateAbbr = stateResult[0].state_abbr;
     
     // Query for House representative if district is provided
@@ -57,6 +56,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           p.party_id,
           p.state_id,
           p.district,
+          p.votesmart_id,
           'house' as chamber,
           'Representative' as role
         FROM 
@@ -88,6 +88,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           WHERE 
             bs.people_id = ${rep.people_id}
             AND bs.sponsor_type_id = 1  -- Primary sponsor
+            AND b.bill_type_id = 1  -- Only return bills of type 1
           ORDER BY 
             ba.overall_positive_impact_score DESC
           LIMIT 2
@@ -110,6 +111,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           WHERE 
             bs.people_id = ${rep.people_id}
             AND bs.sponsor_type_id = 1  -- Primary sponsor
+            AND b.bill_type_id = 1  -- Only return bills of type 1
           ORDER BY 
             ba.overall_bias_score DESC
           LIMIT 2
@@ -136,6 +138,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             WHERE 
               bs.people_id = ${rep.people_id}
               AND bs.sponsor_type_id != 1  -- Not primary sponsor
+              AND b.bill_type_id = 1  -- Only return bills of type 1
             ORDER BY 
               ba.overall_positive_impact_score DESC
             LIMIT 4
@@ -160,6 +163,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             twitter: "",
             facebook: ""
           },
+          votesmart_id: rep.votesmart_id ? rep.votesmart_id.toString() : null,
           bills: bills.map(bill => ({
             id: bill.bill_id.toString(),
             title: bill.title,
@@ -184,6 +188,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         p.party_id,
         p.state_id,
         p.district,
+        p.votesmart_id,
         'senate' as chamber,
         'Senator' as role
       FROM 
@@ -215,6 +220,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         WHERE 
           bs.people_id = ${senator.people_id}
           AND bs.sponsor_type_id = 1  -- Primary sponsor
+          AND b.bill_type_id = 1  -- Only return bills of type 1
         ORDER BY 
           ba.overall_positive_impact_score DESC
         LIMIT 2
@@ -237,6 +243,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         WHERE 
           bs.people_id = ${senator.people_id}
           AND bs.sponsor_type_id = 1  -- Primary sponsor
+          AND b.bill_type_id = 1  -- Only return bills of type 1
         ORDER BY 
           ba.overall_bias_score DESC
         LIMIT 2
@@ -263,6 +270,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           WHERE 
             bs.people_id = ${senator.people_id}
             AND bs.sponsor_type_id != 1  -- Not primary sponsor
+            AND b.bill_type_id = 1  -- Only return bills of type 1
           ORDER BY 
             ba.overall_positive_impact_score DESC
           LIMIT 4
@@ -287,6 +295,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           twitter: "",
           facebook: ""
         },
+        votesmart_id: senator.votesmart_id ? senator.votesmart_id.toString() : null,
         bills: bills.map(bill => ({
           id: bill.bill_id.toString(),
           title: bill.title,

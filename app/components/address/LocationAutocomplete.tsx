@@ -164,7 +164,7 @@ export default function LocationAutocomplete({
       console.error('Error geocoding zip code:', err);
       setError('Could not find location for the provided zip code. Please enter a valid US zip code.');
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 
