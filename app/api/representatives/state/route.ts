@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import postgres from 'postgres';
-
-// Initialize database connection
-const sql = postgres(process.env.LEGISCAN_DB_URL || '');
+import sql from '@/lib/db';
 
 /**
  * API endpoint to get state representatives by district

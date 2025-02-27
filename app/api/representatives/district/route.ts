@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import postgres from 'postgres';
+import sql from '@/lib/db';
 
 /**
  * API endpoint to get representatives for a district
  * This queries the database for representatives based on state and district
  */
-
-// Initialize database connection
-const sql = postgres(process.env.LEGISCAN_DB_URL || '');
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   // Extract parameters from query 
@@ -48,9 +45,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     
     // Query for House representative if district is provided
     if (district) {
-      // Format district with leading zeros (e.g., "006")
-      const formattedDistrict = district.padStart(3, '0');
-      const districtCode = `HD-${formattedDistrict}`;
+      // Format district code using the correct format: HD-{stateAbbr}-{district}
+      const districtCode = `HD-${stateAbbr}-${district}`;
+      console.log(`Looking for House representative with district code: ${districtCode}`);
       
       // Query for House representative
       const houseReps = await sql`
@@ -175,8 +172,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
     
     // Query for Senators based on state
-    // Use the state abbreviation for the district pattern
+    // Use the state abbreviation for the district pattern for Senators
+    // Format: SD-{stateAbbr}
     const senateDistrictPattern = `SD-${stateAbbr}`;
+    console.log(`Looking for senators with district pattern: ${senateDistrictPattern}`);
     
     const senators = await sql`
       SELECT 
@@ -306,8 +305,5 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { error: "SERVER_ERROR" },
       { status: 500 }
     );
-  } finally {
-    // Close the database connection
-    await sql.end();
   }
 } 
