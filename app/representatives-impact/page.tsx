@@ -4,6 +4,8 @@ import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { AlertCircle, CheckCircle, AlertTriangle, MinusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { getStateName } from '@/app/utils/stateUtils';
+import { AuroraBackground } from '@/app/components/ui/aurora-background';
+import { Footer } from '@/app/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'Your Elected Representatives | Bills Impact',
@@ -245,10 +247,31 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
   // If no form data, show the form
   if (!formData) {
     return (
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-6">Find Your Representatives</h1>
-        <p className="mb-6">Enter your zip code to find your representatives and see their impact on legislation.</p>
-        <LocationAutocomplete formAction="/api/representatives/submit" />
+      <div className="min-h-screen bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
+        {/* Hero Section */}
+        <section className="h-[30vh] relative">
+          <AuroraBackground>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <h1 className="text-4xl md:text-6xl font-bold text-zinc-900 dark:text-white text-center">
+                Find Your Representatives
+              </h1>
+              <p className="text-lg mt-4 text-zinc-700 dark:text-zinc-300 text-center">
+                Enter your zip code to find your representatives and see their impact on legislation.
+              </p>
+            </div>
+          </AuroraBackground>
+        </section>
+        
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-8 max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 text-zinc-900 dark:text-white">Enter your zip code</h2>
+            <p className="mb-6 text-zinc-700 dark:text-zinc-300">
+              We'll use your location to find your federal and state representatives and show you the bills they've sponsored.
+            </p>
+            <LocationAutocomplete formAction="/api/representatives/submit" />
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -262,7 +285,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
     
     if (districtData.error) {
       return (
-        <div className="container mx-auto py-8">
+        <div className="container mx-auto py-8 text-zinc-900 dark:text-white">
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -296,15 +319,22 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
 
     // Show results
     return (
-      <div className="relative min-h-screen">
-        {/* Aurora Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-100 via-indigo-50 to-purple-100 dark:from-sky-950 dark:via-indigo-950 dark:to-purple-950 opacity-50 -z-10"></div>
-        <div className="absolute inset-0 bg-[url('/images/aurora-grid.svg')] bg-center bg-no-repeat bg-cover opacity-10 dark:opacity-5 -z-10"></div>
+      <div className="min-h-screen bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
+        {/* Hero Section */}
+        <section className="h-[30vh] relative">
+          <AuroraBackground>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <h1 className="text-4xl md:text-6xl font-bold text-zinc-900 dark:text-white text-center">
+                Your Representatives
+              </h1>
+              <p className="text-lg mt-4 text-zinc-700 dark:text-zinc-300 text-center">
+                Democracy in action for {address}
+              </p>
+            </div>
+          </AuroraBackground>
+        </section>
         
-        <div className="container mx-auto py-12 px-4">
-          <h1 className="text-4xl font-bold mb-2 text-center">Your Representatives</h1>
-          <p className="text-lg mb-8 text-center text-gray-600 dark:text-gray-300">Democracy in action for {address}</p>
-          
+        <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="mb-8 grid gap-4 md:grid-cols-3">
             {state && district && (
               <div className="p-4 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
@@ -330,7 +360,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
 
           {/* Federal Representatives Section */}
           <section className="mb-10">
-            <h2 className="text-2xl font-bold mb-6 border-b pb-2">Congress</h2>
+            <h2 className="text-2xl font-bold mb-6 border-b pb-2 text-zinc-900 dark:text-white">Congress</h2>
             
             {representativesData.representatives && representativesData.representatives.length > 0 ? (
               <div className="space-y-6">
@@ -351,7 +381,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
           {/* State Representatives Section */}
           {stateRepresentativesData.representatives && stateRepresentativesData.representatives.length > 0 && (
             <section className="mb-10">
-              <h2 className="text-2xl font-bold mb-6 border-b pb-2">{stateName} Representatives</h2>
+              <h2 className="text-2xl font-bold mb-6 border-b pb-2 text-zinc-900 dark:text-white">{stateName} Representatives</h2>
               
               <div className="space-y-6">
                 {stateRepresentativesData.representatives.map(rep => (
@@ -365,17 +395,18 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
           )}
 
           <div className="mt-10 p-6 bg-white dark:bg-zinc-800 rounded-lg shadow-sm">
-            <h2 className="text-xl font-bold mb-4">Not your district?</h2>
+            <h2 className="text-xl font-bold mb-4 text-zinc-900 dark:text-white">Not your district?</h2>
             <LocationAutocomplete formAction="/api/representatives/submit" />
           </div>
         </div>
+        <Footer />
       </div>
     );
   } catch (error) {
     console.error('Error processing form data:', error);
     
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 text-zinc-900 dark:text-white">
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>An unexpected error occurred. Please try again.</AlertDescription>
@@ -408,7 +439,7 @@ function RepresentativeListItem({ representative }: { representative: Representa
   const OverallImpactIcon = overallImpact.Icon;
   
   return (
-    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm overflow-hidden text-zinc-900 dark:text-white">
       <div className="flex flex-col md:flex-row">
         {/* Column 1: Bio */}
         <div className="p-6 md:w-1/3 flex flex-col md:border-r border-gray-200 dark:border-gray-700">
