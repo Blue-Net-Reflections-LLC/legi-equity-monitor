@@ -65,12 +65,14 @@ interface LocationAutocompleteProps {
   className?: string;
   fullWidth?: boolean;
   formAction?: string;
+  showLabel?: boolean;
 }
 
 export default function LocationAutocomplete({
   className = '',
   fullWidth = false,
   formAction = '/api/representatives/submit',
+  showLabel = true,
 }: LocationAutocompleteProps) {
   const [zipCode, setZipCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -216,16 +218,20 @@ export default function LocationAutocomplete({
                   lngInput.value = longitude.toString();
                   addressInput.value = addressText;
                   
+                  // End loading state
+                  setIsLoading(false);
+                  
                   // Just update fields without submitting the form
                   if (!addressText) {
                     setError('Could not determine your zip code. You may need to enter it manually.');
+                  } else {
+                    // Show a success message
+                    setError(null);
                   }
                 } else {
                   setError('Form field error. Please try again.');
+                  setIsLoading(false);
                 }
-                
-                // End loading state
-                setIsLoading(false);
               } else {
                 // Handle geocoding failure
                 setError('Could not determine your location. Please enter a zip code manually.');
@@ -264,9 +270,11 @@ export default function LocationAutocomplete({
         className="space-y-4"
       >
         <div className="flex flex-col">
-          <label htmlFor="zipCode" className="mb-2 text-sm font-medium">
-            Enter your zip code to find your representatives
-          </label>
+          {showLabel && (
+            <label htmlFor="zipCode" className="mb-2 text-sm font-medium">
+              Who Represents You? Enter Your Zip Code
+            </label>
+          )}
           <div className="flex gap-2">
             <div className={`${fullWidth ? 'w-full' : 'flex-1'}`}>
               <Input
@@ -295,11 +303,18 @@ export default function LocationAutocomplete({
               title="Use my current location"
               aria-label="Use my current location"
             >
-              <MapPin size={20} />
+              {isLoading ? (
+                <svg className="animate-spin h-5 w-5 text-zinc-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <MapPin size={20} />
+              )}
             </Button>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Enter your zip code to find representatives for your area.
+            Discover your Congressional & State representatives with just a zip code.
           </p>
         </div>
 
@@ -311,10 +326,20 @@ export default function LocationAutocomplete({
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full bg-orange-600 hover:bg-orange-700 text-white"
           disabled={isLoading || !zipCode}
         >
-          {isLoading ? 'Finding Your Location...' : 'Find My Representatives'}
+          {isLoading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Finding Representatives...</span>
+            </div>
+          ) : (
+            'Find My Representatives'
+          )}
         </Button>
       </form>
     </div>
