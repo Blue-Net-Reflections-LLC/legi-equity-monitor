@@ -48,6 +48,8 @@ interface DistrictData {
   district: string;
   stateSenateDistrict?: string;
   stateHouseDistrict?: string;
+  county?: string;
+  metroDivision?: string;
   error?: string;
 }
 
@@ -356,7 +358,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
     }
 
     // Fetch representatives
-    const { state, district, stateSenateDistrict, stateHouseDistrict } = districtData;
+    const { state, district, stateSenateDistrict, stateHouseDistrict, county, metroDivision } = districtData;
     
     // Federal representatives
     let representativesData: RepresentativesResponse = { representatives: [] };
@@ -373,6 +375,24 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
     // Get proper state name from state code
     const stateName = getStateName(state);
 
+    // Format location information for subtitle
+    let locationInfo = address;
+    if (county || metroDivision || state) {
+      const locationDetails = [];
+      if (county) locationDetails.push(county);
+      
+      // If metro division exists, use it; otherwise use state name
+      if (metroDivision) {
+        // Extract just the base name (e.g., "Marietta, GA" from "Marietta, GA Metro Division")
+        const metroBase = metroDivision.replace(' Metro Division', '');
+        locationDetails.push(metroBase);
+      } else if (state) {
+        locationDetails.push(stateName);
+      }
+      
+      locationInfo = `${address} (${locationDetails.join(', ')})`;
+    }
+
     // Show results
     return (
       <div className="min-h-screen bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
@@ -384,7 +404,7 @@ export default async function RepresentativesImpactPage(props: RepresentativesIm
                 Your Representatives
               </h1>
               <p className="text-lg mt-4 text-zinc-700 dark:text-zinc-300 text-center">
-                Democracy in action for {address}
+                Democracy in action for {locationInfo}
               </p>
             </div>
           </AuroraBackground>

@@ -9,6 +9,7 @@ interface CensusApiResponse {
       [key: string]: Array<{
         STUSAB?: string;
         BASENAME?: string;
+        NAME?: string;
         [key: string]: any;
       }>;
     };
@@ -97,11 +98,25 @@ function extractDistrictData(data: CensusApiResponse) {
       }
     }
     
+    // Get county information
+    let county = null;
+    if (geographies['Counties']?.length > 0) {
+      county = geographies['Counties'][0].NAME;
+    }
+    
+    // Get metropolitan division information
+    let metroDivision = null;
+    if (geographies['Metropolitan Divisions']?.length > 0) {
+      metroDivision = geographies['Metropolitan Divisions'][0].NAME;
+    }
+    
     return {
       state: stateCode,
       district,
       stateSenateDistrict,
-      stateHouseDistrict
+      stateHouseDistrict,
+      county,
+      metroDivision
     };
   } catch (error) {
     console.error('Error extracting district data:', error);
