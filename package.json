@@ -11,7 +11,8 @@
     "certs": "bash scripts/generate-certificates.sh",
     "analyze": "npx tsx scripts/process-all-bills.ts",
     "cluster:analyze": "npx tsx analysis_service/src/cluster-analysis.ts",
-    "cluster:dry-run": "npx tsx analysis_service/src/cluster-analysis.ts --dry-run"
+    "cluster:dry-run": "npx tsx analysis_service/src/cluster-analysis.ts --dry-run",
+    "sync:legislators": "npx tsx scripts/sync-us-legislators.ts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.2.3",

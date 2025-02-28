@@ -10,6 +10,7 @@ import { Footer } from "@/app/components/layout/Footer";
 import { SponsoredBillsList } from '@/app/components/sponsor/SponsoredBillsList';
 import { Metadata } from 'next';
 import SponsorImage from '@/app/components/sponsor/SponsorImage';
+import LocationAutocomplete from '@/app/components/address/LocationAutocomplete';
 
 interface SubgroupScore {
   subgroup_code: string;
@@ -467,6 +468,16 @@ export default async function SponsorPage({
                   </div>
                 </div>
               </div>
+            </Card>
+
+            {/* Find Representatives Card */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Who Represents You?</h3>
+              <LocationAutocomplete
+                formAction="/api/representatives/submit"
+                fullWidth={true}
+                showLabel={false}
+              />
             </Card>
           </div>
 

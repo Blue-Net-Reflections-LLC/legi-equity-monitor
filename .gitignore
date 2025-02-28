@@ -51,3 +51,6 @@ __pycache__/
 
 /logs/
 certificates
+
+# Temporary files
+/temp/

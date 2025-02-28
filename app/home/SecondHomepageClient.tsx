@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import AdUnit from '../components/ads/AdUnit';
+import { Card, CardContent } from "../components/ui/card";
+import LocationAutocomplete from '../components/address/LocationAutocomplete';
 
 // Dynamically import components with CSR
 const AnimatedStatesMap = dynamic(
@@ -172,10 +174,12 @@ export function SecondHomepageClient({ blogPosts, videos }: SecondHomepageProps)
             <TrendingUp className="w-5 h-5" />
             Latest Legislative Trends
           </div>
-          <div className="grid grid-cols-4 gap-6">
+          
+          {/* Responsive Grid Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Featured Post - Split Layout */}
             {featuredPost && (
-              <div className="col-span-3 group grid md:grid-cols-2 gap-6 overflow-hidden bg-zinc-50 dark:bg-zinc-800/50">
+              <div className="col-span-1 md:col-span-3 group grid md:grid-cols-2 gap-6 overflow-hidden bg-zinc-50 dark:bg-zinc-800/50">
                 <div className="flex flex-col justify-center p-8">
                   <Link href={`/blog/${featuredPost.slug}`}>
                     <h2 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors mb-3">
@@ -207,8 +211,17 @@ export function SecondHomepageClient({ blogPosts, videos }: SecondHomepageProps)
               </div>
             )}
 
-            {/* Empty Column for Ads */}
-            <div className="col-span-1">
+            {/* Right Rail - Stacks on Mobile */}
+            <div className="col-span-1 order-3 md:order-2">
+              {/* Find Representatives Form */}
+              <Card className="mb-6">
+                <CardContent className="pt-6">
+                  <LocationAutocomplete 
+                    formAction="/api/representatives/submit"
+                    fullWidth={true}
+                  />
+                </CardContent>
+              </Card>
               <AdUnit
                 slot="4008304448"
                 className="h-full"
@@ -223,32 +236,34 @@ export function SecondHomepageClient({ blogPosts, videos }: SecondHomepageProps)
               </div>
             </div>
 
-            {/* Recent Posts - Under the Featured Post */}
-            <div className="col-span-3 grid grid-cols-3 gap-6">
-              {recentPosts.map((post) => (
-                <article key={post.slug} className="group">
-                  <Link href={`/blog/${post.slug}`}>
-                    <div className="aspect-[16/9] relative overflow-hidden mb-4">
-                      {post.main_image ? (
-                        <Image
-                          src={post.main_image}
-                          alt={post.title}
-                          fill
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-zinc-200 dark:bg-zinc-700" />
-                      )}
-                    </div>
-                    <h3 className="text-lg font-medium text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors mb-2">
-                      {post.title}
-                    </h3>
-                    <div className="text-sm text-orange-600 dark:text-orange-400">
-                      {format(new Date(post.published_at), 'MMMM d, yyyy')}
-                    </div>
-                  </Link>
-                </article>
-              ))}
+            {/* Recent Posts - Under the Featured Post, Full Width on Mobile */}
+            <div className="col-span-1 md:col-span-3 order-2 md:order-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {recentPosts.map((post) => (
+                  <article key={post.slug} className="group">
+                    <Link href={`/blog/${post.slug}`}>
+                      <div className="aspect-[16/9] relative overflow-hidden mb-4">
+                        {post.main_image ? (
+                          <Image
+                            src={post.main_image}
+                            alt={post.title}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-200 dark:bg-zinc-700" />
+                        )}
+                      </div>
+                      <h3 className="text-lg font-medium text-zinc-900 dark:text-white group-hover:text-orange-500 transition-colors mb-2">
+                        {post.title}
+                      </h3>
+                      <div className="text-sm text-orange-600 dark:text-orange-400">
+                        {format(new Date(post.published_at), 'MMMM d, yyyy')}
+                      </div>
+                    </Link>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </div>
