@@ -8,7 +8,6 @@ import { Footer } from '@/app/components/layout/Footer';
 import SponsorImage from '@/app/components/sponsor/SponsorImage';
 import { STATE_NAMES } from '@/app/constants/states';
 import { ImpactScore } from "@/app/components/analysis/ImpactScore";
-import { ConfidenceBadge } from "@/app/components/analysis/ConfidenceBadge";
 
 const getStateName = (stateCode: string) => STATE_NAMES[stateCode] || stateCode;
 

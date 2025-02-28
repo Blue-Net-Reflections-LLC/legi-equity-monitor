@@ -10,7 +10,7 @@ interface CensusApiResponse {
         STUSAB?: string;
         BASENAME?: string;
         NAME?: string;
-        [key: string]: any;
+        [key: string]: string | number | boolean | null | undefined;
       }>;
     };
   };

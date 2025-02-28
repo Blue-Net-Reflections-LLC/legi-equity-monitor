@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import AdUnit from '../components/ads/AdUnit';
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import LocationAutocomplete from '../components/address/LocationAutocomplete';
 
 // Dynamically import components with CSR
