@@ -186,7 +186,7 @@ export default function LocationAutocomplete({
           setLatitude(latitude);
           setLongitude(longitude);
           
-          // Optionally reverse geocode to get zip code
+          // Reverse geocode to get address information
           const geocoder = new google.maps.Geocoder();
           geocoder.geocode(
             { location: { lat: latitude, lng: longitude } },
@@ -198,20 +198,38 @@ export default function LocationAutocomplete({
                   component => component.types.includes('postal_code')
                 );
                 
+                let addressText = results[0].formatted_address || '';
+                
                 if (zipComponent) {
+                  // Set the zip code in the input field
                   setZipCode(zipComponent.short_name);
+                  addressText = zipComponent.short_name; // Use zip code as address if found
                 }
-              }
-              setIsLoading(false);
-              
-              // Submit the form with location data
-              const latInput = document.querySelector('input[name="lat"]') as HTMLInputElement;
-              const lngInput = document.querySelector('input[name="lng"]') as HTMLInputElement;
-              
-              if (latInput && lngInput) {
-                latInput.value = latitude.toString();
-                lngInput.value = longitude.toString();
-                formRef.current?.submit();
+                
+                // Set all required form fields
+                const latInput = document.querySelector('input[name="lat"]') as HTMLInputElement;
+                const lngInput = document.querySelector('input[name="lng"]') as HTMLInputElement;
+                const addressInput = document.querySelector('input[name="address"]') as HTMLInputElement;
+                
+                if (latInput && lngInput && addressInput) {
+                  latInput.value = latitude.toString();
+                  lngInput.value = longitude.toString();
+                  addressInput.value = addressText;
+                  
+                  // Just update fields without submitting the form
+                  if (!addressText) {
+                    setError('Could not determine your zip code. You may need to enter it manually.');
+                  }
+                } else {
+                  setError('Form field error. Please try again.');
+                }
+                
+                // End loading state
+                setIsLoading(false);
+              } else {
+                // Handle geocoding failure
+                setError('Could not determine your location. Please enter a zip code manually.');
+                setIsLoading(false);
               }
             }
           );
