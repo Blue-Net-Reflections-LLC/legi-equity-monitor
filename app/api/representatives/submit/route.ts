@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
     const redirectUrl = `/representatives-impact?${params.toString()}`;
     
     // Redirect to the results page (303 See Other is correct for form submissions)
-    return NextResponse.redirect(new URL(redirectUrl, request.url), 303);
+    // return NextResponse.redirect(new URL(redirectUrl, request.url), 303);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${redirectUrl}`, 303);
   } catch (error) {
     console.error('Error processing form submission:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
