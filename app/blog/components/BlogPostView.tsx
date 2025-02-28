@@ -10,6 +10,8 @@ import { Toaster } from 'sonner';
 import { Recommendations } from '@/components/recommendations';
 import { ShareButtons } from '@/app/components/ShareButtons';
 import AdUnit from '@/app/components/ads/AdUnit';
+import LocationAutocomplete from '@/app/components/address/LocationAutocomplete';
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 
 interface BlogPostViewProps {
   post: BlogPost;
@@ -185,11 +187,28 @@ export function BlogPostView({
             />
 
             {/* Sidebar */}
-            <aside className="lg:h-[calc(100vh-2rem)] lg:sticky lg:top-8">
-              <AdUnit
-                slot="3689574391"
-                className="h-full"
-              />
+            <aside className="space-y-6">
+              <div className="lg:sticky lg:top-8">
+                {/* Find Representatives Form */}
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="text-base">Who Represents You?</CardTitle>
+                    <p className="text-sm text-muted-foreground">Discover your Congressional & State representatives</p>
+                  </CardHeader>
+                  <CardContent>
+                    <LocationAutocomplete 
+                      formAction="/api/representatives/submit"
+                      fullWidth={true}
+                      showLabel={false}
+                    />
+                  </CardContent>
+                </Card>
+
+                <AdUnit
+                  slot="3689574391"
+                  className="h-full"
+                />
+              </div>
             </aside>
           </div>
 

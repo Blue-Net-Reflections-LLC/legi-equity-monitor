@@ -77,7 +77,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             b.bill_id,
             b.bill_number,
             b.title,
-            ba.overall_positive_impact_score as impact_score,
+            ba.overall_positive_impact_score,
+            ba.overall_bias_score,
             bs.sponsor_type_id = 1 as is_primary
           FROM 
             ls_bill b
@@ -100,7 +101,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             b.bill_id,
             b.bill_number,
             b.title,
-            ba.overall_bias_score as impact_score,
+            ba.overall_positive_impact_score,
+            ba.overall_bias_score,
             bs.sponsor_type_id = 1 as is_primary
           FROM 
             ls_bill b
@@ -127,7 +129,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
               b.bill_id,
               b.bill_number,
               b.title,
-              ba.overall_positive_impact_score as impact_score,
+              ba.overall_positive_impact_score,
+              ba.overall_bias_score,
               bs.sponsor_type_id = 1 as is_primary
             FROM 
               ls_bill b
@@ -168,7 +171,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             id: bill.bill_id.toString(),
             title: bill.title,
             number: bill.bill_number,
-            impactScore: parseFloat(bill.impact_score),
+            positiveScore: parseFloat(bill.overall_positive_impact_score),
+            biasScore: parseFloat(bill.overall_bias_score),
             isPrimary: bill.is_primary
           }))
         });
@@ -210,7 +214,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             b.bill_id,
             b.bill_number,
             b.title,
-            ba.overall_positive_impact_score as impact_score,
+            ba.overall_positive_impact_score,
+            ba.overall_bias_score,
             bs.sponsor_type_id = 1 as is_primary
           FROM 
             ls_bill b
@@ -233,7 +238,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             b.bill_id,
             b.bill_number,
             b.title,
-            ba.overall_bias_score as impact_score,
+            ba.overall_positive_impact_score,
+            ba.overall_bias_score,
             bs.sponsor_type_id = 1 as is_primary
           FROM 
             ls_bill b
@@ -260,7 +266,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
               b.bill_id,
               b.bill_number,
               b.title,
-              ba.overall_positive_impact_score as impact_score,
+              ba.overall_positive_impact_score,
+              ba.overall_bias_score,
               bs.sponsor_type_id = 1 as is_primary
             FROM 
               ls_bill b
@@ -301,7 +308,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             id: bill.bill_id.toString(),
             title: bill.title,
             number: bill.bill_number,
-            impactScore: parseFloat(bill.impact_score),
+            positiveScore: parseFloat(bill.overall_positive_impact_score),
+            biasScore: parseFloat(bill.overall_bias_score),
             isPrimary: bill.is_primary
           }))
         });
@@ -311,9 +319,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // Return the results
     return NextResponse.json({ representatives });
   } catch (error) {
-    console.error('Error fetching state representatives:', error);
+    console.error('Error processing state representatives request:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch state representatives' },
+      { error: 'SERVER_ERROR' },
       { status: 500 }
     );
   }
