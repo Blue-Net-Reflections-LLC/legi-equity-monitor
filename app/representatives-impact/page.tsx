@@ -7,6 +7,8 @@ import { AuroraBackground } from '@/app/components/ui/aurora-background';
 import { Footer } from '@/app/components/layout/Footer';
 import SponsorImage from '@/app/components/sponsor/SponsorImage';
 import { STATE_NAMES } from '@/app/constants/states';
+import { ImpactScore } from "@/app/components/analysis/ImpactScore";
+import { ConfidenceBadge } from "@/app/components/analysis/ConfidenceBadge";
 
 const getStateName = (stateCode: string) => STATE_NAMES[stateCode] || stateCode;
 
@@ -69,7 +71,8 @@ interface Representative {
     id: string;
     title: string;
     number: string;
-    impactScore: number;
+    positiveScore: number;
+    biasScore: number;
     isPrimary: boolean;
     bill_type_id?: number;
   }>;
@@ -179,11 +182,26 @@ async function getStateRepresentatives(state: string, senateDistrict?: string, h
   }
 }
 
-// Calculate impact score (same logic as bill detail page)
-function calculateImpact(score: number, isPrimary: boolean) {
-  // Get impact type based on score
-  const type = score >= 0.6 ? 'positive' : score <= -0.6 ? 'bias' : 'neutral';
-  const percentage = Math.round(Math.abs(score) * 100);
+// Calculate impact score for a bill based on its positive and bias scores
+function calculateImpact(positiveScore: number, biasScore: number, isPrimary: boolean) {
+  // Check if both scores are below the threshold (0.6)
+  if (positiveScore < 0.6 && biasScore < 0.6) {
+    return {
+      score: Math.round(Math.max(positiveScore, biasScore) * 100),
+      type: 'neutral',
+      colorClass: 'text-zinc-500 dark:text-zinc-400',
+      Icon: MinusCircle,
+      sponsorType: isPrimary ? 'Primary Sponsor' : 'Co-Sponsor',
+      sponsorClass: isPrimary ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white' : 
+                   'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+    };
+  }
+
+  // Determine which score is higher
+  const isPositive = positiveScore >= biasScore;
+  const score = isPositive ? positiveScore : biasScore;
+  const type = isPositive ? 'positive' : 'bias';
+  const percentage = Math.round(score * 100);
 
   let colorClass = '';
   if (type === 'positive') {
@@ -211,23 +229,39 @@ function calculateImpact(score: number, isPrimary: boolean) {
 
 // Calculate overall impact for a representative based on their bills
 function calculateOverallImpact(bills: Representative['bills']) {
-  if (!bills || bills.length === 0) return { score: 0, type: 'neutral', colorClass: 'text-zinc-500' };
+  if (!bills || bills.length === 0) return { score: 0, type: 'neutral', colorClass: 'text-zinc-500', Icon: MinusCircle };
   
-  // Calculate average impact score, giving more weight to primary sponsored bills
-  const totalImpact = bills.reduce((sum, bill) => {
+  // Calculate average impact scores, giving more weight to primary sponsored bills
+  let totalPositive = 0;
+  let totalBias = 0;
+  let totalWeight = 0;
+  
+  bills.forEach(bill => {
     const weight = bill.isPrimary ? 2 : 1;
-    return sum + (bill.impactScore * weight);
-  }, 0);
+    totalPositive += bill.positiveScore * weight;
+    totalBias += bill.biasScore * weight;
+    totalWeight += weight;
+  });
   
-  const totalWeight = bills.reduce((sum, bill) => sum + (bill.isPrimary ? 2 : 1), 0);
-  const averageImpact = totalWeight > 0 ? totalImpact / totalWeight : 0;
+  const avgPositiveScore = totalWeight > 0 ? totalPositive / totalWeight : 0;
+  const avgBiasScore = totalWeight > 0 ? totalBias / totalWeight : 0;
   
-  // Determine impact type
-  const type = averageImpact >= 0.6 ? 'positive' : 
-               averageImpact <= -0.6 ? 'bias' : 
-               'neutral';
-               
-  const percentage = Math.round(Math.abs(averageImpact) * 100);
+  // If both scores are below threshold, return neutral
+  if (avgPositiveScore < 0.6 && avgBiasScore < 0.6) {
+    return {
+      score: Math.round(Math.max(avgPositiveScore, avgBiasScore) * 100),
+      type: 'neutral',
+      colorClass: 'text-zinc-500 dark:text-zinc-400',
+      Icon: MinusCircle
+    };
+  }
+  
+  // Determine which score is higher
+  const isPositive = avgPositiveScore >= avgBiasScore;
+  const score = isPositive ? avgPositiveScore : avgBiasScore;
+  const type = isPositive ? 'positive' : 'bias';
+  
+  const percentage = Math.round(score * 100);
   
   let colorClass = '';
   if (type === 'positive') {
@@ -435,6 +469,9 @@ function RepresentativeListItem({ representative }: { representative: Representa
   // Determine if this is a federal representative (for bill links)
   const isFederal = office === "U.S. House of Representatives" || office === "U.S. Senate";
   
+  // Convert legacy score format to ImpactScore format
+  const positiveScore = overallImpact.type === 'positive' ? overallImpact.score / 100 : 0;
+  const biasScore = overallImpact.type === 'bias' ? overallImpact.score / 100 : 0;
   return (
     <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm overflow-hidden text-zinc-900 dark:text-white">
       <div className="flex flex-col md:flex-row">
@@ -451,17 +488,10 @@ function RepresentativeListItem({ representative }: { representative: Representa
             
             {/* Overall impact score */}
             <div className="flex flex-col">
-              <div className={`flex items-center ${overallImpact.colorClass}`}>
-                {overallImpact.Icon && <overallImpact.Icon className="h-5 w-5 mr-1" />}
-                <span className="font-semibold">{overallImpact.score}% {overallImpact.type.charAt(0).toUpperCase() + overallImpact.type.slice(1)}</span>
-              </div>
-              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full ${
-                party === "1" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" : 
-                party === "2" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" : 
-                "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
-              }`}>
-                {partyName}
-              </span>
+              <ImpactScore
+                positiveScore={positiveScore}
+                biasScore={biasScore}
+              />
             </div>
           </div>
           
@@ -469,6 +499,17 @@ function RepresentativeListItem({ representative }: { representative: Representa
           <Link href={`/sponsor/${id}`} className="text-xl font-bold hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
             {name}
           </Link>
+          
+          {/* Party badge - moved here */}
+          <span className={`mt-1 inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full w-fit ${
+            Number(party) === 1 
+              ? "bg-blue-500 text-white dark:bg-blue-600 dark:text-white" 
+              : Number(party) === 2 
+                ? "bg-red-500 text-white dark:bg-red-600 dark:text-white" 
+                : "bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200"
+          }`}>
+            {partyName}
+          </span>
           
           <div className="mt-2 text-gray-600 dark:text-gray-400">
             <div>{role}</div>
@@ -486,7 +527,7 @@ function RepresentativeListItem({ representative }: { representative: Representa
           {filteredBills && filteredBills.length > 0 ? (
             <div className="space-y-4">
               {filteredBills.map(bill => {
-                const impact = calculateImpact(bill.impactScore, bill.isPrimary);
+                const impact = calculateImpact(bill.positiveScore, bill.biasScore, bill.isPrimary);
                 const ImpactIcon = impact.Icon;
                 
                 // Use "us" for federal representatives, state code for state representatives
@@ -505,7 +546,9 @@ function RepresentativeListItem({ representative }: { representative: Representa
                       
                       <div className={`flex items-center text-sm ${impact.colorClass}`}>
                         <ImpactIcon className="h-4 w-4 mr-1" />
-                        <span>{impact.score}% {impact.type.charAt(0).toUpperCase() + impact.type.slice(1)}</span>
+                        <span>
+                          {impact.type === 'neutral' ? 'Neutral' : `${impact.score}% ${impact.type.charAt(0).toUpperCase() + impact.type.slice(1)}`}
+                        </span>
                       </div>
                     </div>
                   </div>

@@ -9,7 +9,7 @@ interface CensusApiResponse {
       [key: string]: Array<{
         STUSAB?: string;
         BASENAME?: string;
-        [key: string]: unknown;
+        [key: string]: any;
       }>;
     };
   };
