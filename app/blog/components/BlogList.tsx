@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -9,7 +9,7 @@ import { BlogSkeleton, RegularGridSkeleton } from './skeletons';
 import { cn } from '@/lib/utils';
 import AdUnit from '@/app/components/ads/AdUnit';
 
-interface BlogPost {
+export interface BlogPost {
   title: string;
   slug: string;
   excerpt: string;
@@ -22,11 +22,11 @@ interface BlogPost {
 }
 
 // Helper function to remove HTML tags
-function scrubTags(html: string): string {
+export function scrubTags(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 }
 
-function BlogCard({ post, className = '' }: { post: BlogPost; className?: string }) {
+export function BlogCard({ post, className = '' }: { post: BlogPost; className?: string }) {
   return (
     <Link href={`/blog/${post.slug}`} className={`group block text-neutral-900 dark:text-neutral-50 mb-12 ${className}`}>
       <div className="relative aspect-[16/9] overflow-hidden rounded-lg mb-4">
@@ -53,7 +53,7 @@ function BlogCard({ post, className = '' }: { post: BlogPost; className?: string
   );
 }
 
-function FeaturedBlogCard({ post }: { post: BlogPost }) {
+export function FeaturedBlogCard({ post }: { post: BlogPost }) {
   if (!post) return null;
   
   return (
@@ -85,6 +85,7 @@ function FeaturedBlogCard({ post }: { post: BlogPost }) {
   );
 }
 
+// This is the client-side version that will be kept for backward compatibility
 export function BlogList() {
   const searchParams = useSearchParams();
   const currentPage = parseInt(searchParams.get('page') || '1');
@@ -119,6 +120,19 @@ export function BlogList() {
     return currentPage === 1 ? <BlogSkeleton /> : <RegularGridSkeleton />;
   }
 
+  return <BlogLayout posts={posts} totalPosts={totalPosts} currentPage={currentPage} />;
+}
+
+// Shared layout component that works with both client and server rendered data
+export function BlogLayout({ 
+  posts, 
+  totalPosts, 
+  currentPage 
+}: { 
+  posts: BlogPost[]; 
+  totalPosts: number; 
+  currentPage: number;
+}) {
   if (!posts?.length) {
     return (
       <div className="text-center py-12">
@@ -212,8 +226,8 @@ export function BlogList() {
       {/* Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         {posts.map((post: BlogPost, index: number) => (
-          <>
-            <BlogCard key={post.slug} post={post} />
+          <React.Fragment key={post.slug}>
+            <BlogCard post={post} />
             {index === 7 && (
               <div className="col-span-full w-full my-8">
                 <AdUnit
@@ -222,7 +236,7 @@ export function BlogList() {
                 />
               </div>
             )}
-          </>
+          </React.Fragment>
         ))}
       </div>
 
