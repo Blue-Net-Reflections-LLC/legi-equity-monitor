@@ -1,8 +1,5 @@
 import type { Metadata } from 'next';
 
-// Define the base URL for the entire application
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://legiequity.us';
-
 /**
  * Generates metadata for a page, including canonical URL
  * 
