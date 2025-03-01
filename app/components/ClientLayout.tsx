@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { embeddingService } from '@/app/services/embedding.service'
+import CanonicalUrl from './CanonicalUrl'
 
 export default function ClientLayout({
   children,
@@ -24,5 +25,13 @@ export default function ClientLayout({
     }
   }, [])
 
-  return <>{children}</>
+  return (
+    <>
+      {/* Wrap in Suspense to handle any potential issues during navigation */}
+      <Suspense fallback={null}>
+        <CanonicalUrl />
+      </Suspense>
+      {children}
+    </>
+  )
 } 

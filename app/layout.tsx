@@ -13,10 +13,16 @@ import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// Define the base URL for the entire application
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://legiequity.us'
+
 export const metadata: Metadata = {
   title: 'LegiEquity Monitor',
   description: 'AI-powered legislative analysis for racial equity impact assessment',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(BASE_URL),
+  alternates: {
+    canonical: '/',
+  }
 }
 
 export default async function RootLayout({
