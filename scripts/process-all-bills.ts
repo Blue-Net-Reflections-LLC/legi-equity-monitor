@@ -6,6 +6,11 @@ import { validateConfig } from './bill-analysis/config';
 
 const envConfig = validateConfig();
 
+// Define the expected error structure to fix TypeScript errors
+interface BatchError extends Error {
+    bills?: Array<{id: number}>;
+}
+
 async function processAllBills() {
     const sql = postgres(envConfig.legiscanDbUrl);
     const openai = new OpenAI({
@@ -39,21 +44,29 @@ async function processAllBills() {
 
                 // Add delay between batches to avoid rate limits
                 await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch (batchError) {
+            } catch (error: unknown) {
+                // Type guard for the error
+                const batchError = error as BatchError;
+                
+                // Get the bills count from the error if available
                 const billCount = batchError.bills?.length || envConfig.openaiMaxBatchSize;
                 processed += billCount;
                 failed += billCount;
                 
-                console.error(`Error processing batch: ${batchError.message}`);
+                console.error(`Error processing batch: ${batchError.message || 'Unknown error'}`);
                 
                 // Mark only this batch's bills as failed if we have their IDs
-                if (batchError.bills && batchError.bills.length > 0) {
-                    const billIds = batchError.bills.map(b => b.id);
-                    await sql`
-                        UPDATE bill_analysis_status
-                        SET analysis_state = 'failed'::analysis_state_enum
-                        WHERE bill_id IN ${sql(billIds)}
-                    `;
+                try {
+                    if (batchError.bills && batchError.bills.length > 0) {
+                        const billIds = batchError.bills.map(b => b.id);
+                        await sql`
+                            UPDATE bill_analysis_status
+                            SET analysis_state = 'failed'::analysis_state_enum
+                            WHERE bill_id IN ${sql(billIds)}
+                        `;
+                    }
+                } catch (dbError) {
+                    console.error('Failed to update bill status in database:', dbError);
                 }
                 
                 // Continue with next batch despite error
@@ -64,16 +77,38 @@ async function processAllBills() {
         console.log(`Completed processing ${processed} bills (${succeeded} succeeded, ${failed} failed)`);
         
     } catch (error) {
-        console.error('Fatal error in mass bill analysis:', error);
-        // Don't exit, but do update any remaining pending bills to failed
-        await sql`
-            UPDATE bill_analysis_status
-            SET analysis_state = 'failed'::analysis_state_enum
-            WHERE analysis_state = 'pending'::analysis_state_enum
-        `;
+        // Handle any unexpected error without exiting
+        console.error('Error in mass bill analysis:', error);
+        
+        try {
+            // Try to update pending bills to failed, but don't exit if this fails
+            await sql`
+                UPDATE bill_analysis_status
+                SET analysis_state = 'failed'::analysis_state_enum
+                WHERE analysis_state = 'pending'::analysis_state_enum
+            `;
+        } catch (dbError) {
+            console.error('Failed to update pending bills to failed state:', dbError);
+        }
     } finally {
-        await sql.end();
+        // Ensure SQL connection is closed even if errors occur
+        try {
+            await sql.end();
+        } catch (closeError) {
+            console.error('Error closing database connection:', closeError);
+        }
     }
 }
 
-processAllBills(); 
+// Don't exit on unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Promise Rejection:', reason);
+    // Don't throw, just log the error
+});
+
+processAllBills().then(() => {
+    console.log('Process all bills completed.');
+}).catch(err => {
+    console.error('Error in processAllBills:', err);
+    // Don't exit here either
+}); 
