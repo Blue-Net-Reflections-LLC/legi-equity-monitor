@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { SponsorLink } from '@/app/components/ui/seo-links';
 
 interface RollCall {
   roll_call_id: number;
@@ -125,9 +126,13 @@ export default function RollCallVotes({ rollCalls }: { rollCalls: RollCall[] }) 
                           className="flex items-center justify-between py-2 px-3 bg-white dark:bg-zinc-900 rounded"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-zinc-900 dark:text-white">
+                            <SponsorLink
+                              sponsorId={legislator.people_id.toString()}
+                              name={legislator.name}
+                              className="font-medium text-zinc-900 dark:text-white hover:underline"
+                            >
                               {legislator.name}
-                            </span>
+                            </SponsorLink>
                             <span className="text-sm text-zinc-500 dark:text-zinc-400">
                               {legislator.party_name}
                             </span>
