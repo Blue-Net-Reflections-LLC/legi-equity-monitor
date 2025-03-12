@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { BillLink } from '@/app/components/ui/seo-links';
 
 interface Vote {
   bill_id: number;
@@ -63,9 +63,12 @@ export function VotingHistory({ sponsorId }: { sponsorId: string }) {
   return (
     <div className="space-y-4">
       {votes.map((vote) => (
-        <Link
+        <BillLink
           key={`${vote.bill_id}-${vote.vote_date}`}
-          href={`/${vote.state_abbr}/bill/${vote.bill_id}`}
+          stateCode={vote.state_abbr.toLowerCase()}
+          billId={vote.bill_id.toString()}
+          billNumber={vote.bill_number}
+          title={vote.title}
           className="block"
         >
           <div className="p-4 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
@@ -86,7 +89,7 @@ export function VotingHistory({ sponsorId }: { sponsorId: string }) {
               </div>
             </div>
           </div>
-        </Link>
+        </BillLink>
       ))}
     </div>
   );

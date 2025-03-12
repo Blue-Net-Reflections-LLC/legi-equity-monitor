@@ -1,16 +1,17 @@
 import db from "@/lib/db";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Card } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
-import BackButton from './BackButton';
-import SponsorList from './SponsorList';
-import RollCallVotes from './RollCallVotes';
-import BillAnalysis from './BillAnalysis';
+import BackButton from '../BackButton';
+import SponsorList from '../SponsorList';
+import RollCallVotes from '../RollCallVotes';
+import BillAnalysis from '../BillAnalysis';
 import { Footer } from "@/app/components/layout/Footer";
 import { Metadata } from 'next'
 import { STATE_NAMES } from '@/app/constants/states';
-import { BillDescription } from './BillDescription';
+import { BillDescription } from '../BillDescription';
 import Link from 'next/link';
+import { generateBillSlug, isValidSlug, formatBillUrl } from '@/app/utils/slugUtils';
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -129,6 +130,7 @@ interface Props {
   params: { 
     stateCode: string;  // The state code (e.g., 'CA', 'NY')
     billId: string;    // The bill ID
+    slug?: string[];   // Optional slug parameter
   }
 }
 
@@ -148,6 +150,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = bill.description.length > 200 
     ? bill.description.substring(0, 197) + '...' 
     : bill.description;
+    
+  // Generate the canonical URL with slug
+  const billSlug = generateBillSlug(bill.bill_number, bill.title);
+  const canonicalUrl = formatBillUrl(params.stateCode, params.billId, billSlug);
 
   return {
     title: `${title} - ${stateName} Legislature - LegiEquity`,
@@ -155,7 +161,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `${title} - ${stateName} Legislature`,
       description,
-      url: `https://legiequity.us/${params.stateCode.toLowerCase()}/bill/${params.billId}`,
+      url: canonicalUrl,
       siteName: 'LegiEquity',
       images: [
         {
@@ -174,6 +180,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       images: [`https://legiequity.us/api/og/bill?state=${stateCode}&id=${params.billId}`],
     },
+    // Add canonical URL for SEO
+    alternates: {
+      canonical: canonicalUrl,
+    }
   }
 }
 
@@ -423,7 +433,7 @@ async function getBillAnalysis(billId: string): Promise<BillAnalysis | null> {
 export default async function BillPage({ 
   params 
 }: { 
-  params: { stateCode: string; billId: string } 
+  params: { stateCode: string; billId: string; slug?: string[] } 
 }) {
   const stateCode = params.stateCode.toUpperCase();
   
@@ -439,6 +449,16 @@ export default async function BillPage({
   
   if (!bill) {
     notFound();
+  }
+  
+  // Generate the expected slug from bill information
+  const expectedSlug = generateBillSlug(bill.bill_number, bill.title);
+  
+  // Check if URL needs to be redirected to the slugified version
+  // If no slug is provided or if it doesn't match the expected slug, redirect
+  if (!params.slug || !isValidSlug(params.slug[0], expectedSlug)) {
+    // Perform a 301 (permanent) redirect to the canonical URL with the slug
+    permanentRedirect(`/${params.stateCode.toLowerCase()}/bill/${params.billId}/${expectedSlug}`);
   }
 
   return (
