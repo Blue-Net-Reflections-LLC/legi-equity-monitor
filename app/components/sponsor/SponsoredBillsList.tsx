@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { SimplePagination } from '../ui/simple-pagination';
 import { BillLink } from '@/app/components/ui/seo-links';
 

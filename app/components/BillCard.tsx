@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Card, CardHeader } from "@/app/components/ui/card"
 import { DemographicImpact } from "@/app/components/DemographicImpact"

@@ -14,7 +14,6 @@ import { Badge } from '@/app/components/ui/badge';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/components/ui/table';
 import { ClusterBill } from '../types';
-import Link from 'next/link';
 import {
   Chart as ChartJS,
   CategoryScale,

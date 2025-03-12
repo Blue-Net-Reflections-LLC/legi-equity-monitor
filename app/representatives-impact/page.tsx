@@ -2,7 +2,6 @@ import { Metadata } from 'next';
 import LocationAutocomplete from '@/app/components/address/LocationAutocomplete';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { AlertCircle, CheckCircle, AlertTriangle, MinusCircle } from 'lucide-react';
-import Link from 'next/link';
 import { AuroraBackground } from '@/app/components/ui/aurora-background';
 import { Footer } from '@/app/components/layout/Footer';
 import SponsorImage from '@/app/components/sponsor/SponsorImage';
