@@ -2,14 +2,14 @@ import db from "@/lib/db";
 import { notFound } from "next/navigation";
 import { Card } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
-import BackButton from './BackButton';
-import SponsorList from './SponsorList';
-import RollCallVotes from './RollCallVotes';
-import BillAnalysis from './BillAnalysis';
+import BackButton from '../BackButton';
+import SponsorList from '../SponsorList';
+import RollCallVotes from '../RollCallVotes';
+import BillAnalysis from '../BillAnalysis';
 import { Footer } from "@/app/components/layout/Footer";
 import { Metadata } from 'next'
 import { STATE_NAMES } from '@/app/constants/states';
-import { BillDescription } from './BillDescription';
+import { BillDescription } from '../BillDescription';
 import Link from 'next/link';
 
 export const revalidate = 3600; // Revalidate every hour
