@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { notFound } from "next/navigation";
+import { notFound, redirect, permanentRedirect } from "next/navigation";
 import { Card } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from '@/app/[stateCode]/bill/[billId]/BackButton';
@@ -11,6 +11,7 @@ import { SponsoredBillsList } from '@/app/components/sponsor/SponsoredBillsList'
 import { Metadata } from 'next';
 import SponsorImage from '@/app/components/sponsor/SponsorImage';
 import LocationAutocomplete from '@/app/components/address/LocationAutocomplete';
+import { generateSponsorSlug, isValidSlug, formatSponsorUrl } from '@/app/utils/slugUtils';
 
 interface SubgroupScore {
   subgroup_code: string;
@@ -311,7 +312,10 @@ async function getVoteCounts(peopleId: string): Promise<VoteCount[]> {
 }
 
 interface Props {
-  params: { sponsorId: string }
+  params: { 
+    sponsorId: string;
+    slug?: string[];
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -319,26 +323,66 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   if (!sponsor) {
     return {
-      title: 'Sponsor Not Found - LegiEquity',
-      description: 'The requested sponsor could not be found.',
+      title: 'Legislator Not Found - LegiEquity',
+      description: 'The requested legislator could not be found.',
     }
   }
 
+  // Generate slug from sponsor name only
+  const sponsorSlug = generateSponsorSlug(sponsor.name);
+  const canonicalUrl = formatSponsorUrl(params.sponsorId, sponsorSlug);
+  
   return {
-    title: `${sponsor.name} - Legislative Profile - LegiEquity`,
-    description: `View ${sponsor.name}'s legislative profile, including sponsored bills, voting record, and demographic impact analysis.`,
+    title: `${sponsor.name} - ${sponsor.state_name} ${sponsor.role_name} - LegiEquity`,
+    description: `View the legislative profile, voting record, and equity impact analysis for ${sponsor.name} (${sponsor.party_name}) from ${sponsor.state_name}.`,
+    openGraph: {
+      title: `${sponsor.name} - ${sponsor.state_name} ${sponsor.role_name}`,
+      description: `View the legislative profile, voting record, and equity impact analysis for ${sponsor.name} (${sponsor.party_name}) from ${sponsor.state_name}.`,
+      url: canonicalUrl,
+      siteName: 'LegiEquity',
+      images: [
+        {
+          url: `https://legiequity.us/api/og/sponsor?id=${params.sponsorId}`,
+          width: 1200,
+          height: 630,
+          alt: `${sponsor.name} - ${sponsor.state_name} ${sponsor.role_name}`,
+        },
+      ],
+      locale: 'en_US',
+      type: 'profile',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${sponsor.name} - ${sponsor.state_name} ${sponsor.role_name}`,
+      description: `View the legislative profile, voting record, and equity impact analysis for ${sponsor.name} (${sponsor.party_name}) from ${sponsor.state_name}.`,
+      images: [`https://legiequity.us/api/og/sponsor?id=${params.sponsorId}`],
+    },
+    // Add canonical URL for SEO
+    alternates: {
+      canonical: canonicalUrl,
+    }
   }
 }
 
 export default async function SponsorPage({ 
   params 
 }: { 
-  params: { sponsorId: string } 
+  params: { sponsorId: string; slug?: string[] } 
 }) {
   const sponsor = await getSponsor(params.sponsorId);
   
   if (!sponsor) {
     notFound();
+  }
+  
+  // Generate the expected slug from sponsor information - using only name now
+  const expectedSlug = generateSponsorSlug(sponsor.name);
+  
+  // Check if URL needs to be redirected to the slugified version
+  // If no slug is provided or if it doesn't match the expected slug, redirect
+  if (!params.slug || !isValidSlug(params.slug[0], expectedSlug)) {
+    // Perform a 301 (permanent) redirect to the canonical URL with the slug
+    permanentRedirect(`/sponsor/${params.sponsorId}/${expectedSlug}`);
   }
 
   const [sponsoredBills, voteCounts] = await Promise.all([
