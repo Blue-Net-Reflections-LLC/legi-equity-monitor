@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { SimplePagination } from '../ui/simple-pagination';
+import { BillLink } from '@/app/components/ui/seo-links';
 
 interface Bill {
   bill_id: number;
@@ -63,9 +63,12 @@ export function SponsoredBillsList({ bills }: { bills: Bill[] }) {
             ) : (
               <>
                 {currentBills.map((bill) => (
-                  <Link
+                  <BillLink
                     key={bill.bill_id}
-                    href={`/${bill.state_abbr}/bill/${bill.bill_id}`}
+                    stateCode={bill.state_abbr}
+                    billId={bill.bill_id.toString()}
+                    billNumber={bill.bill_number}
+                    title={bill.title}
                     className="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all"
                   >
                     <div className="flex justify-between items-start gap-4">
@@ -132,7 +135,7 @@ export function SponsoredBillsList({ bills }: { bills: Bill[] }) {
                         {bill.sponsor_type_desc}
                       </div>
                     </div>
-                  </Link>
+                  </BillLink>
                 ))}
               </>
             )}
@@ -150,9 +153,12 @@ export function SponsoredBillsList({ bills }: { bills: Bill[] }) {
       ) : (
         <div className="space-y-4">
           {bills.map((bill) => (
-            <Link
+            <BillLink
               key={bill.bill_id}
-              href={`/${bill.state_abbr}/bill/${bill.bill_id}`}
+              stateCode={bill.state_abbr}
+              billId={bill.bill_id.toString()}
+              billNumber={bill.bill_number}
+              title={bill.title}
               className="block p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all"
             >
               <div className="flex justify-between items-start gap-4">
@@ -219,7 +225,7 @@ export function SponsoredBillsList({ bills }: { bills: Bill[] }) {
                   {bill.sponsor_type_desc}
                 </div>
               </div>
-            </Link>
+            </BillLink>
           ))}
         </div>
       )}

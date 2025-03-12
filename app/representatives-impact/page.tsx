@@ -2,12 +2,12 @@ import { Metadata } from 'next';
 import LocationAutocomplete from '@/app/components/address/LocationAutocomplete';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { AlertCircle, CheckCircle, AlertTriangle, MinusCircle } from 'lucide-react';
-import Link from 'next/link';
 import { AuroraBackground } from '@/app/components/ui/aurora-background';
 import { Footer } from '@/app/components/layout/Footer';
 import SponsorImage from '@/app/components/sponsor/SponsorImage';
 import { STATE_NAMES } from '@/app/constants/states';
 import { ImpactScore } from "@/app/components/analysis/ImpactScore";
+import { BillLink, SponsorLink } from '@/app/components/ui/seo-links';
 
 const getStateName = (stateCode: string) => STATE_NAMES[stateCode] || stateCode;
 
@@ -515,9 +515,13 @@ function RepresentativeListItem({ representative }: { representative: Representa
           </div>
           
           {/* Name and district */}
-          <Link href={`/sponsor/${id}`} className="text-xl font-bold hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+          <SponsorLink 
+            sponsorId={id}
+            name={name}
+            className="text-xl font-bold hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+          >
             {name}
-          </Link>
+          </SponsorLink>
           
           {/* Party badge - moved here */}
           <span className={`mt-1 inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full w-fit ${
@@ -554,9 +558,15 @@ function RepresentativeListItem({ representative }: { representative: Representa
                 
                 return (
                   <div key={bill.id} className="border-b border-gray-200 dark:border-gray-700 pb-3 last:border-0 last:pb-0">
-                    <Link href={`/${stateCode}/bill/${bill.id}`} className="font-medium line-clamp-2 hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+                    <BillLink 
+                      stateCode={stateCode}
+                      billId={bill.id}
+                      billNumber={bill.number}
+                      title={bill.title}
+                      className="font-medium line-clamp-2 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                    >
                       {bill.title}
-                    </Link>
+                    </BillLink>
                     
                     <div className="flex items-center justify-between mt-2">
                       <span className={`text-xs px-2.5 py-0.5 rounded-full ${impact.sponsorClass}`}>

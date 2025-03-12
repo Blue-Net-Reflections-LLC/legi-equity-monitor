@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
+import { SponsorLink } from '@/app/components/ui/seo-links';
 
 interface Sponsor {
   people_id: number;
@@ -83,8 +83,9 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
               <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-4">
                 Primary Sponsor
               </h3>
-              <Link 
-                href={`/sponsor/${primarySponsor.people_id}`}
+              <SponsorLink 
+                sponsorId={primarySponsor.people_id.toString()}
+                name={primarySponsor.name}
                 className="block"
               >
                 <div className="flex items-start gap-4">
@@ -134,7 +135,7 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </SponsorLink>
             </div>
           )}
 
@@ -146,9 +147,10 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
               </h3>
               <div className="space-y-2">
                 {coSponsors.map((sponsor) => (
-                  <Link 
+                  <SponsorLink 
                     key={sponsor.people_id}
-                    href={`/sponsor/${sponsor.people_id}`}
+                    sponsorId={sponsor.people_id.toString()}
+                    name={sponsor.name}
                     className="block"
                   >
                     <div className="px-4 py-3 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg transition-colors">
@@ -163,7 +165,7 @@ export default function SponsorList({ sponsors }: { sponsors: Sponsor[] }) {
                         </div>
                     </div>
                     </div>
-                  </Link>
+                  </SponsorLink>
                 ))}
               </div>
             </div>

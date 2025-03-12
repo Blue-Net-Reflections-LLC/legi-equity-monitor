@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Scale } from 'lucide-react';
 import { format } from 'date-fns';
+import { BillLink } from '@/app/components/ui/seo-links';
 
 interface Bill {
   bill_id: number;
@@ -135,9 +135,12 @@ export default function RecentImpactfulBills() {
             const status = STATUS_BADGES[bill.status_id];
             
             return (
-              <Link
+              <BillLink
                 key={bill.bill_id}
-                href={`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`}
+                stateCode={bill.state_abbr.toLowerCase()}
+                billId={bill.bill_id.toString()}
+                billNumber={bill.bill_number}
+                title={bill.title}
                 className="snap-start group"
               >
                 <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4 h-full border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
@@ -196,7 +199,7 @@ export default function RecentImpactfulBills() {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </BillLink>
             );
           })}
         </div>
