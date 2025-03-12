@@ -11,6 +11,7 @@ import { debounce } from 'lodash'
 import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/app/lib/redux/store'
+import { getBillPath, getSponsorPath } from '@/app/utils/slugUtils'
 
 export interface SearchResult {
   type: 'bill' | 'sponsor' | 'blog_post'
@@ -153,12 +154,34 @@ export function SearchDialog() {
     }
   }, [query, handleSearch])
 
-  const onSelect = useCallback((item: SearchResult) => {
-    setOpen(false);
-    if (item.href) {
-      router.push(item.href);
+  const handleItemClick = (item: SearchResult) => {
+    let href: string
+    switch (item.type) {
+      case 'bill':
+        const bill = item.item as Bill;
+        href = getBillPath(
+          bill.state_abbr.toLowerCase(),
+          bill.bill_id.toString(),
+          bill.bill_number,
+          bill.title
+        );
+        break;
+      case 'sponsor':
+        const sponsor = item.item as Sponsor;
+        href = getSponsorPath(
+          sponsor.people_id.toString(),
+          sponsor.name
+        );
+        break;
+      case 'blog_post':
+        href = `/blog/${(item.item as BlogPost).slug}`
+        break;
+      default:
+        href = '/unknown'
     }
-  }, [router, setOpen]);
+    // Navigate to the URL
+    router.push(href)
+  }
 
   // Clean up on unmount
   useEffect(() => {
@@ -249,7 +272,7 @@ export function SearchDialog() {
             >
               <SearchResults 
                 results={results} 
-                onItemClick={onSelect}
+                onItemClick={handleItemClick}
               />
               {hasMore && (
                 <div className="mt-4 text-center pb-2">

@@ -4,6 +4,7 @@ import { Card, CardHeader } from "@/app/components/ui/card"
 import { DemographicImpact } from "@/app/components/DemographicImpact"
 import { Building2, Users, Flag, AlertTriangle, CheckCircle, MinusCircle } from "lucide-react"
 import { Bill } from "@/app/types"
+import { BillLink } from "@/app/components/ui/seo-links"
 
 interface BillCardProps {
   bill: Bill
@@ -85,8 +86,11 @@ export function BillCard({ bill }: BillCardProps) {
   };
 
   return (
-    <Link 
-      href={`/${stateCode}/bill/${bill.bill_id}`}
+    <BillLink 
+      stateCode={stateCode}
+      billId={bill.bill_id.toString()}
+      billNumber={bill.bill_number}
+      title={bill.title}
       className="block transition-all hover:scale-[1.02]"
     >
       <Card className="w-full h-full transition-shadow hover:shadow-lg">
@@ -210,6 +214,6 @@ export function BillCard({ bill }: BillCardProps) {
           )}
         </CardHeader>
       </Card>
-    </Link>
+    </BillLink>
   )
 } 

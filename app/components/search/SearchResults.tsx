@@ -10,6 +10,8 @@ import { Star as StarIcon } from 'lucide-react'
 import { memo } from 'react'
 import { Search, FileText } from 'lucide-react'
 import { format } from 'date-fns'
+import { SponsorLink, BillLink } from '@/app/components/ui/seo-links'
+import { getBillPath, getSponsorPath } from '@/app/utils/slugUtils'
 
 interface SearchResultsProps {
   results: SearchResult[]
@@ -30,14 +32,24 @@ export const SearchResults = memo(function SearchResults({
     let href: string
     switch (item.type) {
       case 'bill':
-        href = `/${(item.item as Bill).state_abbr.toLowerCase()}/bill/${(item.item as Bill).bill_id}`
-        break
+        const bill = item.item as Bill;
+        href = getBillPath(
+          bill.state_abbr.toLowerCase(),
+          bill.bill_id.toString(),
+          bill.bill_number,
+          bill.title
+        );
+        break;
       case 'sponsor':
-        href = `/sponsor/${(item.item as Sponsor).people_id}`
-        break
+        const sponsor = item.item as Sponsor;
+        href = getSponsorPath(
+          sponsor.people_id.toString(),
+          sponsor.name
+        );
+        break;
       case 'blog_post':
         href = `/blog/${(item.item as BlogPost).slug}`
-        break
+        break;
       default:
         href = '/unknown'
     }
@@ -136,9 +148,12 @@ interface ResultProps extends React.HTMLAttributes<HTMLAnchorElement> {
 
 const BillResult = memo(function BillResult({ bill, onClick, ...props }: { bill: Bill, onClick: () => void } & ResultProps) {
   return (
-    <Link 
+    <BillLink 
       {...props}
-      href={`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`}
+      stateCode={bill.state_abbr.toLowerCase()}
+      billId={bill.bill_id.toString()}
+      billNumber={bill.bill_number}
+      title={bill.title}
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded block"
       onClick={onClick}
     >
@@ -167,7 +182,7 @@ const BillResult = memo(function BillResult({ bill, onClick, ...props }: { bill:
           {bill.title}
         </div>
       </div>
-    </Link>
+    </BillLink>
   )
 })
 
@@ -180,9 +195,10 @@ const SponsorResult = memo(function SponsorResult({
   onClick: () => void 
 } & ResultProps) {
   return (
-    <Link 
+    <SponsorLink 
       {...props}
-      href={`/sponsor/${sponsor.people_id}`}
+      sponsorId={sponsor.people_id.toString()}
+      name={sponsor.name}
       className="flex items-start space-x-3 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors bg-zinc-50 dark:bg-zinc-900 rounded block"
       onClick={onClick}
     >
@@ -229,7 +245,7 @@ const SponsorResult = memo(function SponsorResult({
           {sponsor.name}
         </div>
       </div>
-    </Link>
+    </SponsorLink>
   )
 })
 
