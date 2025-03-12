@@ -179,6 +179,8 @@ export function SearchDialog() {
       default:
         href = '/unknown'
     }
+    // Close the dialog
+    setOpen(false)
     // Navigate to the URL
     router.push(href)
   }
