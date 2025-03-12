@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { notFound, redirect, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Card } from "@/app/components/ui/card";
 import { AuroraBackground } from "@/app/components/ui/aurora-background";
 import BackButton from '../BackButton';

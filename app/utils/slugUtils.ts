@@ -33,8 +33,8 @@ export function generateBillSlug(billNumber: string, title: string): string {
  * @param name Sponsor name
  * @returns Slugified string for sponsor URL
  */
-export function generateSponsorSlug(name: string, party?: string): string {
-  // Use only the name to create a slug (party is ignored)
+export function generateSponsorSlug(name: string): string {
+  // Use only the name to create a slug
   return generateSlug(name);
 }
 
@@ -89,10 +89,9 @@ export function getBillPath(stateCode: string, billId: string, billNumber: strin
  * Formats a relative URL path for a sponsor page
  * @param sponsorId Sponsor ID
  * @param name Sponsor name
- * @param party Sponsor party affiliation (not used in slug, but kept for API compatibility)
  * @returns Relative URL path for sponsor
  */
-export function getSponsorPath(sponsorId: string, name: string, party: string): string {
+export function getSponsorPath(sponsorId: string, name: string): string {
   const slug = generateSponsorSlug(name);
   return `/sponsor/${sponsorId}/${slug}`;
 } 

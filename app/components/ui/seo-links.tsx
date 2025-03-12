@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import { getBillPath, getSponsorPath } from '@/app/utils/slugUtils';
+import { ComponentProps } from 'react';
+
+type LinkProps = Omit<ComponentProps<typeof Link>, 'href'>;
 
 /**
  * SEO-friendly link to a bill page with auto-generated slug
@@ -19,8 +22,7 @@ export function BillLink({
   title: string;
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
-}) {
+} & LinkProps) {
   const href = getBillPath(stateCode, billId, billNumber, title);
   
   return (
@@ -32,24 +34,20 @@ export function BillLink({
 
 /**
  * SEO-friendly link to a sponsor page with auto-generated slug
- * Note: Party is no longer used for slug generation, but is kept as a parameter for API compatibility
  */
 export function SponsorLink({
   sponsorId,
   name,
-  party,
   children,
   className,
   ...props
 }: {
   sponsorId: string;
   name: string;
-  party: string;
   children: React.ReactNode;
   className?: string;
-  [key: string]: any;
-}) {
-  const href = getSponsorPath(sponsorId, name, party);
+} & LinkProps) {
+  const href = getSponsorPath(sponsorId, name);
   
   return (
     <Link href={href} className={className} {...props}>
