@@ -26,6 +26,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { GenerateBlogPost } from './components/GenerateBlogPost';
+import { BillLink } from "@/app/components/ui/seo-links";
 
 ChartJS.register(
   CategoryScale,
@@ -448,13 +449,16 @@ export default function ClusterDetailPage() {
                 {sortedBills.map((bill) => (
                   <TableRow key={bill.bill_id}>
                     <TableCell>
-                      <Link 
-                        href={`/${bill.state_abbr.toLowerCase()}/bill/${bill.bill_id}`}
+                      <BillLink 
+                        stateCode={bill.state_abbr.toLowerCase()}
+                        billId={bill.bill_id.toString()}
+                        billNumber={bill.bill_number}
+                        title={bill.title}
                         target="_blank"
                         className="text-blue-600 hover:underline dark:text-blue-400"
                       >
                         {bill.bill_number}
-                      </Link>
+                      </BillLink>
                     </TableCell>
                     <TableCell>{bill.state_abbr}</TableCell>
                     <TableCell className="max-w-md truncate">{bill.title}</TableCell>
