@@ -1,8 +1,24 @@
 import { STATES } from './constants/states';
 import db from '@/lib/db';
+import { headers } from 'next/headers';
 
 // Define the base URL for consistent usage
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://legiequity.us';
+
+// Check if we're in development or if this is the dev site
+function isDevelopment() {
+  // Check based on environment variable
+  if (process.env.NODE_ENV === 'development') return true
+  
+  // Check based on hostname
+  try {
+    const headersList = headers();
+    const host = headersList.get('host') || '';
+    return host.includes('dev.legiequity') || host.includes('localhost') || host.includes('127.0.0.1');
+  } catch (e) {
+    return false;
+  }
+}
 
 async function getPublishedBlogPosts() {
   const posts = await db`
@@ -22,6 +38,11 @@ async function getPublishedBlogPosts() {
 }
 
 export default async function sitemap() {
+  // For development environments, return empty sitemap to prevent indexing
+  if (isDevelopment()) {
+    return [];
+  }
+
   const stateEntries = STATES.map(state => ({
     url: `${BASE_URL}/${state.code.toLowerCase()}`,
     lastModified: new Date(),
