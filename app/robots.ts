@@ -14,7 +14,7 @@ function isDevelopment() {
     const headersList = headers();
     const host = headersList.get('host') || '';
     return host.includes('dev.legiequity') || host.includes('localhost') || host.includes('127.0.0.1');
-  } catch (e) {
+  } catch {
     return false;
   }
 }
