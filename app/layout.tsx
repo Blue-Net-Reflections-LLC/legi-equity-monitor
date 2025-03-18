@@ -10,11 +10,27 @@ import ClientLayout from './components/ClientLayout'
 import { SessionProvider } from 'next-auth/react'
 import { auth } from '@/app/(auth)/auth'
 import Script from 'next/script'
+import { headers } from 'next/headers'
 
 const inter = Inter({ subsets: ['latin'] })
 
 // Define the base URL for the entire application
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://legiequity.us'
+
+// Check if we're in development or if this is the dev site
+function isDevelopment() {
+  // Check based on environment variable
+  if (process.env.NODE_ENV === 'development') return true
+  
+  // Check based on hostname
+  try {
+    const headersList = headers()
+    const host = headersList.get('host') || ''
+    return host.includes('dev.legiequity') || host.includes('localhost') || host.includes('127.0.0.1')
+  } catch {
+    return false
+  }
+}
 
 export const metadata: Metadata = {
   title: 'LegiEquity Monitor',
@@ -22,6 +38,18 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   alternates: {
     canonical: '/',
+  },
+  // Add robots directive based on environment
+  robots: isDevelopment() ? {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    }
+  } : {
+    index: true,
+    follow: true,
   }
 }
 
@@ -35,8 +63,11 @@ export default async function RootLayout({
   return (
     <html lang="en" className="[color-scheme:dark_light] dark">
       <head>
-      <meta name="apple-mobile-web-app-title" content="LegiEquity" />
-      <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
+        <meta name="apple-mobile-web-app-title" content="LegiEquity" />
+        {isDevelopment() && (
+          <meta name="robots" content="noindex, nofollow" />
+        )}
+        <script dangerouslySetInnerHTML={{ __html: systemThemeScript() }} />
         <Script
           async
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.GOOGLE_ADSENSE_CLIENT_ID}`}
