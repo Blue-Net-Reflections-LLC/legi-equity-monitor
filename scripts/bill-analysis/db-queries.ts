@@ -1,7 +1,6 @@
 import postgres from 'postgres';
 import { Bill } from './types';
 import { validateConfig } from './config';
-import { AnalysisConfig, defaultAnalysisConfig } from './analysis-config';
 
 const envConfig = validateConfig();
 
@@ -9,8 +8,7 @@ interface BillId { bill_id: number }
 
 export async function getBillsForAnalysis(
   sql: postgres.Sql,
-  batchSize: number,
-  config: AnalysisConfig = defaultAnalysisConfig
+  batchSize: number
 ): Promise<Array<Bill>> {
   // Use a transaction to lock rows during selection
   return await sql.begin(async (sql) => {
@@ -86,7 +84,7 @@ export async function getBillsForAnalysis(
         FROM ls_bill b
         WHERE b.bill_type_id = 1  -- Only regular bills
         AND b.session_id = (SELECT MAX(session_id) FROM ls_session WHERE state_id = b.state_id)  -- Current session
-        AND b.updated >= NOW() - INTERVAL '${config.recencyWindowDays} days'  -- Recently updated
+        AND b.updated >= NOW() - INTERVAL '30 days'  -- Recently updated bills (hardcoded to 30 days)
         -- Only get bills not already processed
         AND NOT EXISTS (
           SELECT 1 FROM bill_analysis_status bas
@@ -103,14 +101,14 @@ export async function getBillsForAnalysis(
         FROM scored_bills sb
         LEFT JOIN advanced_bills ab ON sb.bill_id = ab.bill_id
         WHERE (
-          -- Include advanced bills if configured
-          (${config.includeAdvancedBills} AND ab.bill_id IS NOT NULL)
+          -- Include advanced bills
+          (ab.bill_id IS NOT NULL)
           
           -- For introduced bills, apply stricter passage likelihood threshold (50%)
           OR (sb.is_introduced_only AND 
              (sb.committee_score + sb.sponsor_score + sb.bipartisan_score + sb.amendment_score) >= 50)
         )
-        ORDER BY ${!envConfig.randomOrder ? sql`sb.bill_id DESC` : sql`RANDOM()`}
+        ORDER BY RANDOM()
         LIMIT ${batchSize}
         FOR UPDATE SKIP LOCKED
       )
@@ -120,18 +118,20 @@ export async function getBillsForAnalysis(
     if (eligibleBillIds.length === 0) {
       return [];
     }
-
+    console.log('eligibleBillIds', eligibleBillIds);
     // Mark selected bills as processing to prevent other workers from picking them up
     await sql`
       INSERT INTO bill_analysis_status (bill_id, analysis_state, updated_at)
       SELECT id, 'pending'::analysis_state_enum, NOW()
-      FROM unnest(${eligibleBillIds.map(b => b.id)}::int[]) AS t(id)
+      FROM unnest(${sql.array(eligibleBillIds.map(b => Number(b.id)))}::int[]) AS t(id)
       ON CONFLICT (bill_id) 
       DO UPDATE SET analysis_state = 'pending'::analysis_state_enum, updated_at = NOW()
     `;
+    console.log('eligibleBillIds2', eligibleBillIds);
 
     // Now fetch full bill data for the locked IDs
-    const query = `
+    const billIds = eligibleBillIds.map(b => Number(b.id));
+    const bills = await sql`
       SELECT 
         b.bill_id as id,
         b.bill_number,
@@ -139,12 +139,10 @@ export async function getBillsForAnalysis(
         b.state_id,
         (SELECT state_abbr FROM ls_state WHERE state_id = b.state_id) as state_abbr
       FROM ls_bill b
-      WHERE b.bill_id IN (${eligibleBillIds.map(b => b.id).join(',')})
+      WHERE b.bill_id = ANY(${sql.array(billIds)})
     `;
-    
-    // Execute query and map results
-    const bills = await sql.unsafe(query);
-    
+    console.log('eligibleBillIds3', eligibleBillIds);
+
     // Map to expected Bill interface
     return bills.map((bill: any) => ({
       id: bill.id,

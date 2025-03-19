@@ -58,11 +58,11 @@ async function processAllBills() {
                 // Mark only this batch's bills as failed if we have their IDs
                 try {
                     if (batchError.bills && batchError.bills.length > 0) {
-                        const billIds = batchError.bills.map(b => b.id);
+                        const billIds = batchError.bills.map(b => Number(b.id));
                         await sql`
                             UPDATE bill_analysis_status
                             SET analysis_state = 'failed'::analysis_state_enum
-                            WHERE bill_id IN ${sql(billIds)}
+                            WHERE bill_id = ANY(${sql.array(billIds)})
                         `;
                     }
                 } catch (dbError) {

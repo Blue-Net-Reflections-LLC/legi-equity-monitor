@@ -61,16 +61,17 @@ export class BatchProcessor {
 
     private async initializeBatch(batchId: string, bills: Bill[]): Promise<void> {
         // Prepare arrays with non-null values for SQL
-        const billIds = bills.map(b => b.id);
+        console.log('Initializing batch with bills:', bills.length);
+        const billIds = bills.map(b => Number(b.id));
         const changeHashes = bills.map(b => b.change_hash || ''); // Provide empty string as default
-
+        console.log('billIds2', billIds);
         await this.sql.begin(async (sql) => {
             // Batch insert/update analysis status records
             await sql`
                 WITH bill_data AS (
                     SELECT 
-                        unnest(${billIds}::int[]) as bill_id,
-                        unnest(${changeHashes}::text[]) as change_hash
+                        unnest(${sql.array(billIds)}::int[]) as bill_id,
+                        unnest(${sql.array(changeHashes)}::text[]) as change_hash
                 )
                 INSERT INTO bill_analysis_status (
                     bill_id, 
@@ -86,7 +87,7 @@ export class BatchProcessor {
                 SET current_change_hash = EXCLUDED.current_change_hash,
                     analysis_state = EXCLUDED.analysis_state
             `;
-
+            console.log('billIds3', billIds);
             // Create batch progress record
             await sql`
                 INSERT INTO bill_analysis_progress (
@@ -95,6 +96,7 @@ export class BatchProcessor {
                     ${batchId}, NOW(), ${bills.length}, 'running'
                 )
             `;
+            console.log('billIds4', billIds);
 
             // Batch insert batch items
             await sql`
@@ -105,7 +107,7 @@ export class BatchProcessor {
                     ${batchId},
                     bill_id,
                     'pending'
-                FROM unnest(${billIds}::int[]) AS t(bill_id)
+                FROM unnest(${sql.array(billIds)}::int[]) AS t(bill_id)
             `;
         });
     }
