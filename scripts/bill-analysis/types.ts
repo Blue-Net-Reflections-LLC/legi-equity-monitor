@@ -5,28 +5,33 @@ export type AnalysisState = 'pending' | 'completed' | 'skipped' | 'error';
 
 // Input types
 export interface Bill {
-    bill_id: number;
+    id: number;
+    bill_number: string;
     title: string;
-    description: string;
-    change_hash: string;
-    status: string;
-    session_year_start: string;
-    session_year_end: string;
-    state: string;
-    sponsors: Array<{
-        people_id: string;
+    state_abbr: string;
+    
+    // Optional legacy fields - these can be populated by more detailed queries
+    bill_type_id?: number;
+    description?: string;
+    change_hash?: string;
+    status?: number;
+    session_year_start?: number;
+    session_year_end?: number;
+    state?: string;
+    sponsors?: Array<{
+        people_id: number;
         party: string;
-        type: string;
+        type: 'Primary Sponsor' | 'Co-Sponsor';
     }>;
-    subjects: string[];
-    amendments: Array<{
-        amendment_id: string;
+    subjects?: string[];
+    amendments?: Array<{
+        amendment_id: number;
         title: string;
         description: string;
         adopted: boolean;
     }>;
-    full_texts: Array<{
-        date: Date;
+    full_texts?: Array<{
+        date: string;
         name: string;
         content_url: string;
     }>;

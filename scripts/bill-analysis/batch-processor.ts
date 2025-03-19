@@ -60,13 +60,17 @@ export class BatchProcessor {
     }
 
     private async initializeBatch(batchId: string, bills: Bill[]): Promise<void> {
+        // Prepare arrays with non-null values for SQL
+        const billIds = bills.map(b => b.id);
+        const changeHashes = bills.map(b => b.change_hash || ''); // Provide empty string as default
+
         await this.sql.begin(async (sql) => {
             // Batch insert/update analysis status records
             await sql`
                 WITH bill_data AS (
                     SELECT 
-                        unnest(${bills.map(b => b.bill_id)}::int[]) as bill_id,
-                        unnest(${bills.map(b => b.change_hash)}::text[]) as change_hash
+                        unnest(${billIds}::int[]) as bill_id,
+                        unnest(${changeHashes}::text[]) as change_hash
                 )
                 INSERT INTO bill_analysis_status (
                     bill_id, 
@@ -101,7 +105,7 @@ export class BatchProcessor {
                     ${batchId},
                     bill_id,
                     'pending'
-                FROM unnest(${bills.map(b => b.bill_id)}::int[]) AS t(bill_id)
+                FROM unnest(${billIds}::int[]) AS t(bill_id)
             `;
         });
     }
@@ -133,7 +137,7 @@ export class BatchProcessor {
     private async analyzeBills(bills: Bill[]) {
         // Format bills data according to established structure
         const inputs = bills.map(bill => ({
-            bill_id: bill.bill_id.toString(),
+            bill_id: bill.id.toString(),
             title: bill.title,
             status: bill.status,
             session_year_start: bill.session_year_start,
@@ -266,10 +270,10 @@ ${JSON.stringify(inputs, null, 2)}`;
 
             // Validate each bill_id matches
             const mismatches = bills.filter(bill => 
-                !response.analyses.find((a: { bill_id: string }) => a.bill_id === bill.bill_id.toString())
+                !response.analyses.find((a: { bill_id: string }) => a.bill_id === bill.id.toString())
             );
             if (mismatches.length > 0) {
-                throw new Error(`Missing analyses for bills: ${mismatches.map(b => b.bill_id).join(', ')}`);
+                throw new Error(`Missing analyses for bills: ${mismatches.map(b => b.id).join(', ')}`);
             }
 
             return {
