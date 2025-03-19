@@ -9,107 +9,121 @@ interface BillId { bill_id: number }
 export async function getBillsForAnalysis(sql: postgres.Sql, batchSize: number): Promise<Bill[]> {
   return await sql.begin(async (sql): Promise<Bill[]> => {
     try {
-      // First get eligible bill IDs with locking using new scoring logic
+      // First get eligible bill IDs with locking using optimized query
       const eligibleBillIds = await sql`
-        WITH 
-        -- Identify bills with significant progress
-        advanced_bills AS (
-          SELECT DISTINCT b.bill_id
-          FROM ls_bill b
-          JOIN ls_bill_progress bp ON b.bill_id = bp.bill_id
-          WHERE bp.progress_event_id IN (2, 3, 4, 5, 8) -- Engrossed, Enrolled, Passed, Vetoed, Chaptered
-        ),
-        
-        -- Calculate passage likelihood score using pre-calculated tables
-        scored_bills AS (
-          SELECT 
-            b.bill_id,
-            b.title,
-            -- Determine if bill is introduced only or more advanced
-            NOT EXISTS (
-              SELECT 1 FROM ls_bill_progress bp 
-              WHERE bp.bill_id = b.bill_id AND bp.progress_event_id IN (2, 3, 4, 5, 8)
-            ) AS is_introduced_only,
-            
-            -- Committee power score (up to 35 points)
-            COALESCE((
-              SELECT cps.power_score
-              FROM committee_power_scores cps
-              JOIN ls_bill_referral br ON cps.committee_id = br.committee_id
-              WHERE br.bill_id = b.bill_id
-              ORDER BY cps.power_score DESC
+        SELECT 
+          eb.bill_id AS id,
+          
+          -- Committee score
+          COALESCE((
+            SELECT MAX(cps.power_score)
+            FROM ls_bill_referral br
+            JOIN committee_power_scores cps ON br.committee_id = cps.committee_id
+            WHERE br.bill_id = eb.bill_id
+          ), 0) AS committee_score,
+          
+          -- Sponsor score
+          COALESCE((
+            SELECT MAX(sss.success_score) * 0.35
+            FROM ls_bill_sponsor bs
+            JOIN sponsor_success_scores sss ON bs.people_id = sss.people_id
+            WHERE bs.bill_id = eb.bill_id
+            AND bs.sponsor_type_id = 1
+          ), 0) AS sponsor_score,
+          
+          -- Bipartisan score
+          CASE WHEN EXISTS (
+            SELECT 1
+            FROM ls_bill_sponsor bs1
+            JOIN ls_people p1 ON bs1.people_id = p1.people_id
+            WHERE bs1.bill_id = eb.bill_id AND bs1.sponsor_type_id = 1 AND p1.party_id IN (1, 2)
+            AND EXISTS (
+              SELECT 1
+              FROM ls_bill_sponsor bs2
+              JOIN ls_people p2 ON bs2.people_id = p2.people_id
+              WHERE bs2.bill_id = eb.bill_id AND bs2.sponsor_type_id != 1 
+              AND p2.party_id IN (1, 2) AND p2.party_id != p1.party_id
               LIMIT 1
-            ), 0) AS committee_score,
-            
-            -- Sponsor success score (up to 100 points, scaled down to 35 max)
-            COALESCE((
-              SELECT sss.success_score * 0.35
-              FROM sponsor_success_scores sss
-              JOIN ls_bill_sponsor bs ON sss.people_id = bs.people_id
-              WHERE bs.bill_id = b.bill_id AND bs.sponsor_type_id = 1
-              LIMIT 1
-            ), 0) AS sponsor_score,
-            
-            -- Bipartisan support (10 points)
-            CASE WHEN EXISTS (
-              -- Democrat primary sponsor with Republican cosponsors
-              SELECT 1 FROM ls_bill_sponsor bs1
-              JOIN ls_people p1 ON bs1.people_id = p1.people_id
-              WHERE bs1.bill_id = b.bill_id AND bs1.sponsor_type_id = 1 AND p1.party_id = 1
-              AND EXISTS (
-                SELECT 1 FROM ls_bill_sponsor bs2
-                JOIN ls_people p2 ON bs2.people_id = p2.people_id
-                WHERE bs2.bill_id = b.bill_id AND bs2.sponsor_type_id != 1 AND p2.party_id = 2
-              )
-            ) OR EXISTS (
-              -- Republican primary sponsor with Democrat cosponsors
-              SELECT 1 FROM ls_bill_sponsor bs1
-              JOIN ls_people p1 ON bs1.people_id = p1.people_id
-              WHERE bs1.bill_id = b.bill_id AND bs1.sponsor_type_id = 1 AND p1.party_id = 2
-              AND EXISTS (
-                SELECT 1 FROM ls_bill_sponsor bs2
-                JOIN ls_people p2 ON bs2.people_id = p2.people_id
-                WHERE bs2.bill_id = b.bill_id AND bs2.sponsor_type_id != 1 AND p2.party_id = 1
-              )
-            ) THEN 10 ELSE 0 END AS bipartisan_score,
-            
-            -- Amendment score (20 points for adopted amendments)
-            CASE WHEN EXISTS (
-              SELECT 1 FROM ls_bill_amendment ba
-              WHERE ba.bill_id = b.bill_id AND ba.adopted = 1
-            ) THEN 20 ELSE 0 END AS amendment_score
+            )
+            LIMIT 1
+          ) THEN 10 ELSE 0 END AS bipartisan_score,
+          
+          -- Amendment score
+          CASE WHEN EXISTS (
+            SELECT 1 FROM ls_bill_amendment ba 
+            WHERE ba.bill_id = eb.bill_id AND ba.adopted = 1
+            LIMIT 1
+          ) THEN 20 ELSE 0 END AS amendment_score
+          
+        FROM (
+          -- Eligible bills with limit to improve performance
+          SELECT b.bill_id
           FROM ls_bill b
-          WHERE b.bill_type_id = 1  -- Only regular bills
-          AND b.session_id = (SELECT MAX(session_id) FROM ls_session WHERE state_id = b.state_id)  -- Current session
-          AND b.updated >= NOW() - INTERVAL '30 days'  -- Recently updated bills (hardcoded to 30 days)
-          -- Only get bills not already processed
+          WHERE b.bill_type_id = 1
+          AND b.updated >= NOW() - INTERVAL '30 days'
           AND NOT EXISTS (
             SELECT 1 FROM bill_analysis_status bas
             WHERE bas.bill_id = b.bill_id 
-            AND bas.analysis_state IN ('completed')
+            AND bas.analysis_state = 'completed'
           )
-        ),
-        
-        -- Final bill selection with passage likelihood thresholds
-        eligible_bills AS (
-          SELECT 
-            sb.bill_id,
-            sb.committee_score + sb.sponsor_score + sb.bipartisan_score + sb.amendment_score AS passage_likelihood_score
-          FROM scored_bills sb
-          LEFT JOIN advanced_bills ab ON sb.bill_id = ab.bill_id
-          WHERE (
-            -- Include advanced bills
-            (ab.bill_id IS NOT NULL)
-            
-            -- For introduced bills, apply stricter passage likelihood threshold (50%)
-            OR (sb.is_introduced_only AND 
-               (sb.committee_score + sb.sponsor_score + sb.bipartisan_score + sb.amendment_score) >= 50)
+          LIMIT 2000  -- Limit for performance
+        ) AS eb
+        WHERE 
+          -- Advanced bills
+          EXISTS (
+            SELECT 1 FROM ls_bill_progress bp 
+            WHERE bp.bill_id = eb.bill_id AND bp.progress_event_id IN (2, 3, 4, 5, 8)
+            LIMIT 1
           )
-          ORDER BY RANDOM()
-          LIMIT ${batchSize}
-          FOR UPDATE SKIP LOCKED
-        )
-        SELECT bill_id AS id FROM eligible_bills
+          OR 
+          -- High score introduced bills
+          (
+            NOT EXISTS (
+              SELECT 1 FROM ls_bill_progress bp 
+              WHERE bp.bill_id = eb.bill_id AND bp.progress_event_id IN (2, 3, 4, 5, 8)
+              LIMIT 1
+            )
+            AND 
+            (
+              -- Calculate score threshold directly with 50% threshold
+              COALESCE((
+                SELECT MAX(cps.power_score)
+                FROM ls_bill_referral br
+                JOIN committee_power_scores cps ON br.committee_id = cps.committee_id
+                WHERE br.bill_id = eb.bill_id
+              ), 0) +
+              COALESCE((
+                SELECT MAX(sss.success_score) * 0.35
+                FROM ls_bill_sponsor bs
+                JOIN sponsor_success_scores sss ON bs.people_id = sss.people_id
+                WHERE bs.bill_id = eb.bill_id
+                AND bs.sponsor_type_id = 1
+              ), 0) +
+              CASE WHEN EXISTS (
+                SELECT 1
+                FROM ls_bill_sponsor bs1
+                JOIN ls_people p1 ON bs1.people_id = p1.people_id
+                WHERE bs1.bill_id = eb.bill_id AND bs1.sponsor_type_id = 1 AND p1.party_id IN (1, 2)
+                AND EXISTS (
+                  SELECT 1
+                  FROM ls_bill_sponsor bs2
+                  JOIN ls_people p2 ON bs2.people_id = p2.people_id
+                  WHERE bs2.bill_id = eb.bill_id AND bs2.sponsor_type_id != 1 
+                  AND p2.party_id IN (1, 2) AND p2.party_id != p1.party_id
+                  LIMIT 1
+                )
+                LIMIT 1
+              ) THEN 10 ELSE 0 END +
+              CASE WHEN EXISTS (
+                SELECT 1 FROM ls_bill_amendment ba 
+                WHERE ba.bill_id = eb.bill_id AND ba.adopted = 1
+                LIMIT 1
+              ) THEN 20 ELSE 0 END >= 50
+            )
+          )
+        ORDER BY RANDOM()
+        LIMIT ${batchSize}
+        FOR UPDATE SKIP LOCKED
       `;
 
       if (eligibleBillIds.length === 0) {
