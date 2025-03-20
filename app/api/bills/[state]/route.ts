@@ -139,7 +139,7 @@ export async function GET(
       s.session_id, s.session_name,
       b1.body_name as body_name,
       b2.body_name as current_body_name,
-      COALESCE(p.progress_desc, 'Introduced') as status_name,
+      COALESCE(p.progress_desc, 'Introduced') as status_desc,
       pb.latest_action_date,
       c.committee_name as pending_committee_name,
       c.committee_id as pending_committee_id,
