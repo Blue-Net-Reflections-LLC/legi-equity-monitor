@@ -1,19 +1,19 @@
-import { NextRequest } from 'next/server'
+import { type NextRequest } from 'next/server'
 import db from "@/lib/db"
-import type { Bill } from "@/app/types"
 import type { BillFilters } from "@/app/types/filters"
 
 export const revalidate = 3600 // Cache for 1 hour
 
 export async function GET(
-  request: NextRequest,
+  req: NextRequest,
   { params }: { params: { state: string } }
 ) {
-  const { searchParams } = new URL(request.url)
+  const stateCode = params.state.toUpperCase()
+  const searchParams = new URL(req.url).searchParams
+
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = 12
   const offset = (page - 1) * pageSize
-  const stateCode = params.state.toUpperCase()
 
   // Parse category filters
   const categoryFilters = searchParams.getAll('category')
@@ -29,6 +29,8 @@ export async function GET(
         impactTypes: validImpactType ? [validImpactType] : [] as ('POSITIVE' | 'BIAS' | 'NEUTRAL')[]
       }
     })
+    
+  console.log('Category Filters:', JSON.stringify(categoryFilters))
 
   const filters = {
     committee: searchParams.getAll('committee').filter(Boolean).length > 0 
@@ -38,190 +40,248 @@ export async function GET(
     party: searchParams.get('party'),
     support: searchParams.get('support') as 'HAS_SUPPORT' | 'NO_SUPPORT' | undefined,
   }
+  
+  console.log('All Filters:', JSON.stringify(filters))
 
-  // Get bills with filters
-  const bills = await db`
-    WITH filtered_bills AS (
-      SELECT DISTINCT b.bill_id
-      FROM lsv_bill b
-      ${filters.categories?.length ? db`
-        JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
-        JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      ` : db`
-        LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
-        LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-      `}
-      WHERE b.state_abbr = ${stateCode}
-      AND b.bill_type_id = 1
-      ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
-        EXISTS (
-          SELECT 1
-          FROM bill_analysis_results subbar
-          JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id
-          WHERE subbar.bill_id = b.bill_id
-          AND subbacs.category = ${cat.id}
-          ${cat.impactTypes.includes('BIAS') ? db`
-            AND subbacs.bias_score >= subbacs.positive_impact_score 
-            AND subbacs.bias_score >= 0.60
-          ` : cat.impactTypes.includes('POSITIVE') ? db`
-            AND subbacs.positive_impact_score > subbacs.bias_score
-            AND subbacs.positive_impact_score >= 0.60
-          ` : cat.impactTypes.length ? db`
-            AND (
-              subbacs.bias_score < 0.60 
-              AND subbacs.positive_impact_score < 0.60
-            )
-          ` : db``}
-        )
-      `).reduce((acc, clause, idx) => 
-        idx === 0 ? clause : db`${acc} AND ${clause}`
-      , db``)}` : db``}
-      ${filters.committee ? db`AND b.pending_committee_name = ANY(${filters.committee})` : db``}
-      ${filters.party ? db`AND EXISTS (
-        SELECT 1 FROM ls_bill_sponsor sp
-        JOIN ls_people p ON sp.people_id = p.people_id
-        JOIN ls_party party ON p.party_id = party.party_id
-        WHERE sp.bill_id = b.bill_id
-        AND sp.sponsor_order = 1
-        AND party.party_abbr = ${filters.party}
-      )` : db``}
-      ${filters.support === 'HAS_SUPPORT' ? db`AND (
-        SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
-      ) >= 2` : filters.support === 'NO_SUPPORT' ? db`AND (
-        SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
-      ) < 2` : db``}
+  // Prepare committee names for filtering - escape SQL special characters
+  const committeeNamesArray = filters.committee?.map(name => 
+    `'${name.replace(/'/g, "''")}'`
+  ).join(',') || '';
+  
+  console.log('Filters prepared')
+
+  // Optimized query using string concatenation to avoid parameter conflicts
+  const result = await db`
+    WITH state_bills AS (
+      -- Fast index lookup to get only the bills we need by state and type first
+      SELECT b.bill_id
+      FROM ls_bill b
+      JOIN ls_state s ON b.state_id = s.state_id
+      JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id  -- Only include analyzed bills
+      ${filters.committee?.length ? db`
+      JOIN ls_committee c ON b.pending_committee_id = c.committee_id
+      ` : db``}
+      WHERE s.state_abbr = ${stateCode}
+      -- Only filter by bill_type_id for state bills, not for US Congress
+      ${stateCode !== 'US' ? db`AND b.bill_type_id = 1` : db``}
+      ${filters.committee?.length ? db`
+      AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
+      ` : db``}
     ),
-    bill_details AS (
+    filtered_bills AS (
+      -- Apply all filters to the state bills
+      SELECT DISTINCT sb.bill_id
+      FROM state_bills sb
+      ${filters.party ? db`
+      JOIN ls_bill_sponsor bs ON sb.bill_id = bs.bill_id AND bs.sponsor_order = 1
+      JOIN ls_people p ON bs.people_id = p.people_id
+      JOIN ls_party party ON p.party_id = party.party_id
+      ` : db``}
+      WHERE 1=1
+      ${filters.party ? db`AND party.party_abbr = ${filters.party}` : db``}
+      ${filters.categories && filters.categories.length > 0 
+        ? filters.categories.map(cat => db`
+          AND EXISTS (
+            SELECT 1
+            FROM bill_analysis_results bar
+            JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+            WHERE bar.bill_id = sb.bill_id
+            AND bacs.category = ${cat.id}
+            ${cat.impactTypes.includes('BIAS') ? db`
+              AND bacs.bias_score >= bacs.positive_impact_score
+              AND bacs.bias_score >= 0.60
+            ` : cat.impactTypes.includes('POSITIVE') ? db`
+              AND bacs.positive_impact_score > bacs.bias_score
+              AND bacs.positive_impact_score >= 0.60
+            ` : cat.impactTypes.length ? db`
+              AND (
+                bacs.bias_score < 0.60
+                AND bacs.positive_impact_score < 0.60
+              )
+            ` : db``}
+          )
+        `)
+        : db``
+      }
+      ${filters.support === 'HAS_SUPPORT' 
+        ? db`AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = sb.bill_id) >= 2` 
+        : filters.support === 'NO_SUPPORT'
+        ? db`AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = sb.bill_id) < 2`
+        : db``
+      }
+    ),
+    -- Get history dates for just these bills
+    bill_history AS (
+      SELECT
+        h.bill_id,
+        MAX(h.history_date) as latest_action_date
+      FROM filtered_bills fb
+      JOIN ls_bill_history h ON fb.bill_id = h.bill_id
+      GROUP BY h.bill_id
+    ),
+    -- Get our filtered page of bills
+    paged_bills AS (
       SELECT 
-        b.*,
-        h.history_date as latest_action_date,
-        sponsors.sponsor_data as sponsors,
-        bar.analysis_data as analysis_results
-      FROM lsv_bill b
-      JOIN filtered_bills fb ON b.bill_id = fb.bill_id
-      LEFT JOIN LATERAL (
-        SELECT history_date
-        FROM ls_bill_history
-        WHERE bill_id = b.bill_id
-        ORDER BY history_step DESC
-        LIMIT 1
-      ) h ON true
-      LEFT JOIN LATERAL (
+        fb.bill_id,
+        COALESCE(bh.latest_action_date, '1970-01-01'::date) as latest_action_date
+      FROM filtered_bills fb
+      LEFT JOIN bill_history bh ON fb.bill_id = bh.bill_id
+      ORDER BY latest_action_date DESC NULLS LAST, fb.bill_id DESC
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    )
+    -- Get complete bill data
+    SELECT
+      b.bill_id, b.bill_number, b.status_id, b.body_id, b.current_body_id,
+      b.title, b.description, b.pending_committee_id, b.legiscan_url, b.state_url,
+      st.state_id, st.state_abbr, st.state_name,
+      t.bill_type_id, t.bill_type_name, t.bill_type_abbr,
+      s.session_id, s.session_name,
+      b1.body_name as body_name,
+      b2.body_name as current_body_name,
+      COALESCE(p.progress_desc, 'Introduced') as status_desc,
+      pb.latest_action_date,
+      c.committee_name as pending_committee_name,
+      c.committee_id as pending_committee_id,
+      (
         SELECT json_agg(json_build_object(
           'people_id', sp.people_id,
-          'party', party.party_name,
+          'party', pa.party_name, 
           'type', CASE WHEN sp.sponsor_order = 1 THEN 'Primary' ELSE 'Co' END
-        )) as sponsor_data
+        ))
         FROM ls_bill_sponsor sp
-        JOIN ls_people p ON sp.people_id = p.people_id
-        JOIN ls_party party ON p.party_id = party.party_id
+        JOIN ls_people pe ON sp.people_id = pe.people_id
+        JOIN ls_party pa ON pe.party_id = pa.party_id
         WHERE sp.bill_id = b.bill_id
-      ) sponsors ON true
-      LEFT JOIN LATERAL (
-        SELECT json_build_object(
-          'overall_score', CASE 
-            WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
-            THEN bar.overall_positive_impact_score * 100
-            ELSE bar.overall_bias_score * 100
-          END,
-          'overall_sentiment', CASE 
-            WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
-            THEN 'POSITIVE' 
-            ELSE 'NEGATIVE'
-          END,
-          'bias_detected', bar.overall_bias_score >= 0.6,
-          'categories', (
-            SELECT json_object_agg(
-              category,
-              json_build_object(
-                'score', CASE 
-                  WHEN positive_impact_score >= bias_score THEN positive_impact_score * 100
-                  ELSE bias_score * 100
-                END,
-                'sentiment', CASE 
-                  WHEN positive_impact_score >= bias_score THEN 'POSITIVE'
-                  ELSE 'NEGATIVE'
-                END
+      ) as sponsors,
+      (
+        -- Analysis data
+        SELECT 
+          CASE WHEN bar.bill_id IS NOT NULL THEN
+            json_build_object(
+              'overall_score', CASE 
+                WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
+                THEN bar.overall_positive_impact_score * 100
+                ELSE bar.overall_bias_score * 100
+              END,
+              'overall_sentiment', CASE 
+                WHEN bar.overall_positive_impact_score >= bar.overall_bias_score 
+                THEN 'POSITIVE' 
+                ELSE 'NEGATIVE'
+              END,
+              'bias_detected', bar.overall_bias_score >= 0.6,
+              'categories', (
+                -- Category scores
+                SELECT json_object_agg(
+                  category,
+                  json_build_object(
+                    'score', CASE 
+                      WHEN positive_impact_score >= bias_score THEN positive_impact_score * 100
+                      ELSE bias_score * 100
+                    END,
+                    'sentiment', CASE 
+                      WHEN positive_impact_score >= bias_score THEN 'POSITIVE'
+                      ELSE 'NEGATIVE'
+                    END
+                  )
+                )
+                FROM bill_analysis_category_scores
+                WHERE analysis_id = bar.analysis_id
               )
             )
-            FROM bill_analysis_category_scores
-            WHERE analysis_id = bar.analysis_id
-          )
-        ) as analysis_data
+          ELSE NULL END
         FROM bill_analysis_results bar
         WHERE bar.bill_id = b.bill_id
         LIMIT 1
-      ) bar ON true
-    )
-    SELECT *
-    FROM bill_details
-    ORDER BY latest_action_date DESC NULLS LAST, bill_id DESC
-    LIMIT ${pageSize}
-    OFFSET ${offset}
-  `.then(rows => rows as unknown as Bill[])
+      ) as analysis_results
+    FROM paged_bills pb
+    JOIN ls_bill b ON pb.bill_id = b.bill_id
+    JOIN ls_state st ON b.state_id = st.state_id
+    JOIN ls_type t ON b.bill_type_id = t.bill_type_id
+    JOIN ls_session s ON b.session_id = s.session_id
+    LEFT JOIN ls_body b1 ON b.body_id = b1.body_id
+    LEFT JOIN ls_body b2 ON b.current_body_id = b2.body_id
+    LEFT JOIN ls_progress p ON b.status_id = p.progress_event_id
+    LEFT JOIN ls_committee c ON b.pending_committee_id = c.committee_id
+    ORDER BY pb.latest_action_date DESC NULLS LAST, b.bill_id DESC
+  `
 
-  // Get total count
-  const [{ count }] = await db`
-    SELECT COUNT(DISTINCT b.bill_id)
-    FROM lsv_bill b
-    ${filters.categories?.length ? db`
-      JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
-      JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-    ` : db`
-      LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
-      LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-    `}
-    WHERE b.state_abbr = ${stateCode}
-    AND b.bill_type_id = 1
-    ${filters.categories?.length ? db`AND ${filters.categories.map(cat => db`
-      EXISTS (
-        SELECT 1
-        FROM bill_analysis_results subbar
-        JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id
-        WHERE subbar.bill_id = b.bill_id
-        AND subbacs.category = ${cat.id}
-        ${cat.impactTypes.includes('BIAS') ? db`
-          AND subbacs.bias_score >= subbacs.positive_impact_score 
-          AND subbacs.bias_score >= 0.60
-        ` : cat.impactTypes.includes('POSITIVE') ? db`
-          AND subbacs.positive_impact_score > subbacs.bias_score
-          AND subbacs.positive_impact_score >= 0.60
-        ` : cat.impactTypes.length ? db`
-          AND (
-            subbacs.bias_score < 0.60 
-            AND subbacs.positive_impact_score < 0.60
-          )
-        ` : db``}
-      )
-    `).reduce((acc, clause, idx) => 
-      idx === 0 ? clause : db`${acc} AND ${clause}`
-    , db``)}` : db``}
-    ${filters.committee ? db`AND b.pending_committee_name = ANY(${filters.committee})` : db``}
-    ${filters.party ? db`AND EXISTS (
-      SELECT 1 FROM ls_bill_sponsor sp
-      JOIN ls_people p ON sp.people_id = p.people_id
+  // Count query with same approach
+  const countResult = await db`
+    WITH state_bills AS (
+      -- Fast index lookup to get only the bills we need by state and type first
+      SELECT b.bill_id
+      FROM ls_bill b
+      JOIN ls_state s ON b.state_id = s.state_id
+      JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id  -- Only include analyzed bills
+      ${filters.committee?.length ? db`
+      JOIN ls_committee c ON b.pending_committee_id = c.committee_id
+      ` : db``}
+      WHERE s.state_abbr = ${stateCode}
+      -- Only filter by bill_type_id for state bills, not for US Congress
+      ${stateCode !== 'US' ? db`AND b.bill_type_id = 1` : db``}
+      ${filters.committee?.length ? db`
+      AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
+      ` : db``}
+    ),
+    filtered_bills AS (
+      -- Apply all filters to the state bills
+      SELECT DISTINCT sb.bill_id
+      FROM state_bills sb
+      ${filters.party ? db`
+      JOIN ls_bill_sponsor bs ON sb.bill_id = bs.bill_id AND bs.sponsor_order = 1
+      JOIN ls_people p ON bs.people_id = p.people_id
       JOIN ls_party party ON p.party_id = party.party_id
-      WHERE sp.bill_id = b.bill_id
-      AND sp.sponsor_order = 1
-      AND party.party_abbr = ${filters.party}
-    )` : db``}
-    ${filters.support === 'HAS_SUPPORT' ? db`AND (
-      SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
-    ) >= 2` : filters.support === 'NO_SUPPORT' ? db`AND (
-      SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id
-    ) < 2` : db``}
-  ` as unknown as [{ count: string }]
+      ` : db``}
+      WHERE 1=1
+      ${filters.party ? db`AND party.party_abbr = ${filters.party}` : db``}
+      ${filters.categories && filters.categories.length > 0 
+        ? filters.categories.map(cat => db`
+          AND EXISTS (
+            SELECT 1
+            FROM bill_analysis_results bar
+            JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+            WHERE bar.bill_id = sb.bill_id
+            AND bacs.category = ${cat.id}
+            ${cat.impactTypes.includes('BIAS') ? db`
+              AND bacs.bias_score >= bacs.positive_impact_score
+              AND bacs.bias_score >= 0.60
+            ` : cat.impactTypes.includes('POSITIVE') ? db`
+              AND bacs.positive_impact_score > bacs.bias_score
+              AND bacs.positive_impact_score >= 0.60
+            ` : cat.impactTypes.length ? db`
+              AND (
+                bacs.bias_score < 0.60
+                AND bacs.positive_impact_score < 0.60
+              )
+            ` : db``}
+          )
+        `)
+        : db``
+      }
+      ${filters.support === 'HAS_SUPPORT' 
+        ? db`AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = sb.bill_id) >= 2` 
+        : filters.support === 'NO_SUPPORT'
+        ? db`AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = sb.bill_id) < 2`
+        : db``
+      }
+    )
+    SELECT COUNT(*) as total
+    FROM filtered_bills
+  `
 
-  // Get all committees for the state
+  // Get all committees for the state using a more efficient direct join
   const allCommittees = await db`
     SELECT DISTINCT 
-      pending_committee_id as id,
-      pending_committee_name as name
-    FROM lsv_bill
-    WHERE state_abbr = ${stateCode}
-      AND pending_committee_name IS NOT NULL
-      AND pending_committee_name != ''
-    ORDER BY pending_committee_name
+      c.committee_id as id,
+      c.committee_name as name
+    FROM ls_committee c
+    JOIN ls_bill b ON b.pending_committee_id = c.committee_id
+    JOIN ls_state s ON b.state_id = s.state_id
+    WHERE s.state_abbr = ${stateCode}
+      AND c.committee_name IS NOT NULL
+      AND c.committee_name != ''
+    ORDER BY c.committee_name
   `
 
   // Build filter state
@@ -286,8 +346,8 @@ export async function GET(
   }
 
   return Response.json({
-    bills,
-    totalCount: Number(count),
+    bills: result,
+    totalCount: parseInt(countResult[0].total),
     filters: billFilters
   }, {
     headers: {
