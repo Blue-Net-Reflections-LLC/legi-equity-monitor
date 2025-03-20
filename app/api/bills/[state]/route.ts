@@ -68,28 +68,6 @@ export async function GET(
     `).join(' AND ')
   }
 
-  // Committee Filter
-  if (filters.committee?.length) {
-    // Join to lsv_bill view to access pending_committee_name
-    filterConditions += ` AND EXISTS (
-      SELECT 1 FROM lsv_bill lb
-      WHERE lb.bill_id = b.bill_id
-      AND lb.pending_committee_name = ANY(ARRAY[${filters.committee.map(name => `'${name.replace(/'/g, "''")}'`).join(',')}])
-    )`
-  }
-
-  // Party Filter
-  if (filters.party) {
-    filterConditions += ` AND EXISTS (
-      SELECT 1 FROM ls_bill_sponsor sp
-      JOIN ls_people p ON sp.people_id = p.people_id
-      JOIN ls_party party ON p.party_id = party.party_id
-      WHERE sp.bill_id = b.bill_id
-      AND sp.sponsor_order = 1
-      AND party.party_abbr = '${filters.party}'
-    )`
-  }
-
   // Support Filter
   if (filters.support === 'HAS_SUPPORT') {
     filterConditions += ` AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id) >= 2`
@@ -102,11 +80,11 @@ export async function GET(
     `'${name.replace(/'/g, "''")}'`
   ).join(',') || '';
 
-  // Use optimized query with direct join instead of subquery for committee filtering
+  // Optimized query using string concatenation to avoid parameter conflicts
   const result = await db`
-    WITH state_bill_ids AS (
-      -- Fast index lookup to get only the bills we need by state and type
-      SELECT DISTINCT b.bill_id
+    WITH state_bills AS (
+      -- Fast index lookup to get only the bills we need by state and type first
+      SELECT b.bill_id
       FROM ls_bill b
       JOIN ls_state s ON b.state_id = s.state_id
       ${filters.committee?.length ? db`
@@ -117,6 +95,19 @@ export async function GET(
       ${filters.committee?.length ? db`
       AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
       ` : db``}
+    ),
+    filtered_bills AS (
+      -- Apply all filters to the state bills
+      SELECT sb.bill_id
+      FROM state_bills sb
+      JOIN ls_bill b ON sb.bill_id = b.bill_id
+      ${filters.party ? db`
+      JOIN ls_bill_sponsor bs ON sb.bill_id = bs.bill_id AND bs.sponsor_order = 1
+      JOIN ls_people p ON bs.people_id = p.people_id
+      JOIN ls_party party ON p.party_id = party.party_id
+      ` : db``}
+      WHERE 1=1
+      ${filters.party ? db`AND party.party_abbr = ${filters.party}` : db``}
       ${db.unsafe(filterConditions)}
     ),
     -- Get history dates for just these bills
@@ -124,18 +115,18 @@ export async function GET(
       SELECT
         h.bill_id,
         MAX(h.history_date) as latest_action_date
-      FROM state_bill_ids sb
-      JOIN ls_bill_history h ON sb.bill_id = h.bill_id
+      FROM filtered_bills fb
+      JOIN ls_bill_history h ON fb.bill_id = h.bill_id
       GROUP BY h.bill_id
     ),
     -- Get our filtered page of bills
     paged_bills AS (
       SELECT 
-        sb.bill_id,
+        fb.bill_id,
         COALESCE(bh.latest_action_date, '1970-01-01'::date) as latest_action_date
-      FROM state_bill_ids sb
-      LEFT JOIN bill_history bh ON sb.bill_id = bh.bill_id
-      ORDER BY latest_action_date DESC NULLS LAST, sb.bill_id DESC
+      FROM filtered_bills fb
+      LEFT JOIN bill_history bh ON fb.bill_id = bh.bill_id
+      ORDER BY latest_action_date DESC NULLS LAST, fb.bill_id DESC
       LIMIT ${pageSize}
       OFFSET ${offset}
     )
@@ -217,18 +208,36 @@ export async function GET(
 
   // Count query with same approach
   const countResult = await db`
+    WITH state_bills AS (
+      -- Fast index lookup to get only the bills we need by state and type first
+      SELECT b.bill_id
+      FROM ls_bill b
+      JOIN ls_state s ON b.state_id = s.state_id
+      ${filters.committee?.length ? db`
+      JOIN ls_committee c ON b.pending_committee_id = c.committee_id
+      ` : db``}
+      WHERE s.state_abbr = ${stateCode}
+      AND b.bill_type_id = 1
+      ${filters.committee?.length ? db`
+      AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
+      ` : db``}
+    ),
+    filtered_bills AS (
+      -- Apply all filters to the state bills
+      SELECT sb.bill_id
+      FROM state_bills sb
+      JOIN ls_bill b ON sb.bill_id = b.bill_id
+      ${filters.party ? db`
+      JOIN ls_bill_sponsor bs ON sb.bill_id = bs.bill_id AND bs.sponsor_order = 1
+      JOIN ls_people p ON bs.people_id = p.people_id
+      JOIN ls_party party ON p.party_id = party.party_id
+      ` : db``}
+      WHERE 1=1
+      ${filters.party ? db`AND party.party_abbr = ${filters.party}` : db``}
+      ${db.unsafe(filterConditions)}
+    )
     SELECT COUNT(*) as total
-    FROM ls_bill b
-    JOIN ls_state s ON b.state_id = s.state_id
-    ${filters.committee?.length ? db`
-    JOIN ls_committee c ON b.pending_committee_id = c.committee_id
-    ` : db``}
-    WHERE s.state_abbr = ${stateCode}
-    AND b.bill_type_id = 1
-    ${filters.committee?.length ? db`
-    AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
-    ` : db``}
-    ${db.unsafe(filterConditions)}
+    FROM filtered_bills
   `
 
   // Get all committees for the state using a more efficient direct join
