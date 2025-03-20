@@ -1,6 +1,5 @@
 import { type NextRequest } from 'next/server'
 import db from "@/lib/db"
-import type { Bill } from "@/app/types"
 import type { BillFilters } from "@/app/types/filters"
 
 export const revalidate = 3600 // Cache for 1 hour
