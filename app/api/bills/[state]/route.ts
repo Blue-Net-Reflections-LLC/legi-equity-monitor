@@ -30,6 +30,8 @@ export async function GET(
         impactTypes: validImpactType ? [validImpactType] : [] as ('POSITIVE' | 'BIAS' | 'NEUTRAL')[]
       }
     })
+    
+  console.log('Category Filters:', JSON.stringify(categoryFilters))
 
   const filters = {
     committee: searchParams.getAll('committee').filter(Boolean).length > 0 
@@ -39,46 +41,15 @@ export async function GET(
     party: searchParams.get('party'),
     support: searchParams.get('support') as 'HAS_SUPPORT' | 'NO_SUPPORT' | undefined,
   }
-
-  // Build WHERE clauses for filters
-  let filterConditions = ''
   
-  // Category filters
-  if (filters.categories?.length) {
-    filterConditions += filters.categories.map(cat => `
-      EXISTS (
-        SELECT 1
-        FROM bill_analysis_results subbar
-        JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id    
-        WHERE subbar.bill_id = b.bill_id
-        AND subbacs.category = '${cat.id}'
-        ${cat.impactTypes.includes('BIAS') ? `
-          AND subbacs.bias_score >= subbacs.positive_impact_score
-          AND subbacs.bias_score >= 0.60
-        ` : cat.impactTypes.includes('POSITIVE') ? `
-          AND subbacs.positive_impact_score > subbacs.bias_score
-          AND subbacs.positive_impact_score >= 0.60
-        ` : cat.impactTypes.length ? `
-          AND (
-            subbacs.bias_score < 0.60
-            AND subbacs.positive_impact_score < 0.60
-          )
-        ` : ''}
-      )
-    `).join(' AND ')
-  }
-
-  // Support Filter
-  if (filters.support === 'HAS_SUPPORT') {
-    filterConditions += ` AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id) >= 2`
-  } else if (filters.support === 'NO_SUPPORT') {
-    filterConditions += ` AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id) < 2`
-  }
+  console.log('All Filters:', JSON.stringify(filters))
 
   // Prepare committee names for filtering - escape SQL special characters
   const committeeNamesArray = filters.committee?.map(name => 
     `'${name.replace(/'/g, "''")}'`
   ).join(',') || '';
+  
+  console.log('Filters prepared')
 
   // Optimized query using string concatenation to avoid parameter conflicts
   const result = await db`
@@ -91,16 +62,16 @@ export async function GET(
       JOIN ls_committee c ON b.pending_committee_id = c.committee_id
       ` : db``}
       WHERE s.state_abbr = ${stateCode}
-      AND b.bill_type_id = 1
+      -- Only filter by bill_type_id for state bills, not for US Congress
+      ${stateCode !== 'US' ? db`AND b.bill_type_id = 1` : db``}
       ${filters.committee?.length ? db`
       AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
       ` : db``}
     ),
     filtered_bills AS (
       -- Apply all filters to the state bills
-      SELECT sb.bill_id
+      SELECT DISTINCT sb.bill_id
       FROM state_bills sb
-      JOIN ls_bill b ON sb.bill_id = b.bill_id
       ${filters.party ? db`
       JOIN ls_bill_sponsor bs ON sb.bill_id = bs.bill_id AND bs.sponsor_order = 1
       JOIN ls_people p ON bs.people_id = p.people_id
@@ -108,7 +79,36 @@ export async function GET(
       ` : db``}
       WHERE 1=1
       ${filters.party ? db`AND party.party_abbr = ${filters.party}` : db``}
-      ${db.unsafe(filterConditions)}
+      ${filters.categories && filters.categories.length > 0 
+        ? filters.categories.map(cat => db`
+          AND EXISTS (
+            SELECT 1
+            FROM bill_analysis_results bar
+            JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+            WHERE bar.bill_id = sb.bill_id
+            AND bacs.category = ${cat.id}
+            ${cat.impactTypes.includes('BIAS') ? db`
+              AND bacs.bias_score >= bacs.positive_impact_score
+              AND bacs.bias_score >= 0.60
+            ` : cat.impactTypes.includes('POSITIVE') ? db`
+              AND bacs.positive_impact_score > bacs.bias_score
+              AND bacs.positive_impact_score >= 0.60
+            ` : cat.impactTypes.length ? db`
+              AND (
+                bacs.bias_score < 0.60
+                AND bacs.positive_impact_score < 0.60
+              )
+            ` : db``}
+          )
+        `)
+        : db``
+      }
+      ${filters.support === 'HAS_SUPPORT' 
+        ? db`AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = sb.bill_id) >= 2` 
+        : filters.support === 'NO_SUPPORT'
+        ? db`AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = sb.bill_id) < 2`
+        : db``
+      }
     ),
     -- Get history dates for just these bills
     bill_history AS (
@@ -217,16 +217,16 @@ export async function GET(
       JOIN ls_committee c ON b.pending_committee_id = c.committee_id
       ` : db``}
       WHERE s.state_abbr = ${stateCode}
-      AND b.bill_type_id = 1
+      -- Only filter by bill_type_id for state bills, not for US Congress
+      ${stateCode !== 'US' ? db`AND b.bill_type_id = 1` : db``}
       ${filters.committee?.length ? db`
       AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
       ` : db``}
     ),
     filtered_bills AS (
       -- Apply all filters to the state bills
-      SELECT sb.bill_id
+      SELECT DISTINCT sb.bill_id
       FROM state_bills sb
-      JOIN ls_bill b ON sb.bill_id = b.bill_id
       ${filters.party ? db`
       JOIN ls_bill_sponsor bs ON sb.bill_id = bs.bill_id AND bs.sponsor_order = 1
       JOIN ls_people p ON bs.people_id = p.people_id
@@ -234,7 +234,36 @@ export async function GET(
       ` : db``}
       WHERE 1=1
       ${filters.party ? db`AND party.party_abbr = ${filters.party}` : db``}
-      ${db.unsafe(filterConditions)}
+      ${filters.categories && filters.categories.length > 0 
+        ? filters.categories.map(cat => db`
+          AND EXISTS (
+            SELECT 1
+            FROM bill_analysis_results bar
+            JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
+            WHERE bar.bill_id = sb.bill_id
+            AND bacs.category = ${cat.id}
+            ${cat.impactTypes.includes('BIAS') ? db`
+              AND bacs.bias_score >= bacs.positive_impact_score
+              AND bacs.bias_score >= 0.60
+            ` : cat.impactTypes.includes('POSITIVE') ? db`
+              AND bacs.positive_impact_score > bacs.bias_score
+              AND bacs.positive_impact_score >= 0.60
+            ` : cat.impactTypes.length ? db`
+              AND (
+                bacs.bias_score < 0.60
+                AND bacs.positive_impact_score < 0.60
+              )
+            ` : db``}
+          )
+        `)
+        : db``
+      }
+      ${filters.support === 'HAS_SUPPORT' 
+        ? db`AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = sb.bill_id) >= 2` 
+        : filters.support === 'NO_SUPPORT'
+        ? db`AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = sb.bill_id) < 2`
+        : db``
+      }
     )
     SELECT COUNT(*) as total
     FROM filtered_bills
