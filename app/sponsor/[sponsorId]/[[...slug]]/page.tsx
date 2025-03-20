@@ -183,53 +183,55 @@ async function getSponsor(peopleId: string): Promise<Sponsor | null> {
 
 async function getSponsoredBills(peopleId: string): Promise<SponsoredBill[]> {
   const bills = await db`
-    WITH latest_history AS (
+    WITH sponsor_bills AS (
       SELECT 
-        bill_id,
-        MAX(history_date) as latest_history_date
+        b.bill_id, b.bill_number, b.title, b.status_id, b.state_id, 
+        bs.sponsor_type_id
+      FROM ls_bill_sponsor bs
+      JOIN ls_bill b ON bs.bill_id = b.bill_id 
+      WHERE bs.people_id = ${peopleId}
+      AND b.bill_type_id = 1
+    ),
+    latest_dates AS (
+      SELECT bill_id, MAX(history_date) as latest_history_date
       FROM ls_bill_history
+      WHERE bill_id IN (SELECT bill_id FROM sponsor_bills)
       GROUP BY bill_id
     )
-    SELECT DISTINCT
-      b.bill_id,
-      b.bill_number,
-      b.title,
-      st.state_abbr,
+    SELECT 
+      sb.bill_id, sb.bill_number, sb.title,
+      st.state_abbr, 
       p.progress_desc as status_desc,
       spt.sponsor_type_desc,
-      h.latest_history_date,
-      bar.overall_bias_score,
-      bar.overall_positive_impact_score,
-      bar.confidence,
-      bacs.category,
-      bacs.bias_score,
-      bacs.positive_impact_score,
+      ld.latest_history_date,
+      bar.overall_bias_score, bar.overall_positive_impact_score, bar.confidence,
+      bacs.category, bacs.bias_score, bacs.positive_impact_score,
       COALESCE(
-        (
-          SELECT jsonb_agg(
-            jsonb_build_object(
-              'subgroup_code', bass.subgroup_code,
-              'bias_score', bass.bias_score,
-              'positive_impact_score', bass.positive_impact_score,
-              'evidence', bass.evidence
-            )
+        (SELECT json_agg(
+          json_build_object(
+            'subgroup_code', bass.subgroup_code,
+            'bias_score', bass.bias_score, 
+            'positive_impact_score', bass.positive_impact_score,
+            'evidence', bass.evidence
           )
-          FROM bill_analysis_subgroup_scores bass
-          WHERE bass.category_score_id = bacs.category_score_id
-        ),
-        '[]'::jsonb
+        )
+        FROM bill_analysis_subgroup_scores bass 
+        WHERE bass.category_score_id = bacs.category_score_id),
+        '[]'
       ) as subgroups
-    FROM ls_bill b
-    INNER JOIN ls_bill_sponsor bs ON b.bill_id = bs.bill_id
-    INNER JOIN ls_sponsor_type spt ON bs.sponsor_type_id = spt.sponsor_type_id
-    INNER JOIN ls_state st ON b.state_id = st.state_id
-    LEFT JOIN latest_history h ON b.bill_id = h.bill_id
-    LEFT JOIN ls_progress p ON b.status_id = p.progress_event_id
-    LEFT JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
+    FROM sponsor_bills sb
+    JOIN ls_state st ON sb.state_id = st.state_id
+    JOIN ls_sponsor_type spt ON sb.sponsor_type_id = spt.sponsor_type_id
+    LEFT JOIN latest_dates ld ON sb.bill_id = ld.bill_id
+    LEFT JOIN ls_progress p ON sb.status_id = p.progress_event_id
+    LEFT JOIN bill_analysis_results bar ON sb.bill_id = bar.bill_id
     LEFT JOIN bill_analysis_category_scores bacs ON bar.analysis_id = bacs.analysis_id
-    WHERE bs.people_id = ${peopleId}
-    AND b.bill_type_id = 1
-    ORDER BY h.latest_history_date DESC NULLS LAST, b.bill_id DESC
+    GROUP BY 
+      sb.bill_id, sb.bill_number, sb.title, st.state_abbr, p.progress_desc, 
+      spt.sponsor_type_desc, ld.latest_history_date, bar.overall_bias_score,
+      bar.overall_positive_impact_score, bar.confidence, bacs.category,
+      bacs.bias_score, bacs.positive_impact_score, bacs.category_score_id
+    ORDER BY ld.latest_history_date DESC NULLS LAST, sb.bill_id DESC
     LIMIT 50
   ` as unknown as (SponsoredBill & CategoryScore & { subgroups: SubgroupScore[] })[];
 

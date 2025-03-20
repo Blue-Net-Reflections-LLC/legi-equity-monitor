@@ -57,6 +57,7 @@ export async function GET(
       SELECT b.bill_id
       FROM ls_bill b
       JOIN ls_state s ON b.state_id = s.state_id
+      JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id  -- Only include analyzed bills
       ${filters.committee?.length ? db`
       JOIN ls_committee c ON b.pending_committee_id = c.committee_id
       ` : db``}
@@ -212,6 +213,7 @@ export async function GET(
       SELECT b.bill_id
       FROM ls_bill b
       JOIN ls_state s ON b.state_id = s.state_id
+      JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id  -- Only include analyzed bills
       ${filters.committee?.length ? db`
       JOIN ls_committee c ON b.pending_committee_id = c.committee_id
       ` : db``}
