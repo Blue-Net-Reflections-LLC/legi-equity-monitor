@@ -39,8 +39,9 @@ export async function POST(request: Request) {
           vi.state_name
         FROM vector_index vi
         LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
+        LEFT JOIN bill_analysis_results bar ON vi.entity_type = 'bill' AND vi.entity_id = bar.bill_id
         WHERE ${tokens}
-        AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
+        AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1 AND bar.bill_id IS NOT NULL))
         ORDER BY LENGTH(vi.search_text) ASC
         LIMIT 1000
       ),
@@ -94,8 +95,9 @@ export async function POST(request: Request) {
             'embedding' as source
           FROM vector_index vi
           LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
+          LEFT JOIN bill_analysis_results bar ON vi.entity_type = 'bill' AND vi.entity_id = bar.bill_id
           WHERE vi.embedding IS NOT NULL
-          AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1))
+          AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1 AND bar.bill_id IS NOT NULL))
           AND vi.entity_id NOT IN (${existingIds.length ? existingIds.join(',') : 0})
           AND (1 - (vi.embedding <=> '${vectorString}'::vector)) > 0.30
           ORDER BY vi.embedding <=> '${vectorString}'::vector
