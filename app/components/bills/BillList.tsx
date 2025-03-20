@@ -127,7 +127,14 @@ export function BillList({ stateCode }: BillListProps) {
               currentPage={page}
               totalItems={totalCount}
               pageSize={pageSize}
-              searchParams={Object.fromEntries(searchParams.entries())}
+              searchParams={Object.fromEntries(
+                [...searchParams.entries()].map(([key, value]) => {
+                  // Get all values for this key
+                  const values = searchParams.getAll(key);
+                  // If there are multiple values, return the key with an array
+                  return values.length > 1 ? [key, values] : [key, value];
+                })
+              )}
             />
           )}
         </div>
