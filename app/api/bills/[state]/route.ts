@@ -1,144 +1,122 @@
-import { type NextRequest } from 'next/server';
-import db from '@/lib/db';
+import { type NextRequest } from 'next/server'
+import db from "@/lib/db"
+import type { Bill } from "@/app/types"
+import type { BillFilters } from "@/app/types/filters"
 
-export const revalidate = 300; // 5 minutes instead of 1 hour
-
-interface SupportOption {
-  id: number;
-  name: string;
-  selected: boolean;
-}
-
-interface PartyOption {
-  id: number;
-  name: string;
-  selected: boolean;
-}
+export const revalidate = 3600 // Cache for 1 hour
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { state: string } }
 ) {
-  const state = params.state.toUpperCase();
-  const url = new URL(req.url);
-  const searchParams = new URL(req.url).searchParams;
+  const stateCode = params.state.toUpperCase()
+  const searchParams = new URL(req.url).searchParams
 
-  const page = parseInt(searchParams.get('page') || '1');
-  const filter = searchParams.get('filter') || '';
-  const billType = parseInt(searchParams.get('billType') || '1');
-  const pageSize = 12;
-  const offset = (page - 1) * pageSize;
+  const page = parseInt(searchParams.get('page') || '1')
+  const pageSize = 12
+  const offset = (page - 1) * pageSize
 
-  const committees: { id: number; name: string; selected: boolean }[] = [];
-  const parties: PartyOption[] = [
-    { id: 1, name: 'Democrat', selected: false },
-    { id: 2, name: 'Republican', selected: false },
-  ];
-  const support: SupportOption[] = [
-    { id: 1, name: 'Support', selected: false },
-    { id: 2, name: 'Oppose', selected: false },
-  ];
+  // Parse category filters
+  const categoryFilters = searchParams.getAll('category')
+    .filter(Boolean)
+    .map(categoryId => {
+      const impactType = searchParams.get(`impact_${categoryId}`)
+      const validImpactType = (impactType === 'POSITIVE' || impactType === 'BIAS' || impactType === 'NEUTRAL') 
+        ? impactType as 'POSITIVE' | 'BIAS' | 'NEUTRAL'
+        : undefined
 
-  // Update selected state based on URL parameters
-  if (searchParams.has('committee')) {
-    const selectedCommittees = searchParams.get('committee')?.split(',').map(Number) || [];
-    for (let i = 0; i < committees.length; i++) {
-      committees[i].selected = selectedCommittees.includes(committees[i].id);
-    }
-  }
-  
-  if (searchParams.has('party')) {
-    const selectedParties = searchParams.get('party')?.split(',').map(Number) || [];
-    for (let i = 0; i < parties.length; i++) {
-      parties[i].selected = selectedParties.includes(parties[i].id);
-    }
-  }
-  
-  if (searchParams.has('support')) {
-    const selectedSupport = searchParams.get('support')?.split(',').map(Number) || [];
-    for (let i = 0; i < support.length; i++) {
-      support[i].selected = selectedSupport.includes(support[i].id);
-    }
-  }
+      return {
+        id: categoryId,
+        impactTypes: validImpactType ? [validImpactType] : [] as ('POSITIVE' | 'BIAS' | 'NEUTRAL')[]
+      }
+    })
 
-  // Get all committees for this state 
-  const committeesResult = await db`
-    SELECT DISTINCT c.committee_id, c.committee_name
-    FROM ls_committee c
-    JOIN ls_body b ON c.committee_body_id = b.body_id
-    JOIN ls_state s ON b.state_id = s.state_id
-    WHERE s.state_abbr = ${state}
-    ORDER BY c.committee_name
-  `;
-
-  // Extract and format committees
-  for (const committee of committeesResult) {
-    const selectedCommittees = searchParams.get('committee')?.split(',').map(Number) || [];
-    committees.push({
-      id: committee.committee_id,
-      name: committee.committee_name,
-      selected: selectedCommittees.includes(committee.committee_id)
-    });
+  const filters = {
+    committee: searchParams.getAll('committee').filter(Boolean).length > 0 
+      ? searchParams.getAll('committee').filter(Boolean)
+      : undefined,
+    categories: categoryFilters,
+    party: searchParams.get('party'),
+    support: searchParams.get('support') as 'HAS_SUPPORT' | 'NO_SUPPORT' | undefined,
   }
 
   // Build WHERE clauses for filters
-  let filterConditions = '';
-  let filterParams = [];
-  let paramIndex = 2; // Starting from 2 since state and billType are $1 and $2
+  let filterConditions = ''
   
+  // Category filters
+  if (filters.categories?.length) {
+    filterConditions += filters.categories.map(cat => `
+      EXISTS (
+        SELECT 1
+        FROM bill_analysis_results subbar
+        JOIN bill_analysis_category_scores subbacs ON subbar.analysis_id = subbacs.analysis_id    
+        WHERE subbar.bill_id = b.bill_id
+        AND subbacs.category = '${cat.id}'
+        ${cat.impactTypes.includes('BIAS') ? `
+          AND subbacs.bias_score >= subbacs.positive_impact_score
+          AND subbacs.bias_score >= 0.60
+        ` : cat.impactTypes.includes('POSITIVE') ? `
+          AND subbacs.positive_impact_score > subbacs.bias_score
+          AND subbacs.positive_impact_score >= 0.60
+        ` : cat.impactTypes.length ? `
+          AND (
+            subbacs.bias_score < 0.60
+            AND subbacs.positive_impact_score < 0.60
+          )
+        ` : ''}
+      )
+    `).join(' AND ')
+  }
+
   // Committee Filter
-  if (searchParams.has('committee')) {
-    const committeeIds = searchParams.get('committee')?.split(',').map(Number);
-    if (committeeIds && committeeIds.length > 0) {
-      filterConditions += ` AND b.pending_committee_id IN (${committeeIds.join(',')})`;
-    }
-  }
-  
-  // Party Filter - requires joining to sponsor table
-  if (searchParams.has('party')) {
-    const partyIds = searchParams.get('party')?.split(',').map(Number);
-    if (partyIds && partyIds.length > 0) {
-      filterConditions += ` AND b.bill_id IN (
-        SELECT DISTINCT bs.bill_id 
-        FROM ls_bill_sponsor bs
-        JOIN ls_people p ON bs.people_id = p.people_id
-        WHERE p.party_id IN (${partyIds.join(',')})
-      )`;
-    }
-  }
-  
-  // Text Filter
-  if (filter && filter.trim() !== '') {
-    const searchTerm = `%${filter.toLowerCase()}%`;
-    filterConditions += ` AND (
-      LOWER(b.bill_number) LIKE '${searchTerm}' OR 
-      LOWER(b.title) LIKE '${searchTerm}' OR 
-      LOWER(b.description) LIKE '${searchTerm}'
-    )`;
+  if (filters.committee?.length) {
+    // Join to lsv_bill view to access pending_committee_name
+    filterConditions += ` AND EXISTS (
+      SELECT 1 FROM lsv_bill lb
+      WHERE lb.bill_id = b.bill_id
+      AND lb.pending_committee_name = ANY(ARRAY[${filters.committee.map(name => `'${name.replace(/'/g, "''")}'`).join(',')}])
+    )`
   }
 
-  // Support/Oppose filter - would connect to your custom tables
-  if (searchParams.has('support')) {
-    const supportValues = searchParams.get('support')?.split(',').map(Number);
-    if (supportValues && supportValues.length > 0) {
-      filterConditions += ` AND b.bill_id IN (
-        SELECT bill_id FROM bill_analysis_results 
-        WHERE ${supportValues.includes(1) ? 'overall_positive_impact_score >= 0.5' : ''}
-        ${supportValues.includes(1) && supportValues.includes(2) ? ' OR ' : ''}
-        ${supportValues.includes(2) ? 'overall_positive_impact_score < 0.5' : ''}
-      )`;
-    }
+  // Party Filter
+  if (filters.party) {
+    filterConditions += ` AND EXISTS (
+      SELECT 1 FROM ls_bill_sponsor sp
+      JOIN ls_people p ON sp.people_id = p.people_id
+      JOIN ls_party party ON p.party_id = party.party_id
+      WHERE sp.bill_id = b.bill_id
+      AND sp.sponsor_order = 1
+      AND party.party_abbr = '${filters.party}'
+    )`
   }
 
-  // Optimized query using string concatenation to avoid parameter conflicts
+  // Support Filter
+  if (filters.support === 'HAS_SUPPORT') {
+    filterConditions += ` AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id) >= 2`
+  } else if (filters.support === 'NO_SUPPORT') {
+    filterConditions += ` AND (SELECT COUNT(*) FROM ls_bill_sponsor WHERE bill_id = b.bill_id) < 2`
+  }
+
+  // Prepare committee names for filtering - escape SQL special characters
+  const committeeNamesArray = filters.committee?.map(name => 
+    `'${name.replace(/'/g, "''")}'`
+  ).join(',') || '';
+
+  // Use optimized query with direct join instead of subquery for committee filtering
   const result = await db`
     WITH state_bill_ids AS (
       -- Fast index lookup to get only the bills we need by state and type
-      SELECT b.bill_id
+      SELECT DISTINCT b.bill_id
       FROM ls_bill b
       JOIN ls_state s ON b.state_id = s.state_id
-      WHERE s.state_abbr = ${state}
-      AND b.bill_type_id = ${billType}
+      ${filters.committee?.length ? db`
+      JOIN ls_committee c ON b.pending_committee_id = c.committee_id
+      ` : db``}
+      WHERE s.state_abbr = ${stateCode}
+      AND b.bill_type_id = 1
+      ${filters.committee?.length ? db`
+      AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
+      ` : db``}
       ${db.unsafe(filterConditions)}
     ),
     -- Get history dates for just these bills
@@ -176,7 +154,7 @@ export async function GET(
       c.committee_id as pending_committee_id,
       (
         SELECT json_agg(json_build_object(
-          'people_id', sp.people_id, 
+          'people_id', sp.people_id,
           'party', pa.party_name, 
           'type', CASE WHEN sp.sponsor_order = 1 THEN 'Primary' ELSE 'Co' END
         ))
@@ -235,57 +213,106 @@ export async function GET(
     LEFT JOIN ls_progress p ON b.status_id = p.progress_event_id
     LEFT JOIN ls_committee c ON b.pending_committee_id = c.committee_id
     ORDER BY pb.latest_action_date DESC NULLS LAST, b.bill_id DESC
-  `;
+  `
 
   // Count query with same approach
   const countResult = await db`
     SELECT COUNT(*) as total
     FROM ls_bill b
     JOIN ls_state s ON b.state_id = s.state_id
-    WHERE s.state_abbr = ${state}
-    AND b.bill_type_id = ${billType}
+    ${filters.committee?.length ? db`
+    JOIN ls_committee c ON b.pending_committee_id = c.committee_id
+    ` : db``}
+    WHERE s.state_abbr = ${stateCode}
+    AND b.bill_type_id = 1
+    ${filters.committee?.length ? db`
+    AND c.committee_name = ANY(ARRAY[${db.unsafe(committeeNamesArray)}])
+    ` : db``}
     ${db.unsafe(filterConditions)}
-  `;
+  `
+
+  // Get all committees for the state using a more efficient direct join
+  const allCommittees = await db`
+    SELECT DISTINCT 
+      c.committee_id as id,
+      c.committee_name as name
+    FROM ls_committee c
+    JOIN ls_bill b ON b.pending_committee_id = c.committee_id
+    JOIN ls_state s ON b.state_id = s.state_id
+    WHERE s.state_abbr = ${stateCode}
+      AND c.committee_name IS NOT NULL
+      AND c.committee_name != ''
+    ORDER BY c.committee_name
+  `
+
+  // Build filter state
+  const billFilters: BillFilters = {
+    impacts: [],
+    categories: [
+      { id: 'gender', name: 'Gender', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'disability', name: 'Disability', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'age', name: 'Age', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'race', name: 'Race', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'religion', name: 'Religion', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]},
+      { id: 'veterans', name: 'Veterans', selected: false, impactTypes: [
+        { type: 'POSITIVE', selected: false },
+        { type: 'BIAS', selected: false },
+        { type: 'NEUTRAL', selected: false }
+      ]}
+    ],
+    demographics: [],
+    party: filters.party as 'D' | 'R' | 'I' | 'ALL' || 'ALL',
+    committees: allCommittees.map(committee => ({
+      id: committee.id || 0,
+      name: committee.name,
+      selected: filters.committee?.includes(committee.name) || false
+    })),
+    support: filters.support || 'ALL'
+  }
+
+  // Update selected states based on URL params
+  if (categoryFilters.length > 0) {
+    categoryFilters.forEach(({ id, impactTypes }) => {
+      const category = billFilters.categories.find(c => c.id === id)
+      if (category) {
+        category.selected = true
+        impactTypes.forEach(impactType => {
+          const impact = category.impactTypes.find(i => i.type === impactType)
+          if (impact) {
+            impact.selected = true
+          }
+        })
+      }
+    })
+  }
 
   return Response.json({
     bills: result,
     totalCount: parseInt(countResult[0].total),
-    filters: {
-      committees,
-      parties,
-      support,
-      categories: [
-        { id: 'gender', name: 'Gender', selected: false, impactTypes: [
-          { type: 'POSITIVE', selected: false },
-          { type: 'BIAS', selected: false },
-          { type: 'NEUTRAL', selected: false }
-        ]},
-        { id: 'disability', name: 'Disability', selected: false, impactTypes: [
-          { type: 'POSITIVE', selected: false },
-          { type: 'BIAS', selected: false },
-          { type: 'NEUTRAL', selected: false }
-        ]},
-        { id: 'age', name: 'Age', selected: false, impactTypes: [
-          { type: 'POSITIVE', selected: false },
-          { type: 'BIAS', selected: false },
-          { type: 'NEUTRAL', selected: false }
-        ]},
-        { id: 'race', name: 'Race', selected: false, impactTypes: [
-          { type: 'POSITIVE', selected: false },
-          { type: 'BIAS', selected: false },
-          { type: 'NEUTRAL', selected: false }
-        ]},
-        { id: 'religion', name: 'Religion', selected: false, impactTypes: [
-          { type: 'POSITIVE', selected: false },
-          { type: 'BIAS', selected: false },
-          { type: 'NEUTRAL', selected: false }
-        ]},
-        { id: 'sexual_orientation', name: 'Sexual Orientation', selected: false, impactTypes: [
-          { type: 'POSITIVE', selected: false },
-          { type: 'BIAS', selected: false },
-          { type: 'NEUTRAL', selected: false }
-        ]}
-      ]
+    filters: billFilters
+  }, {
+    headers: {
+      'Cache-Control': 'max-age=0, s-maxage=3600, stale-while-revalidate=86400'
     }
-  });
+  })
 } 
