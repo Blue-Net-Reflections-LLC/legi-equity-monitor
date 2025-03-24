@@ -7,7 +7,7 @@ import { AppDispatch, RootState } from '@/app/lib/redux/store';
 import { fetchClusterDetail, fetchClusterAnalysis, fetchClusterBills, resetClusterDetail } from '@/app/lib/redux/features/clustering/clusterDetailSlice';
 import { Button } from '@/app/components/ui/button';
 import { ArrowLeft, Loader2, ArrowUpDown } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, addWeeks, startOfYear } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Separator } from '@/app/components/ui/separator';
 import { Badge } from '@/app/components/ui/badge';
@@ -304,8 +304,11 @@ export default function ClusterDetailPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Date Range</p>
                 <p className="text-lg font-medium">
-                  {format(new Date(cluster.min_date), 'MMM d, yyyy')} -{' '}
-                  {format(new Date(cluster.max_date), 'MMM d, yyyy')}
+                  {format(startOfWeek(new Date(cluster.min_date)), 'MMM d, yyyy')} -{' '}
+                  {format(endOfWeek(new Date(cluster.min_date)), 'MMM d, yyyy')}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Week {Math.floor((new Date(cluster.min_date).getTime() - startOfYear(new Date(cluster.min_date)).getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1}
                 </p>
               </div>
               <div>
