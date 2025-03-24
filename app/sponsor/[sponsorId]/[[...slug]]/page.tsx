@@ -293,6 +293,7 @@ function transformBillsToCategories(bills: SponsoredBill[]): CategoryData[] {
 }
 
 async function getVoteCounts(peopleId: string): Promise<VoteCount[]> {
+  // Select all votes for a sponsor
   const counts = await db`
     SELECT
       CASE 

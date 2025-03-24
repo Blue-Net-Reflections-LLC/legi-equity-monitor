@@ -10,6 +10,12 @@ import { LoadingState } from '@/app/admin/components/LoadingState'
 import { StatusBadge } from './StatusBadge'
 import { ClusterActions } from './ClusterActions'
 import { type ClusterListItem } from '@/app/admin/clustering/types'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/components/ui/tooltip"
 
 // Add sorting state type
 type SortConfig = {
@@ -99,7 +105,7 @@ export function ClusterList() {
           </div>
         ) : (
           items.map((item: ClusterListItem) => (
-            <div key={item.cluster_id} className="grid grid-cols-[2fr_1fr_1fr_3fr_1fr_1fr_auto] gap-4 px-6 py-4 items-center hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+            <div key={item.cluster_id} className="grid grid-cols-[2fr_1fr_1fr_3fr_1fr_1fr_auto] gap-4 px-6 py-4 items-center hover:bg-zinc-50 dark:hover:bg-zinc-900/50  text-zinc-900 dark:text-zinc-50">
               <div className="text-sm">
                 <Link 
                   href={`/admin/clustering/${item.cluster_id}`}
@@ -110,7 +116,18 @@ export function ClusterList() {
               </div>
               <div className="text-sm">{item.bill_count}</div>
               <div className="text-sm">{item.state_count}</div>
-              <div className="text-sm truncate">{item.executive_summary}</div>
+              <div className="text-sm max-w-[400px] overflow-hidden">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="truncate cursor-help">{item.executive_summary}</div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[500px] whitespace-normal bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50">
+                      {item.executive_summary}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <div className="text-sm"><StatusBadge status={item.status} /></div>
               <div className="text-sm text-zinc-500 dark:text-zinc-400">{formatDate(item.min_date)}</div>
               <div><ClusterActions cluster={item} /></div>

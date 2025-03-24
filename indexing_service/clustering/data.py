@@ -293,32 +293,36 @@ async def fetch_bills(week: int, year: int, test_mode: bool = False, model_path:
         # Get overview of bills
         overview = await conn.fetchrow("""
             SELECT COUNT(*) as total,
-                   COUNT(DISTINCT state_id) as states,
-                   MIN(created) as earliest,
-                   MAX(created) as latest
-            FROM ls_bill;
+                   COUNT(DISTINCT b.state_id) as states,
+                   MIN(bh.history_date) as earliest,
+                   MAX(bh.history_date) as latest
+            FROM ls_bill_history bh
+            JOIN ls_bill b ON bh.bill_id = b.bill_id;
         """)
         
         logger.info("\nDatabase Overview:")
-        logger.info(f"Total bills: {overview['total']}")
+        logger.info(f"Total history entries: {overview['total']}")
         logger.info(f"States: {overview['states']}")
         logger.info(f"Date range: {overview['earliest']} to {overview['latest']}")
         
-        # Fetch bills with just the needed fields
+        # Fetch bills with history information
         query = """
-            SELECT 
+            SELECT DISTINCT ON (b.bill_id)
                 b.bill_id,
                 b.bill_number,
                 b.title,
                 b.description,
                 b.created,
                 s.state_name,
-                s.state_abbr
+                s.state_abbr,
+                bh.history_date,
+                bh.history_action
             FROM ls_bill b
             JOIN ls_state s ON b.state_id = s.state_id
-            WHERE b.created >= $1
-            AND b.created < $2
-            ORDER BY b.created;
+            JOIN ls_bill_history bh ON b.bill_id = bh.bill_id
+            WHERE bh.history_date >= $1
+            AND bh.history_date < $2
+            ORDER BY b.bill_id, bh.history_date DESC;
         """
         
         logger.info(f"\nFetching bills between:")
@@ -332,6 +336,7 @@ async def fetch_bills(week: int, year: int, test_mode: bool = False, model_path:
             for row in rows[:5]:
                 logger.info(f"Bill {row['bill_id']} ({row['bill_number']}) from {row['state_name']}")
                 logger.info(f"Title: {row['title'][:100]}...")
+                logger.info(f"Last Action: {row['history_action']} on {row['history_date']}")
             return None, None
         
         # Prepare texts and metadata
@@ -352,7 +357,9 @@ async def fetch_bills(week: int, year: int, test_mode: bool = False, model_path:
                 'bill_number': row['bill_number'],
                 'state': row['state_name'],
                 'state_abbr': row['state_abbr'],
-                'created': row['created']
+                'created': row['created'],
+                'history_date': row['history_date'],
+                'history_action': row['history_action']
             })
         
         if skipped_template_bills > 0:

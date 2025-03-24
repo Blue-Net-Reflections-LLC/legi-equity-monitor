@@ -61,10 +61,20 @@ export async function getBillsForAnalysis(sql: postgres.Sql, batchSize: number):
           FROM ls_bill b
           WHERE b.bill_type_id = 1
           AND b.updated >= NOW() - INTERVAL '30 days'
-          AND NOT EXISTS (
-            SELECT 1 FROM bill_analysis_status bas
-            WHERE bas.bill_id = b.bill_id 
-            AND bas.analysis_state = 'completed'
+          AND (
+            -- Bills never analyzed
+            NOT EXISTS (
+              SELECT 1 FROM bill_analysis_status bas
+              WHERE bas.bill_id = b.bill_id
+            )
+            OR
+            -- Bills with different change hash
+            EXISTS (
+              SELECT 1 FROM bill_analysis_status bas
+              WHERE bas.bill_id = b.bill_id 
+              AND bas.analysis_state = 'completed'
+              AND b.change_hash != bas.last_change_hash
+            )
           )
           LIMIT 2000  -- Limit for performance
         ) AS eb
