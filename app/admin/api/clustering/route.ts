@@ -32,6 +32,14 @@ export async function GET(request: Request) {
     // Get clusters with pagination and filters
     const [clusters, [{ total }]] = await Promise.all([
       db`
+        WITH week_dates AS (
+          SELECT 
+            date_trunc('week', make_date(${year}, 1, 1)) + 
+            (interval '1 week' * (${week} - 1)) as week_start,
+            date_trunc('week', make_date(${year}, 1, 1)) + 
+            (interval '1 week' * ${week}) as week_end
+          WHERE ${week} > 0
+        )
         SELECT DISTINCT
           c.cluster_id,
           c.bill_count,
@@ -44,8 +52,9 @@ export async function GET(request: Request) {
         FROM legislation_clusters c
         JOIN cluster_analysis ca ON c.cluster_id = ca.cluster_id
         LEFT JOIN blog_posts bp ON c.cluster_id = bp.cluster_id
+        LEFT JOIN week_dates wd ON true
         WHERE EXTRACT(YEAR FROM c.min_date) = ${year}
-        ${week > 0 ? db`AND EXTRACT(WEEK FROM c.min_date) = ${week}` : db``}
+        ${week > 0 ? db`AND c.min_date >= wd.week_start AND c.min_date < wd.week_end` : db``}
         ${status ? db`AND ca.status = ${status}` : db``}
         AND bp.post_id IS NULL
         ORDER BY ${sort ? db`${db(sort)} ${order === 'asc' ? db`ASC` : db`DESC`}` : db`c.created_at DESC`}
@@ -53,12 +62,21 @@ export async function GET(request: Request) {
         OFFSET ${offset}
       `,
       db`
+        WITH week_dates AS (
+          SELECT 
+            date_trunc('week', make_date(${year}, 1, 1)) + 
+            (interval '1 week' * (${week} - 1)) as week_start,
+            date_trunc('week', make_date(${year}, 1, 1)) + 
+            (interval '1 week' * ${week}) as week_end
+          WHERE ${week} > 0
+        )
         SELECT COUNT(DISTINCT c.cluster_id)::int as total 
         FROM legislation_clusters c
         JOIN cluster_analysis ca ON c.cluster_id = ca.cluster_id
         LEFT JOIN blog_posts bp ON c.cluster_id = bp.cluster_id
+        LEFT JOIN week_dates wd ON true
         WHERE EXTRACT(YEAR FROM c.min_date) = ${year}
-        ${week > 0 ? db`AND EXTRACT(WEEK FROM c.min_date) = ${week}` : db``}
+        ${week > 0 ? db`AND c.min_date >= wd.week_start AND c.min_date < wd.week_end` : db``}
         ${status ? db`AND ca.status = ${status}` : db``}
         AND bp.post_id IS NULL
       `
