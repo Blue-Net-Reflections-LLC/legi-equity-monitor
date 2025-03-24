@@ -7,7 +7,7 @@ import { AppDispatch, RootState } from '@/app/lib/redux/store';
 import { fetchClusterDetail, fetchClusterAnalysis, fetchClusterBills, resetClusterDetail } from '@/app/lib/redux/features/clustering/clusterDetailSlice';
 import { Button } from '@/app/components/ui/button';
 import { ArrowLeft, Loader2, ArrowUpDown } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, addWeeks, startOfYear } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfYear } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Separator } from '@/app/components/ui/separator';
 import { Badge } from '@/app/components/ui/badge';
