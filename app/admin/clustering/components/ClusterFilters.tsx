@@ -41,6 +41,7 @@ export function ClusterFilters() {
           <SelectValue placeholder="Select year" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="0">All Years</SelectItem>
           {years.map((year) => (
             <SelectItem key={year} value={year.toString()}>
               {year}
