@@ -12,9 +12,9 @@ import asyncpg
 logger = logging.getLogger(__name__)
 
 def generate_cluster_dml(clusters: list, metadata: list, embeddings: np.ndarray, labels: np.ndarray, 
-                   dry_run: bool = False, batch_size: int = 1000):
+                   dry_run: bool = False, batch_size: int = 1000, week: int = None, year: int = None):
     """Generate batched DML statements for storing clusters and their relationships."""
-    logger.info("Generating cluster DML statements...")
+    logger.info(f"Generating cluster DML statements for week {week}, year {year}...")
     
     # Initialize batches
     cluster_batches = []
@@ -37,9 +37,13 @@ def generate_cluster_dml(clusters: list, metadata: list, embeddings: np.ndarray,
             'min_date': cluster_info['min_date'],
             'max_date': cluster_info['max_date'],
             'cluster_description': '',  # Can be populated later with analysis
+            'cluster_week': week,  # Add week tracking
+            'cluster_year': year,  # Add year tracking
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         })
+        
+        logger.debug(f"Added cluster {cluster_id} with week={week}, year={year}")
         
         # Add pending analysis record
         current_analysis_batch.append({
@@ -90,6 +94,8 @@ def generate_cluster_dml(clusters: list, metadata: list, embeddings: np.ndarray,
         bill_counts = [c['bill_count'] for c in batch]
         state_counts = [c['state_count'] for c in batch]
         descriptions = [c['cluster_description'] for c in batch]
+        cluster_weeks = [c['cluster_week'] for c in batch]
+        cluster_years = [c['cluster_year'] for c in batch]
         created_ats = [c['created_at'] for c in batch]
         updated_ats = [c['updated_at'] for c in batch]
         
@@ -97,16 +103,19 @@ def generate_cluster_dml(clusters: list, metadata: list, embeddings: np.ndarray,
         INSERT INTO legislation_clusters (
             cluster_id, cluster_name, min_date, max_date, 
             bill_count, state_count, cluster_description,
+            cluster_week, cluster_year,
             created_at, updated_at
         ) SELECT * FROM unnest(
             $1::uuid[], $2::varchar[], $3::date[], $4::date[],
             $5::integer[], $6::integer[], $7::text[],
-            $8::timestamptz[], $9::timestamptz[]
+            $8::integer[], $9::integer[],
+            $10::timestamptz[], $11::timestamptz[]
         )
         """
         dml_statements.append((stmt, (
             cluster_ids, cluster_names, min_dates, max_dates,
             bill_counts, state_counts, descriptions,
+            cluster_weeks, cluster_years,
             created_ats, updated_ats
         )))
         
@@ -167,7 +176,9 @@ async def store_clusters(
     embeddings: np.ndarray,
     labels: np.ndarray,
     batch_size: int = 1000,
-    dry_run: bool = False
+    dry_run: bool = False,
+    week: int = None,
+    year: int = None
 ) -> None:
     """
     Store clustering results in the database using batched operations.
@@ -180,7 +191,10 @@ async def store_clusters(
         labels: Cluster labels array
         batch_size: Number of records per batch
         dry_run: If True, execute SQL but rollback transaction
+        week: Week number for tracking
+        year: Year for tracking
     """
+    logger.info(f"Starting store_clusters with week={week}, year={year}")
     try:
         async with conn.transaction():
             # Generate DML statements
@@ -190,7 +204,9 @@ async def store_clusters(
                 embeddings=embeddings,
                 labels=labels,
                 dry_run=dry_run,  # Pass through dry_run flag
-                batch_size=batch_size
+                batch_size=batch_size,
+                week=week,  # Pass week parameter
+                year=year   # Pass year parameter
             )
             
             # Execute each statement in the transaction
