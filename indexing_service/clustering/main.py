@@ -92,23 +92,22 @@ async def main():
         if conn is None:
             raise RuntimeError("Failed to connect to database")
             
-        try:
-            await store_clusters(
-                conn=conn,
-                clusters=clusters,
-                metadata=metadata,
-                embeddings=embeddings,
-                labels=labels,
-                batch_size=args.batch_size,
-                dry_run=args.dry_run
-            )
-            if args.dry_run:
-                logger.info("Dry run completed - all changes rolled back")
-            else:
-                logger.info("Successfully stored clustering results")
-        finally:
-            await conn.close()
-            
+        logger.info(f"Storing clusters for week {args.week}, year {args.year}")
+        await store_clusters(
+            conn=conn,
+            clusters=clusters,
+            metadata=metadata,
+            embeddings=embeddings,
+            labels=labels,
+            batch_size=args.batch_size,
+            dry_run=args.dry_run,
+            week=args.week,
+            year=args.year
+        )
+        if args.dry_run:
+            logger.info("Dry run completed - all changes rolled back")
+        else:
+            logger.info("Successfully stored clustering results")
     except ValueError as ve:
         logger.error(f"Invalid input: {str(ve)}")
         exit(1)
