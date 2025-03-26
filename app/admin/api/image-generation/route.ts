@@ -78,10 +78,11 @@ export async function POST(request: Request) {
           height: dimensions.height
         },
         num_images: count,
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
+        num_inference_steps: model === 'recraft-v3' ? 40 : 28,
+        guidance_scale: model === 'recraft-v3' ? 7.5 : 3.5,
         enable_safety_checker: true,
-        sync_mode: false
+        sync_mode: false,
+        style: model === 'recraft-v3' ? 'realistic_image' : undefined
       },
       pollInterval: 1000,
       logs: true,

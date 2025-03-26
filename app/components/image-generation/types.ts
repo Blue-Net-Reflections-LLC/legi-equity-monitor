@@ -3,7 +3,7 @@ import { FieldValues, UseFormReturn, Path } from 'react-hook-form';
 export const IMAGE_MODELS = {
   'flux/dev': 'Basic',
   'flux-pro/v1.1': 'Professional',
-  'recraft-v3': 'Artistic',
+  'recraft-v3': 'Recraft V3',
   'ideogram/v2': 'Ideogram',
   'flux-pro/v1.1-ultra': 'Ultra HD'
 } as const;
