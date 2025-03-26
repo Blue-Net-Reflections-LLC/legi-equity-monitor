@@ -22,7 +22,7 @@ fal.config({
 const requestSchema = z.object({
   prompt: z.string()
     .min(10, 'Prompt must be at least 10 characters')
-    .max(500, 'Prompt must be less than 500 characters'),
+    .max(4000, 'Prompt must be less than 4000 characters'),
   size: z.enum(['landscape_16_9', 'landscape_3_2', 'square']),
   model: z.enum(Object.keys(IMAGE_MODELS) as [string, ...string[]]).default('flux-pro/v1.1'),
   count: z.number().min(1).max(6).default(1)
