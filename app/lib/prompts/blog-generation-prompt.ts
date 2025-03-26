@@ -96,8 +96,11 @@ Analyze the provided cluster of related bills drawing from cluster analysis resu
   • Affected population subgroups ({subgroupA}, {subgroupB})
   • Geographic adoption patterns
   • Implementation timelines and challenges
-  • Any bill references must include the bill number and state
-  • Link specified bills to the bill detail page on the site: E.g. /[CA-HB440](/ca/bill/123456)
+  • Bill references MUST follow this format:
+    - Include state abbreviation and bill number in the link text: [CA HB 440](/ca/bill/123456)
+    - Always use the full state name in the surrounding text: "California's HB 440"
+    - For multiple bills, use a comma-separated list: "California's HB 440, New York's AB 123"
+    - When mentioning a bill for the first time, use the full format: "California Assembly Bill 440 (CA HB 440)"
   • Use **Markdown formatting** for links, bullet points, tables, headings, and other formatting
   • IMPORTANT: Minimum **1000 words** and maximum **3000 words** for the "content" attribute
 - Closing paragraph with neutral outlook analysis
