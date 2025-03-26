@@ -320,6 +320,7 @@ async def fetch_bills(week: int, year: int, test_mode: bool = False, model_path:
             FROM ls_bill b
             JOIN ls_state s ON b.state_id = s.state_id
             JOIN ls_bill_history bh ON b.bill_id = bh.bill_id
+            JOIN bill_analysis_results bar ON b.bill_id = bar.bill_id
             WHERE bh.history_date >= $1
             AND bh.history_date < $2
             ORDER BY b.bill_id, bh.history_date DESC;
