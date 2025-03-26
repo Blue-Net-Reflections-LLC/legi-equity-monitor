@@ -78,6 +78,12 @@ export async function POST(request: Request) {
           aspect_ratio: size === 'landscape_16_9' ? '16:9' : 
                        size === 'landscape_3_2' ? '4:3' : '1:1',
           num_images: count
+        } : model === 'ideogram/v2' ? {
+          aspect_ratio: size === 'landscape_16_9' ? '16:9' : 
+                       size === 'landscape_3_2' ? '3:2' : '1:1',
+          expand_prompt: true,
+          style: 'realistic',
+          num_images: count
         } : {
           image_size: {
             width: dimensions.width,
