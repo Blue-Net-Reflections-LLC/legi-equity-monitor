@@ -10,7 +10,8 @@ const falModels = {
   'flux-pro/v1.1': 'fal-ai/flux-pro/v1.1',
   'recraft-v3': 'fal-ai/recraft-v3',
   'ideogram/v2': 'fal-ai/ideogram/v2',
-  'flux-pro/v1.1-ultra': 'fal-ai/flux-pro/v1.1-ultra'
+  'flux-pro/v1.1-ultra': 'fal-ai/flux-pro/v1.1-ultra',
+  'imagen3': 'fal-ai/imagen3'
 } as const;
   
 // Initialize fal client
@@ -73,16 +74,22 @@ export async function POST(request: Request) {
     const { data } = await fal.subscribe(falModels[model as keyof typeof falModels], {
       input: {
         prompt,
-        image_size: {
-          width: dimensions.width,
-          height: dimensions.height
-        },
-        num_images: count,
-        num_inference_steps: model === 'recraft-v3' ? 40 : 28,
-        guidance_scale: model === 'recraft-v3' ? 7.5 : 3.5,
-        enable_safety_checker: true,
-        sync_mode: false,
-        style: model === 'recraft-v3' ? 'realistic_image' : undefined
+        ...(model === 'imagen3' ? {
+          aspect_ratio: size === 'landscape_16_9' ? '16:9' : 
+                       size === 'landscape_3_2' ? '4:3' : '1:1',
+          num_images: count
+        } : {
+          image_size: {
+            width: dimensions.width,
+            height: dimensions.height
+          },
+          num_images: count,
+          num_inference_steps: model === 'recraft-v3' ? 40 : 28,
+          guidance_scale: model === 'recraft-v3' ? 7.5 : 3.5,
+          enable_safety_checker: true,
+          sync_mode: false,
+          style: model === 'recraft-v3' ? 'realistic_image' : undefined
+        })
       },
       pollInterval: 1000,
       logs: true,

@@ -5,7 +5,8 @@ export const IMAGE_MODELS = {
   'flux-pro/v1.1': 'Professional',
   'recraft-v3': 'Recraft V3',
   'ideogram/v2': 'Ideogram',
-  'flux-pro/v1.1-ultra': 'Ultra HD'
+  'flux-pro/v1.1-ultra': 'Ultra HD',
+  'imagen3': 'Imagen 3'
 } as const;
 
 export type ImageModel = keyof typeof IMAGE_MODELS;
