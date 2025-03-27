@@ -196,13 +196,13 @@ export function BlogPostView({
                   [&_caption]:italic"
                 dangerouslySetInnerHTML={{ __html: post.content }}
               />
-              {/* Related Bills */}
+
+              {/* Related Bills - moved here */}
               {!isPreview && relatedBills.length > 0 && (
-                <div className="mt-8">
-                  <BlogRelatedBills bills={relatedBills} />
-                </div>
+                <BlogRelatedBills bills={relatedBills} />
               )}
             </section>
+
             {/* Sidebar */}
             <aside className="space-y-6">
               <div className="lg:sticky lg:top-8">
