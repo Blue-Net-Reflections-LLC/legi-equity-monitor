@@ -280,12 +280,22 @@ async function analyzeCluster(analysis: ClusterAnalysis, sql: postgres.Sql, dryR
                 { role: 'system', content: CLUSTER_ANALYSIS_PROMPT },
                 { role: 'user', content: userMessage }
             ],
-            temperature: Config.llm.settings.temperature,
-            max_tokens: Config.llm.settings.maxOutputTokens,
-            top_p: Config.llm.settings.topP,
-            frequency_penalty: Config.llm.settings.frequencyPenalty,
-            presence_penalty: Config.llm.settings.presencePenalty,
-            ...(Config.llm.settings.responseFormat && { response_format: Config.llm.settings.responseFormat })
+            ...(Config.llm.apiVersion === 'v1' 
+                ? { 
+                    max_tokens: Config.llm.settings.maxOutputTokens,
+                    temperature: Config.llm.settings.temperature,
+                    top_p: Config.llm.settings.topP,
+                    ...(Config.llm.settings.responseFormat && { response_format: Config.llm.settings.responseFormat })
+                }
+                : { 
+                    max_tokens: Config.llm.settings.maxOutputTokens,
+                    temperature: Config.llm.settings.temperature,
+                    top_p: Config.llm.settings.topP,
+                    frequency_penalty: Config.llm.settings.frequencyPenalty,
+                    presence_penalty: Config.llm.settings.presencePenalty,
+                    ...(Config.llm.settings.responseFormat && { response_format: Config.llm.settings.responseFormat })
+                }
+            )
         });
 
         const response = completion.choices[0].message.content;
