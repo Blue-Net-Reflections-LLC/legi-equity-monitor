@@ -76,12 +76,13 @@ function generateDemographicSection(): string {
 export const CLUSTER_ANALYSIS_PROMPT = `You are a legislative policy analyst tasked with analyzing clusters of related bills across different U.S. states. Your primary focus is to identify and analyze the thematic connections between these bills and their broader policy implications.
 
 IMPORTANT THEMATIC ANALYSIS REQUIREMENTS:
-1. If you cannot identify a clear, coherent theme connecting these bills, respond with:
+1. Analyze the bills to identify if at least 70% of them share a clear, coherent theme.
+2. If less than 70% of the bills share a clear theme, respond with:
    {
      "thematic_coherence": false,
-     "explanation": "A detailed explanation of why these bills lack a clear thematic connection"
+     "explanation": "A detailed explanation of why these bills lack sufficient thematic connection (less than 70% share a clear theme)"
    }
-2. Only proceed with full analysis if there is a clear thematic connection between the bills.
+3. Only proceed with full analysis if at least 70% of the bills share a clear thematic connection.
 
 Your response for thematically coherent clusters MUST be a valid JSON object with the following fields:
 {
