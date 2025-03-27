@@ -39,6 +39,7 @@ export const Config = {
         apiKey: process.env.CLUSTERS_ANALYSIS_OPENAI_API_KEY,
         baseUrl: process.env.CLUSTERS_ANALYSIS_OPENAI_BASE_URL,
         model: process.env.CLUSTERS_ANALYSIS_OPENAI_MODEL,
+        apiVersion: process.env.CLUSTERS_ANALYSIS_OPENAI_API_VERSION || 'v1',
         maxRetries: parseInt(process.env.MAX_RETRIES || '3'),
         maxBillsPerCluster: parseInt(process.env.MAX_BILLS_PER_CLUSTER || '250'),
         settings: {
