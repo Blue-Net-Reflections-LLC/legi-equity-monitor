@@ -12,9 +12,18 @@ import { ShareButtons } from '@/app/components/ShareButtons';
 import AdUnit from '@/app/components/ads/AdUnit';
 import LocationAutocomplete from '@/app/components/address/LocationAutocomplete';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Bill } from '@/app/types';
+import { BlogRelatedBills } from './BlogRelatedBills';
+
+interface RelatedBill extends Bill {
+  overall_bias_score: number | null;
+  overall_positive_impact_score: number | null;
+  membership_confidence: number;
+}
 
 interface BlogPostViewProps {
   post: BlogPost;
+  relatedBills?: RelatedBill[];
   isPreview?: boolean;
   backUrl?: string;
   backLabel?: string;
@@ -22,6 +31,7 @@ interface BlogPostViewProps {
 
 export function BlogPostView({ 
   post, 
+  relatedBills = [],
   isPreview = false,
   backUrl = '/blog',
   backLabel = 'Back to Blog'
@@ -115,77 +125,84 @@ export function BlogPostView({
           {/* Content with Sidebar */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-8">
             {/* Main Content */}
-            <div 
-              className="prose dark:prose-invert max-w-none [&>p]:mb-6 
-                [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-6 
-                [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-6
-                [&>ul>li]:mb-2 [&>ol>li]:mb-2
-                [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline 
-                [&_a:hover]:text-blue-800 dark:[&_a:hover]:text-blue-300
+            <section>
+              <div 
+                className="prose dark:prose-invert max-w-none [&>p]:mb-6 
+                  [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-6 
+                  [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-6
+                  [&>ul>li]:mb-2 [&>ol>li]:mb-2
+                  [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline 
+                  [&_a:hover]:text-blue-800 dark:[&_a:hover]:text-blue-300
 
-                [&>h2]:text-3xl [&>h2]:font-bold [&>h2]:mb-6 [&>h2]:mt-12
-                [&>h2]:bg-gradient-to-r [&>h2]:from-neutral-900 [&>h2]:to-neutral-600
-                dark:[&>h2]:from-white dark:[&>h2]:to-neutral-400
-                [&>h2]:bg-clip-text [&>h2]:text-transparent
-                [&>h2]:pb-2 [&>h2]:border-b [&>h2]:border-neutral-200 dark:[&>h2]:border-neutral-800
+                  [&>h2]:text-3xl [&>h2]:font-bold [&>h2]:mb-6 [&>h2]:mt-12
+                  [&>h2]:bg-gradient-to-r [&>h2]:from-neutral-900 [&>h2]:to-neutral-600
+                  dark:[&>h2]:from-white dark:[&>h2]:to-neutral-400
+                  [&>h2]:bg-clip-text [&>h2]:text-transparent
+                  [&>h2]:pb-2 [&>h2]:border-b [&>h2]:border-neutral-200 dark:[&>h2]:border-neutral-800
 
-                [&>h3]:text-2xl [&>h3]:font-semibold [&>h3]:mb-4 [&>h3]:mt-8
-                [&>h3]:text-neutral-800 dark:[&>h3]:text-neutral-200
-                [&>h3]:flex [&>h3]:items-center [&>h3]:gap-2
-                [&>h3]:before:content-[''] [&>h3]:before:w-2 [&>h3]:before:h-2
-                [&>h3]:before:rounded-full [&>h3]:before:bg-primary
+                  [&>h3]:text-2xl [&>h3]:font-semibold [&>h3]:mb-4 [&>h3]:mt-8
+                  [&>h3]:text-neutral-800 dark:[&>h3]:text-neutral-200
+                  [&>h3]:flex [&>h3]:items-center [&>h3]:gap-2
+                  [&>h3]:before:content-[''] [&>h3]:before:w-2 [&>h3]:before:h-2
+                  [&>h3]:before:rounded-full [&>h3]:before:bg-primary
 
-                [&>h4]:text-xl [&>h4]:font-medium [&>h4]:mb-4 [&>h4]:mt-6
-                [&>h4]:text-neutral-700 dark:[&>h4]:text-neutral-300
-                [&>h4]:pl-4 [&>h4]:border-l-4 [&>h4]:border-primary/60
+                  [&>h4]:text-xl [&>h4]:font-medium [&>h4]:mb-4 [&>h4]:mt-6
+                  [&>h4]:text-neutral-700 dark:[&>h4]:text-neutral-300
+                  [&>h4]:pl-4 [&>h4]:border-l-4 [&>h4]:border-primary/60
 
-                [&>h5]:text-lg [&>h5]:font-medium [&>h5]:mb-3 [&>h5]:mt-4
-                [&>h5]:text-neutral-600 dark:[&>h5]:text-neutral-400
-                [&>h5]:uppercase [&>h5]:tracking-wide
+                  [&>h5]:text-lg [&>h5]:font-medium [&>h5]:mb-3 [&>h5]:mt-4
+                  [&>h5]:text-neutral-600 dark:[&>h5]:text-neutral-400
+                  [&>h5]:uppercase [&>h5]:tracking-wide
 
-                [&>h6]:text-base [&>h6]:font-medium [&>h6]:mb-3 [&>h6]:mt-4
-                [&>h6]:text-neutral-500 dark:[&>h6]:text-neutral-500
-                [&>h6]:italic
+                  [&>h6]:text-base [&>h6]:font-medium [&>h6]:mb-3 [&>h6]:mt-4
+                  [&>h6]:text-neutral-500 dark:[&>h6]:text-neutral-500
+                  [&>h6]:italic
 
-                [&_table]:w-full
-                [&_table]:my-8
-                [&_table]:border-collapse
-                [&_table]:border
-                [&_table]:border-zinc-300
-                dark:[&_table]:border-zinc-700
+                  [&_table]:w-full
+                  [&_table]:my-8
+                  [&_table]:border-collapse
+                  [&_table]:border
+                  [&_table]:border-zinc-300
+                  dark:[&_table]:border-zinc-700
 
-                [&_thead]:bg-zinc-100
-                dark:[&_thead]:bg-zinc-800
-                [&_thead_tr]:border-b
-                [&_thead_tr]:border-zinc-300
-                dark:[&_thead_tr]:border-zinc-700
+                  [&_thead]:bg-zinc-100
+                  dark:[&_thead]:bg-zinc-800
+                  [&_thead_tr]:border-b
+                  [&_thead_tr]:border-zinc-300
+                  dark:[&_thead_tr]:border-zinc-700
 
-                [&_th]:p-3
-                [&_th]:text-left
-                [&_th]:font-semibold
-                [&_th]:text-zinc-900
-                dark:[&_th]:text-zinc-100
+                  [&_th]:p-3
+                  [&_th]:text-left
+                  [&_th]:font-semibold
+                  [&_th]:text-zinc-900
+                  dark:[&_th]:text-zinc-100
 
-                [&_tbody_tr]:border-b
-                [&_tbody_tr]:border-zinc-200
-                dark:[&_tbody_tr]:border-zinc-800
-                [&_tbody_tr]:transition-colors
-                [&_tbody_tr:hover]:bg-zinc-50
-                dark:[&_tbody_tr:hover]:bg-zinc-800/50
+                  [&_tbody_tr]:border-b
+                  [&_tbody_tr]:border-zinc-200
+                  dark:[&_tbody_tr]:border-zinc-800
+                  [&_tbody_tr]:transition-colors
+                  [&_tbody_tr:hover]:bg-zinc-50
+                  dark:[&_tbody_tr:hover]:bg-zinc-800/50
 
-                [&_td]:p-3
-                [&_td]:text-zinc-700
-                dark:[&_td]:text-zinc-300
+                  [&_td]:p-3
+                  [&_td]:text-zinc-700
+                  dark:[&_td]:text-zinc-300
 
-                [&_caption]:mt-4
-                [&_caption]:text-sm
-                [&_caption]:text-zinc-500
-                dark:[&_caption]:text-zinc-400
-                [&_caption]:text-center
-                [&_caption]:italic"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
-
+                  [&_caption]:mt-4
+                  [&_caption]:text-sm
+                  [&_caption]:text-zinc-500
+                  dark:[&_caption]:text-zinc-400
+                  [&_caption]:text-center
+                  [&_caption]:italic"
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
+              {/* Related Bills */}
+              {!isPreview && relatedBills.length > 0 && (
+                <div className="mt-8">
+                  <BlogRelatedBills bills={relatedBills} />
+                </div>
+              )}
+            </section>
             {/* Sidebar */}
             <aside className="space-y-6">
               <div className="lg:sticky lg:top-8">
