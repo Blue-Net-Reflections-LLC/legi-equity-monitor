@@ -38,11 +38,10 @@ export async function POST(request: Request) {
           vi.state_abbr,
           vi.state_name
         FROM vector_index vi
-        LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
+        LEFT JOIN ls_bill b ON vi.entity_type = 'bill' AND vi.entity_id = b.bill_id
         LEFT JOIN bill_analysis_results bar ON vi.entity_type = 'bill' AND vi.entity_id = bar.bill_id
         WHERE ${tokens}
-        AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1 AND bar.bill_id IS NOT NULL))
-        ORDER BY LENGTH(vi.search_text) ASC
+        AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND b.bill_type_id = 1 AND bar.bill_id IS NOT NULL))
         LIMIT 1000
       ),
       ranked AS (
@@ -61,13 +60,6 @@ export async function POST(request: Request) {
       ${entityDataCTE}
       SELECT e.*, r.source FROM entity_data e
       JOIN ranked r ON r.entity_type = e.entity_type AND r.entity_id = e.entity_id
-      ORDER BY 
-        CASE e.entity_type 
-          WHEN 'sponsor' THEN 1
-          WHEN 'blog_post' THEN 2
-          WHEN 'bill' THEN 3
-        END,
-        e.similarity DESC
       OFFSET ${offset}
       LIMIT ${defaultLimit + 1};
     `
@@ -94,10 +86,10 @@ export async function POST(request: Request) {
             1 - (vi.embedding <=> '${vectorString}'::vector) as similarity,
             'embedding' as source
           FROM vector_index vi
-          LEFT JOIN lsv_bill bill ON vi.entity_type = 'bill' AND vi.entity_id = bill.bill_id
+          LEFT JOIN ls_bill b ON vi.entity_type = 'bill' AND vi.entity_id = b.bill_id
           LEFT JOIN bill_analysis_results bar ON vi.entity_type = 'bill' AND vi.entity_id = bar.bill_id
           WHERE vi.embedding IS NOT NULL
-          AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND bill.bill_type_id = 1 AND bar.bill_id IS NOT NULL))
+          AND (vi.entity_type != 'bill' OR (vi.entity_type = 'bill' AND b.bill_type_id = 1 AND bar.bill_id IS NOT NULL))
           AND vi.entity_id NOT IN (${existingIds.length ? existingIds.join(',') : 0})
           AND (1 - (vi.embedding <=> '${vectorString}'::vector)) > 0.30
           ORDER BY vi.embedding <=> '${vectorString}'::vector
@@ -107,13 +99,7 @@ export async function POST(request: Request) {
         ${entityDataCTE}
         SELECT e.*, r.source FROM entity_data e
         JOIN ranked r ON r.entity_type = e.entity_type AND r.entity_id = e.entity_id
-        ORDER BY 
-          CASE e.entity_type 
-            WHEN 'sponsor' THEN 1
-            WHEN 'blog_post' THEN 2
-            WHEN 'bill' THEN 3
-          END,
-          e.similarity DESC;
+        ORDER BY e.similarity DESC;
       `
       const embeddingResults = Array.from(await db.unsafe(embeddingQuery))
       
