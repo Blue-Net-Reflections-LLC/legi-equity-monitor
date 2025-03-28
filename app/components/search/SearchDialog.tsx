@@ -131,7 +131,7 @@ export function SearchDialog() {
           abortControllerRef.current = undefined
         }
       }
-    }, 300),
+    }, 150),
     [setResults, setIsLoading]
   )
 
